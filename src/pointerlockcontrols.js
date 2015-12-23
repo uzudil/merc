@@ -23,12 +23,13 @@ export class PointerLockControls {
 		this.dir = new THREE.Vector3();
 
 		this.enabled = true;
+		this.pitchEnabled = false;
 		$(document).mousemove((event) => {
 			var movementX = event.originalEvent.movementX;
 			var movementY = event.originalEvent.movementY;
 
 			this.yawObject.rotation.z -= movementX * 0.002;
-			this.pitchObject.rotation.x -= movementY * 0.002;
+			if(this.pitchEnabled) this.pitchObject.rotation.x -= movementY * 0.002;
 
 			//this.pitchObject.rotation.x = Math.max( - this.PI_2, Math.min( this.PI_2, this.pitchObject.rotation.x ) );
 		});

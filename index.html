@@ -4,10 +4,76 @@
 	<style>
 		* {
 			padding: 0; margin: 0;
+			font-family: monospace, sans-serif;
+			font-size: 14px;
+			/*font-weight: bold;*/
+			text-transform: uppercase;
+		}
+
+		#ui {
+			position: fixed;
+			bottom: 0;
+			border-top: 10px solid black;
+			border-bottom: 10px solid black;
+			background: #888;
+			z-index: 100;
+		}
+
+		.uibox {
+			border: 10px inset #888;
+			overflow: hidden;
+			color: white;
+			padding: 2px;
+		}
+
+		#el {
+			background: darkgreen;
+			height: 100%;
+		}
+
+		#loc {
+			background: saddlebrown;
+		}
+
+		#alt {
+			background: mediumpurple;
+		}
+
+		#speed {
+			background: darkgreen;
+		}
+
+		#comp {
+			background: brown;
+			height: 100%;
+		}
+
+		#message {
+			background: darkred;
+		}
+
+		table {
+			width: 100%;
+			height: 100%;
+			table-layout: fixed;
 		}
 	</style>
 </head>
 <body>
 	<script src="dist/merc.js"></script>
+	<div id="ui">
+	<table>
+		<tr>
+			<td rowspan="2"><div id="el" class="uibox"></div></td>
+			<td valign="bottom"><div id="loc" class="uibox">0</div></td>
+			<td valign="bottom"><div id="alt" class="uibox">0</div></td>
+			<td valign="bottom"><div id="speed" class="uibox">0</div></td>
+			<td rowspan="2"><div id="comp" class="uibox"></div></td>
+		</tr>
+		<tr>
+			<td colspan="3" valign="top"><div id="message" class="uibox">Welcome.</div></td>
+		</tr>
+	</table>
+	</div>
 </body>
 </html>

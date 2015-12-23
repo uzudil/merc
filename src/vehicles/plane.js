@@ -1,9 +1,10 @@
 import THREE from 'three.js';
 import * as model from 'model';
+import * as game_map from 'game_map';
 
-export class Opera extends model.Model {
+export class Plane extends model.Model {
 	constructor(onLoad) {
-		super("models/opera.json", onLoad);
+		super("models/plane.json", onLoad);
 	}
 
 	transform() {
