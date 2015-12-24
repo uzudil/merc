@@ -5,26 +5,33 @@ import * as plc from 'pointerlockcontrols';
 import * as util from 'util';
 import * as movement from 'movement';
 import * as skybox from "skybox"
+import * as model from 'model'
 
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
 const DEFAULT_Z = 20;
+const FAR_DIST = 10000;
 
 class Merc {
 	constructor() {
-		this.camera = new THREE.PerspectiveCamera( 50, ASPECT_RATIO, 1, 10000 );
+		var models = new model.Models((models)=>this.init(models))
+	}
+
+	init(models) {
+		this.models = models;
+		this.camera = new THREE.PerspectiveCamera( 50, ASPECT_RATIO, 1, FAR_DIST );
 
 		this.scene = new THREE.Scene();
 
 		this.controls = new plc.PointerLockControls( this.camera );
-		this.controls.getObject().position.set(game_map.SECTOR_SIZE * game_map.SECTOR_COUNT/2, game_map.SECTOR_SIZE * game_map.SECTOR_COUNT/2, DEFAULT_Z);
+		this.controls.getObject().position.set(game_map.SECTOR_SIZE * 9, game_map.SECTOR_SIZE * 9, DEFAULT_Z);
 		this.scene.add( this.controls.getObject() );
 
-		this.skybox = new skybox.Skybox(this.controls.getObject());
+		this.skybox = new skybox.Skybox(this.controls.getObject(), FAR_DIST);
 
 		this.movement = new movement.Movement();
 
-		this.game_map = new game_map.GameMap(this.scene);
+		this.game_map = new game_map.GameMap(this.scene, this.models);
 
 		this.renderer = new THREE.WebGLRenderer();
 		this.renderer.setSize( window.innerHeight * ASPECT_RATIO, window.innerHeight );
@@ -81,4 +88,3 @@ class Merc {
 $(document).ready(function() {
 	window.merc = new Merc();
 });
-

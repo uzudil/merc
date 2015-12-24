@@ -1,7 +1,7 @@
 import THREE from 'three.js';
 
 export class Skybox {
-	constructor(scene) {
+	constructor(scene, far_dist) {
 
 		var path = "images/sky-";
 		var format = '.png';
@@ -23,7 +23,7 @@ export class Skybox {
 			depthWrite: false,
 			side: THREE.BackSide
 		} ),
-		mesh = new THREE.Mesh( new THREE.BoxGeometry( 3000, 3000, 3000 ), material );
+		mesh = new THREE.Mesh( new THREE.BoxGeometry( far_dist, far_dist, far_dist ), material );
 		scene.add( mesh );
 	}
 }

@@ -1,9 +1,5 @@
-import THREE from 'three.js';
-import * as opera from "structures/opera"
-import * as car from "vehicles/car"
-import * as plane from "vehicles/plane"
+import THREE from 'three.js'
 
-export const SECTOR_COUNT = 16;
 export const SECTOR_SIZE = 512.0;
 
 export const GRASS_COLOR = new THREE.Color("rgb(39,79,6)");
@@ -15,44 +11,38 @@ const ROAD_MAT = new THREE.LineBasicMaterial({color: ROAD_COLOR, linewidth: 4});
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
+const MAP_POSITIONS = {
+	opera: [[12, 12], [14, 12]],
+	asha: [[10, 10], [12, 10], [14, 10]],
+	car: [[10, 12]],
+	plane: [[10, 14]]
+};
+
 export class GameMap {
-	constructor(scene) {
+	constructor(scene, models) {
 		this.land = new THREE.Object3D();
 		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.DoubleSide });
 		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(100000, 100000), mat);
-		this.plane.position.set(SECTOR_COUNT/2 * SECTOR_SIZE, SECTOR_COUNT/2 * SECTOR_SIZE, 0);
+		this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
 		this.land.add(this.plane);
 
 		this.sectors = {};
-		for(let x = 0; x < SECTOR_COUNT; x++) {
-			for(let y = 0; y < SECTOR_COUNT; y++) {
-				let o = new THREE.Object3D();
-				o["road"] = [0, 0];
-				o.position.set(x * SECTOR_SIZE, y * SECTOR_SIZE, 0);
-				this.sectors[key(x, y)] = o;
-				this.land.add(o);
+		this.minSector = {x: 0, y: 0};
+		this.maxSector = {x: 0, y: 0};
+
+		// add models
+		for(let name in models.models) {
+			var m = models.models[name];
+			for(let [sx, sy] of MAP_POSITIONS[name]) {
+				this.addStructure(m, sx, sy);
 			}
 		}
-
-
-		// structures
-		new opera.Opera((model) => {
-			this.addStructure(model, 12, 12);
-		});
 
 		// roads
 		this.addRoad(11, 0, 0, 15);
 		this.addRoad(0, 11, 15, 0);
 
 		this.drawRoads();
-
-		// add some vehicles
-		new car.Car((model) => {
-			this.addModel(model, 10, 12, SECTOR_SIZE/2, SECTOR_SIZE/2);
-		});
-		new plane.Plane((model) => {
-			this.addModel(model, 10, 14, SECTOR_SIZE/2, SECTOR_SIZE/2);
-		});
 
 		scene.add(this.land);
 	}
@@ -61,19 +51,19 @@ export class GameMap {
 		if(w != 0 && h != 0) throw "Roads can only go in one direction.";
 
 		for(let x = sectorX; x < sectorX + w; x++) {
-			let sector = this.sectors[key(x, sectorY)];
+			let sector = this.getSector(x, sectorY);
 			sector.road[0] = 1;
 		}
 		for(let y = sectorY; y < sectorY + h; y++) {
-			let sector = this.sectors[key(sectorX, y)];
+			let sector = this.getSector(sectorX, y);
 			sector.road[1] = 1;
 		}
 	}
 
 	drawRoads() {
-		for(let x = 0; x < SECTOR_COUNT; x++) {
-			for(let y = 0; y < SECTOR_COUNT; y++) {
-			    var road = this.sectors[key(x, y)].road;
+		for(let x = this.minSector.x; x < this.maxSector.x; x++) {
+			for(let y = this.minSector.y; y < this.maxSector.y; y++) {
+			    var road = this.getSector(x, y).road;
 				var mesh = null;
 				if(road[0] == 1 && road[1] == 1) {
 					mesh = GameMap.createCrossRoad();
@@ -135,7 +125,24 @@ export class GameMap {
 	}
 
 	addModel(model, sectorX, sectorY, offsetX, offsetY) {
-		model.object.position.set(offsetX, offsetY, 0);
-		this.sectors[key(sectorX, sectorY)].add(model.object);
+		var m = model.createObject();
+		m.position.set(offsetX, offsetY, 0);
+		this.getSector(sectorX, sectorY).add(m);
+	}
+
+	getSector(sectorX, sectorY) {
+		var k = key(sectorX, sectorY);
+		if(this.sectors[k] == null) {
+			let o = new THREE.Object3D();
+			o["road"] = [0, 0];
+			o.position.set(sectorX * SECTOR_SIZE, sectorY * SECTOR_SIZE, 0);
+			this.sectors[k] = o;
+			this.land.add(o);
+			if(sectorX <= this.minSector.x) this.minSector.x = sectorX;
+			if(sectorY <= this.minSector.y) this.minSector.y = sectorY;
+			if(sectorX >= this.maxSector.x) this.maxSector.x = sectorX;
+			if(sectorY >= this.maxSector.y) this.maxSector.y = sectorY;
+		}
+		return this.sectors[k];
 	}
 }
