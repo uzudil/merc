@@ -19,7 +19,8 @@ const MAP_POSITIONS = {
 };
 
 export class GameMap {
-	constructor(scene, models) {
+	constructor(scene, models, player) {
+		this.player = player;
 		this.land = new THREE.Object3D();
 		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.DoubleSide });
 		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(100000, 100000), mat);
@@ -31,6 +32,7 @@ export class GameMap {
 		this.maxSector = {x: 0, y: 0};
 
 		// add models
+		this.structures = [];
 		for(let name in models.models) {
 			var m = models.models[name];
 			for(let [sx, sy] of MAP_POSITIONS[name]) {
@@ -113,21 +115,31 @@ export class GameMap {
 		return new THREE.LineSegments(geometry, ROAD_MAT);
 	}
 
-	update(object) {
-		this.plane.position.set(object.position.x, object.position.y, 0);
+	update() {
+		this.plane.position.set(this.player.position.x, this.player.position.y, 0);
 	}
 
 	addStructure(model, sectorX, sectorY) {
 		var bb = model.getBoundingBox();
 		var dx = (SECTOR_SIZE - bb.size().x) / 2;
 		var dy = (SECTOR_SIZE - bb.size().y) / 2;
-		this.addModel(model, sectorX, sectorY, dx, dy);
+		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, 0);
 	}
 
-	addModel(model, sectorX, sectorY, offsetX, offsetY) {
-		var m = model.createObject();
-		m.position.set(offsetX, offsetY, 0);
-		this.getSector(sectorX, sectorY).add(m);
+	addModelAt(x, y, model, zRot) {
+		var sx = (x/SECTOR_SIZE)|0;
+		var sy = (y/SECTOR_SIZE)|0;
+		var ox = x % SECTOR_SIZE;
+		var oy = y % SECTOR_SIZE;
+
+		var object = model.createObject();
+		this.structures.push(object);
+
+		object.position.set(0, 0, 0);
+		object.rotation.z = zRot;
+		object.position.set(ox, oy, 0);
+
+		this.getSector(sx, sy).add(object);
 	}
 
 	getSector(sectorX, sectorY) {

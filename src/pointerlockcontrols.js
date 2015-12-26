@@ -48,6 +48,15 @@ export class PointerLockControls {
 		}();
 	}
 
+	setDirection(euler) {
+		//this.pitchObject.rotation.x = euler.x;
+		this.yawObject.rotation.z = euler.z;
+	}
+
+	getZRot() {
+		return this.yawObject.rotation.z;
+	}
+
 	static dispose() {
 		$(document).unbind("mousemove");
 	}

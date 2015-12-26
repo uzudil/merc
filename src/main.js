@@ -29,9 +29,10 @@ class Merc {
 
 		this.skybox = new skybox.Skybox(this.controls.getObject(), FAR_DIST);
 
-		this.movement = new movement.Movement();
+		var player = this.controls.getObject();
+		this.game_map = new game_map.GameMap(this.scene, this.models, player);
 
-		this.game_map = new game_map.GameMap(this.scene, this.models);
+		this.movement = new movement.Movement(this.game_map, this.controls);
 
 		this.renderer = new THREE.WebGLRenderer();
 		this.renderer.setSize( window.innerHeight * ASPECT_RATIO, window.innerHeight );
@@ -50,23 +51,13 @@ class Merc {
 			element.requestPointerLock();
 		});
 
-		// lights
-		var light = new THREE.AmbientLight( 0x404040 );
-		this.scene.add( light );
-		var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-		directionalLight.position.set( 0, 1, 0 );
-		this.scene.add( directionalLight );
-		directionalLight = new THREE.DirectionalLight( 0xffffcc, 0.5 );
-		directionalLight.position.set( 0, 1, 1 );
-		this.scene.add( directionalLight );
-
 		this.animate();
 	}
 
 	animate() {
-		this.movement.update(this.controls.getObject());
 		this.game_map.update(this.controls.getObject());
-		this.renderer.render( this.scene, this.camera );
+		this.movement.update();
+		this.renderer.render(this.scene, this.camera);
 
 		var x = Math.round(this.controls.getObject().position.x / game_map.SECTOR_SIZE);
 		var y = Math.round(this.controls.getObject().position.y / game_map.SECTOR_SIZE);
@@ -83,6 +74,8 @@ class Merc {
 		}
 
 	}
+
+
 }
 
 $(document).ready(function() {
