@@ -1,6 +1,10 @@
 import THREE from 'three.js';
 import * as game_map from 'game_map';
 
+/*
+	To use colors, use the "vertex paint" feature of blender.
+	Then, export with vertex colors on (no materials needed.)
+ */
 const MODELS = [ "opera", "asha", "car", "plane" ];
 
 const VEHICLES = {
@@ -12,8 +16,8 @@ const VEHICLES = {
 const MATERIAL = new THREE.MeshBasicMaterial({
 	color: 0xffffff,
 	side: THREE.doubleSided,
-	vertexColors: THREE.FaceColors,
-	overdraw: true
+	vertexColors: THREE.FaceColors
+	//overdraw: true
 });
 const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
 
@@ -50,7 +54,7 @@ export class Model {
 
 	load(onLoad) {
 		var loader = new THREE.JSONLoader();
-		loader.load("models/" + this.name + ".json?cb=" + Date.now(), (geometry) => {
+		loader.load("models/" + this.name + ".json?cb=" + Date.now(), (geometry, materials) => {
 
 			// put the geom. on the ground
 			geometry.center();
@@ -63,7 +67,16 @@ export class Model {
 			for (var i = 0; i < geometry.faces.length; i++) {
 				let f = geometry.faces[i];
 				let a = 0.75 + f.normal.dot(LIGHT) * 0.25;
-				f.color.setRGB(a, a, a);
+
+				// use the first vertex colors, if given
+				if(f.vertexColors && f.vertexColors[0]) {
+					f.color.copy(f.vertexColors[0]);
+				}
+
+				f.color.multiplyScalar(a);
+
+				// do not use vertex colors
+				f.vertexColors = [];
 			}
 
 			this.mesh = new THREE.Mesh(geometry, MATERIAL);
