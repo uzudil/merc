@@ -8,8 +8,8 @@ import * as game_map from 'game_map';
 const MODELS = [ "opera", "asha", "car", "plane" ];
 
 const VEHICLES = {
-	"car": { speed: 100, flies: false },
-	"plane": { speed: 1000, flies: true }
+	"car": { speed: 4000, flies: false },
+	"plane": { speed: 40000, flies: true }
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });

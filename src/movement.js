@@ -26,6 +26,7 @@ export class Movement {
 		this.model_bbox = new THREE.Box3();
 
 		this.vehicle = null;
+		this.speed = 0;
 
 		$(document).keydown(( event ) => {
 			switch ( event.keyCode ) {
@@ -81,6 +82,7 @@ export class Movement {
 			this.vehicle.model,
 			this.player_control.getZRot());
 		this.vehicle = null;
+		this.speed = 0;
 	}
 
 	enterVehicle() {
@@ -90,9 +92,14 @@ export class Movement {
 				this.vehicle = o;
 				this.vehicle.parent.remove(this.vehicle);
 				console.log("Entered " + o.model.name);
+				this.speed = 0;
 				break;
 			}
 		}
+	}
+
+	getMaxSpeed() {
+		return this.vehicle ? this.vehicle.model.speed : 1000;
 	}
 
 	update() {
@@ -102,8 +109,17 @@ export class Movement {
 		this.velocity.x -= this.velocity.x * 10.0 * delta;
 		this.velocity.y -= this.velocity.y * 10.0 * delta;
 
-		if ( this.moveForward ) this.velocity.y += 4000.0 * delta;
-		if ( this.moveBackward ) this.velocity.y -= 4000.0 * delta;
+		if(this.moveForward || this.moveBackward) {
+			this.speed = this.speed > 0 ? this.speed * 1.25 : 200;
+			if(this.speed > this.getMaxSpeed()) {
+				this.speed = this.getMaxSpeed();
+			}
+		} else {
+			this.speed = 0;
+		}
+
+		if ( this.moveForward ) this.velocity.y += this.speed * delta;
+		if ( this.moveBackward ) this.velocity.y -= this.speed * delta;
 
 		if ( this.moveLeft ) this.velocity.x -= 400.0 * delta;
 		if ( this.moveRight ) this.velocity.x += 400.0 * delta;

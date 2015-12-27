@@ -64,6 +64,7 @@ class Merc {
 		var z = Math.round(this.controls.getObject().position.z) - DEFAULT_Z;
 		$("#loc").text("" + x + "-" + y);
 		$("#alt").text("" + z);
+		$("#speed").text("" + Math.round(this.movement.speed / 100.0));
 
 		if(LIMIT_FPS) {
 			setTimeout(()=> {
