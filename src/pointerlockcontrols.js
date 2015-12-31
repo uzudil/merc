@@ -6,34 +6,49 @@
 
 import THREE from 'three.js';
 import $ from 'jquery';
+import * as movement from 'movement'
 
 export class PointerLockControls {
-	constructor(camera) {
-		camera.rotation.set( 0, 0, 0 );
+	constructor(main) {
+		this.main = main;
+		main.camera.rotation.set( 0, 0, 0 );
 
 		this.pitchObject = new THREE.Object3D();
 		this.pitchObject.rotation.x = Math.PI / 2;
-		this.pitchObject.add( camera );
+		this.pitchObject.add( main.camera );
+
+		this.rollObject = new THREE.Object3D();
+		//this.rollObject.rotation.y = -Math.PI;
+		this.rollObject.add( this.pitchObject );
 
 		this.yawObject = new THREE.Object3D();
 		this.yawObject.rotation.z = Math.PI;
-		this.yawObject.add( this.pitchObject );
+		this.yawObject.add( this.rollObject );
 
 		this.PI_2 = Math.PI / 2;
 		this.dir = new THREE.Vector3();
 
+		this.movementX = 0.0;
+		this.movementY = 0.0;
+
 		this.enabled = true;
-		this.pitchEnabled = false;
 		$(document).mousemove((event) => {
-			var movementX = event.originalEvent.movementX;
-			var movementY = event.originalEvent.movementY;
+			this.movementX = event.originalEvent.movementX;
+			this.movementY = event.originalEvent.movementY;
 
-			this.yawObject.rotation.z -= movementX * 0.002;
-			if(this.pitchEnabled) this.pitchObject.rotation.x -= movementY * 0.002;
+			if(this.getObject().position.z <= movement.DEFAULT_Z) {
+				this.yawObject.rotation.z -= this.movementX * this.main.movement.getTurnSpeed();
+				this.rollObject.rotation.y = 0;
+			} else {
+				this.rollObject.rotation.y += this.movementX * this.main.movement.getRollSpeed();
+			}
+			this.pitchObject.rotation.x += this.movementY * this.main.movement.getPitchSpeed();
 
-			//this.pitchObject.rotation.x = Math.max( - this.PI_2, Math.min( this.PI_2, this.pitchObject.rotation.x ) );
+			if(this.yawObject.position.z <= movement.DEFAULT_Z) {
+				this.pitchObject.rotation.x = Math.max(this.pitchObject.rotation.x, Math.PI/2);
+				this.rollObject.rotation.y = 0;
+			}
 		});
-
 
 		this.getDirection = function() {
 			// assumes the camera itself is not rotated
@@ -46,6 +61,19 @@ export class PointerLockControls {
 				return v;
 			}
 		}();
+	}
+
+	update() {
+		if(this.getObject().position.z > movement.DEFAULT_Z) {
+			this.yawObject.rotation.z -= this.rollObject.rotation.y * 0.075;
+		}
+		if(this.main.movement.isStalling()) {
+			this.pitchObject.rotation.x += (this.pitchObject.rotation.x > 0 ? -1 : 1) * 0.02;
+		}
+	}
+
+	getPitch() {
+		return this.pitchObject.rotation.x - Math.PI/2;
 	}
 
 	setDirection(euler) {

@@ -7,16 +7,12 @@ import $ from 'jquery';
 import * as models from 'model'
 
 const SIZE = 20;
+export const DEFAULT_Z = 20;
 
 export class Movement {
 	constructor(game_map, player_control) {
 		this.game_map = game_map;
 		this.player_control = player_control;
-
-		this.moveForward = false;
-		this.moveBackward = false;
-		this.moveLeft = false;
-		this.moveRight = false;
 
 		this.prevTime = Date.now();
 		this.velocity = new THREE.Vector3();
@@ -30,46 +26,31 @@ export class Movement {
 
 		$(document).keydown(( event ) => {
 			switch ( event.keyCode ) {
-				case 38: // up
-				case 87: // w
-					this.moveForward = true;
+				case 187: // +
+					this.speed = this.speed > 0 ? this.speed * 1.25 : 200;
+					if(this.speed > this.getMaxSpeed()) this.speed = this.getMaxSpeed();
 					break;
-				case 37: // left
-				case 65: // a
-					this.moveLeft = true; break;
-				case 40: // down
-				case 83: // s
-					this.moveBackward = true;
-					break;
-				case 39: // right
-				case 68: // d
-					this.moveRight = true;
+				case 189: // -
+					this.speed = this.speed * .75;
+					if(Math.abs(this.speed) < 1) {
+						this.speed = 0;
+					}
 					break;
 			}
 		});
 
 		$(document).keyup(( event ) => {
-			//console.log(event.keyCode);
+			console.log(event.keyCode);
 			switch( event.keyCode ) {
-				case 38: // up
-				case 87: // w
-					this.moveForward = false;
-					break;
-				case 37: // left
-				case 65: // a
-					this.moveLeft = false;
-					break;
-				case 40: // down
-				case 83: // s
-					this.moveBackward = false;
-					break;
-				case 39: // right
-				case 68: // d
-					this.moveRight = false;
-					break;
 				case 32:
-					if(this.vehicle) this.exitVehicle();
-					else this.enterVehicle();
+					if(this.vehicle) {
+						if(this.player_control.getObject().position.z <= DEFAULT_Z) {
+							this.exitVehicle();
+						}
+					} else {
+						this.enterVehicle();
+					}
+					break;
 			}
 		});
 	}
@@ -99,33 +80,56 @@ export class Movement {
 	}
 
 	getMaxSpeed() {
-		return this.vehicle ? this.vehicle.model.speed : 1000;
+		if(this.vehicle) {
+			return this.vehicle.model.speed;
+		} else {
+			return 1000;
+		}
+	}
+
+	getTurnSpeed() {
+		if(this.vehicle) {
+			var sp = this.speed / 500; // after 500 turning is full-speed
+			return 0.001 * (sp > 1 ? 1 : sp);
+		} else {
+			return 0.002;
+		}
+	}
+
+	getRollSpeed() {
+		if(this.vehicle && this.vehicle.model.flies && this.player_control.getObject().position.z > DEFAULT_Z) {
+			return this.getTurnSpeed();
+		} else {
+			return 0;
+		}
+	}
+
+	getPitchSpeed() {
+		if(this.vehicle && this.vehicle.model.flies && this.speed > 5000) {
+			return 0.0005;
+		} else {
+			return 0;
+		}
+	}
+
+	isStalling() {
+		return this.vehicle && this.vehicle.model.flies && this.speed < 5000 && this.player_control.getObject().position.z > DEFAULT_Z;
 	}
 
 	update() {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 
-		this.velocity.x -= this.velocity.x * 10.0 * delta;
-		this.velocity.y -= this.velocity.y * 10.0 * delta;
-
-		if(this.moveForward || this.moveBackward) {
-			this.speed = this.speed > 0 ? this.speed * 1.25 : 200;
-			if(this.speed > this.getMaxSpeed()) {
-				this.speed = this.getMaxSpeed();
-			}
-		} else {
-			this.speed = 0;
+		this.velocity.y = this.speed * delta;
+		var pitch = this.player_control.getPitch();
+		if(pitch != 0) {
+			this.velocity.z = this.velocity.y * Math.tan(pitch);
 		}
 
-		if ( this.moveForward ) this.velocity.y += this.speed * delta;
-		if ( this.moveBackward ) this.velocity.y -= this.speed * delta;
-
-		if ( this.moveLeft ) this.velocity.x -= 400.0 * delta;
-		if ( this.moveRight ) this.velocity.x += 400.0 * delta;
-
-		this.player_control.getObject().translateX( this.velocity.x * delta );
+		//this.player_control.getObject().translateX( this.velocity.x * delta );
 		this.player_control.getObject().translateY( this.velocity.y * delta );
+		this.player_control.getObject().translateZ( this.velocity.z * delta );
+		if(this.player_control.getObject().position.z < 20) this.player_control.getObject().position.z = 20;
 
 		this.prevTime = time;
 

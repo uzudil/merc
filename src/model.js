@@ -9,7 +9,7 @@ const MODELS = [ "opera", "asha", "car", "plane" ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false },
-	"plane": { speed: 40000, flies: true }
+	"plane": { speed: 20000, flies: true }
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
