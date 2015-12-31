@@ -12,8 +12,8 @@ const ROAD_MAT = new THREE.LineBasicMaterial({color: ROAD_COLOR, linewidth: 4});
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
-	opera: [[12, 12], [14, 12]],
-	asha: [[10, 10], [12, 10], [14, 10]],
+	opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
+	asha: [[10, 10], [12, 10], [14, 10], [16, 1]],
 	car: [[10, 12]],
 	plane: [[10, 14]]
 };
@@ -23,7 +23,7 @@ export class GameMap {
 		this.player = player;
 		this.land = new THREE.Object3D();
 		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.DoubleSide });
-		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(100000, 100000), mat);
+		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), mat);
 		this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
 		this.land.add(this.plane);
 
@@ -42,7 +42,9 @@ export class GameMap {
 
 		// roads
 		this.addRoad(11, 0, 0, 15);
+		this.addRoad(0, 0, 15, 0);
 		this.addRoad(0, 11, 15, 0);
+		this.addRoad(0, 0, 0, 15);
 
 		this.drawRoads();
 

@@ -8,7 +8,7 @@ import * as model from 'model'
 
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
-const FAR_DIST = 10000;
+const FAR_DIST = 100000;
 
 class Merc {
 	constructor() {
@@ -59,8 +59,8 @@ class Merc {
 		$("#loc").text("" + x + "-" + y);
 		$("#alt").text("" + z);
 		$("#speed").text("" + Math.round(this.movement.speed / 100.0));
-		$("#el").text("" + Math.round(util.rad2angle(this.movement.getPitch())));
-		$("#comp").text("" + Math.round(util.rad2angle(this.movement.getHeading())));
+		$("#el").text("" + Math.round(util.rad2angle(this.movement.getPitch()) + 360) % 360);
+		$("#comp").text("" + Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
 
 		if(LIMIT_FPS) {
 			setTimeout(()=> {
