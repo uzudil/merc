@@ -10,9 +10,8 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 
 export class Movement {
-	constructor(game_map, player_control) {
-		this.game_map = game_map;
-		this.player_control = player_control;
+	constructor(main) {
+		this.main = main;
 
 		this.prevTime = Date.now();
 		this.velocity = new THREE.Vector3();
@@ -23,6 +22,40 @@ export class Movement {
 
 		this.vehicle = null;
 		this.speed = 0;
+
+		main.camera.rotation.set( 0, 0, 0 );
+
+		this.pitch = new THREE.Object3D();
+		this.pitch.rotation.x = Math.PI / 2;
+		this.pitch.add(this.main.camera);
+
+		this.roll = new THREE.Object3D();
+		this.roll.add(this.pitch);
+
+		// yaw
+		this.player = new THREE.Object3D();
+		this.player.add(this.roll);
+		this.player.rotation.z = Math.PI;
+		this.main.scene.add(this.player);
+
+		this.movementX = 0.0;
+		this.movementY = 0.0;
+
+		$(document).mousemove((event) => {
+			this.movementX = event.originalEvent.movementX;
+			this.movementY = event.originalEvent.movementY;
+
+			//this.player.rotation.z -= this.movementX * this.getTurnSpeed();
+
+			if(this.player.position.z <= DEFAULT_Z) {
+				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
+				this.roll.rotation.y = 0;
+				//this.pitch.rotation.y = 0;
+			} else {
+				this.roll.rotation.y += this.movementX * this.getRollSpeed();
+			}
+			this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
+		});
 
 		$(document).keydown(( event ) => {
 			switch ( event.keyCode ) {
@@ -44,7 +77,7 @@ export class Movement {
 			switch( event.keyCode ) {
 				case 32:
 					if(this.vehicle) {
-						if(this.player_control.getObject().position.z <= DEFAULT_Z) {
+						if(this.player.position.z <= DEFAULT_Z) {
 							this.exitVehicle();
 						}
 					} else {
@@ -57,11 +90,11 @@ export class Movement {
 
 	exitVehicle() {
 		console.log("Exited " + this.vehicle.model.name);
-		this.game_map.addModelAt(
-			this.player_control.getObject().position.x,
-			this.player_control.getObject().position.y,
+		this.main.game_map.addModelAt(
+			this.player.position.x,
+			this.player.position.y,
 			this.vehicle.model,
-			this.player_control.getZRot());
+			this.player.rotation.z);
 		this.vehicle = null;
 		this.speed = 0;
 	}
@@ -69,7 +102,7 @@ export class Movement {
 	enterVehicle() {
 		for(let o of this.intersections) {
 			if(o.model instanceof models.Vehicle) {
-				this.player_control.setDirection(o.rotation);
+				this.player.rotation.z = o.rotation.z;
 				this.vehicle = o;
 				this.vehicle.parent.remove(this.vehicle);
 				console.log("Entered " + o.model.name);
@@ -97,7 +130,7 @@ export class Movement {
 	}
 
 	getRollSpeed() {
-		if(this.vehicle && this.vehicle.model.flies && this.player_control.getObject().position.z > DEFAULT_Z) {
+		if(this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z) {
 			return this.getTurnSpeed();
 		} else {
 			return 0;
@@ -112,33 +145,54 @@ export class Movement {
 		}
 	}
 
+	getPitch() {
+		return this.pitch.rotation.x - Math.PI/2;
+	}
+
+	getHeading() {
+		return this.player.rotation.z;
+	}
+
 	isStalling() {
-		return this.vehicle && this.vehicle.model.flies && this.speed < 5000 && this.player_control.getObject().position.z > DEFAULT_Z;
+		return this.vehicle && this.vehicle.model.flies && this.speed < 5000 && this.player.position.z > DEFAULT_Z;
 	}
 
 	update() {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 
-		this.velocity.y = this.speed * delta;
-		var pitch = this.player_control.getPitch();
-		if(pitch != 0) {
-			this.velocity.z = this.velocity.y * Math.tan(pitch);
+		// turning in flight
+		if(this.player.position.z > DEFAULT_Z) {
+			this.player.rotation.z -= this.roll.rotation.y * 0.075;
 		}
 
-		//this.player_control.getObject().translateX( this.velocity.x * delta );
-		this.player_control.getObject().translateY( this.velocity.y * delta );
-		this.player_control.getObject().translateZ( this.velocity.z * delta );
-		if(this.player_control.getObject().position.z < 20) this.player_control.getObject().position.z = 20;
+		// stalling
+		if(this.isStalling()) {
+			this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
+		}
+
+		// forward movement
+		var dx = this.speed / 20 * delta;
+		this.player.translateY(dx);
+
+		// up/down movement
+		this.player.translateZ(dx * Math.tan(this.pitch.rotation.x - Math.PI / 2));
+
+		if(this.player.position.z <= DEFAULT_Z) {
+			this.pitch.rotation.x = Math.max(this.pitch.rotation.x, Math.PI/2);
+			this.roll.rotation.y = 0;
+		}
+
+		if(this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
 
 		this.prevTime = time;
 
-		this.bbox.min.set(this.player_control.getObject().position.x - SIZE, this.player_control.getObject().position.y - SIZE, this.player_control.getObject().position.z - SIZE);
-		this.bbox.max.set(this.player_control.getObject().position.x + SIZE, this.player_control.getObject().position.y + SIZE, this.player_control.getObject().position.z + SIZE);
+		this.bbox.min.set(this.player.position.x - SIZE, this.player.position.y - SIZE, this.player.position.z - SIZE);
+		this.bbox.max.set(this.player.position.x + SIZE, this.player.position.y + SIZE, this.player.position.z + SIZE);
 
 		// check for intersections
 		this.intersections.splice(0, this.intersections.length);
-		for(let o of this.game_map.structures) {
+		for(let o of this.main.game_map.structures) {
 			this.model_bbox.setFromObject(o);
 			if (this.model_bbox.isIntersectionBox(this.bbox)) {
 				this.intersections.push(o);

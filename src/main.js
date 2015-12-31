@@ -1,7 +1,6 @@
 import THREE from 'three.js';
 import * as game_map from 'game_map';
 import $ from 'jquery';
-import * as plc from 'pointerlockcontrols';
 import * as util from 'util';
 import * as movement from 'movement';
 import * as skybox from "skybox"
@@ -22,16 +21,12 @@ class Merc {
 
 		this.scene = new THREE.Scene();
 
-		this.controls = new plc.PointerLockControls( this );
-		this.controls.getObject().position.set(game_map.SECTOR_SIZE * 10, game_map.SECTOR_SIZE * 15, movement.DEFAULT_Z);
-		this.scene.add( this.controls.getObject() );
+		this.movement = new movement.Movement(this);
+		this.movement.player.position.set(game_map.SECTOR_SIZE * 10, game_map.SECTOR_SIZE * 15, movement.DEFAULT_Z);
 
-		this.skybox = new skybox.Skybox(this.controls.getObject(), FAR_DIST);
+		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
-		var player = this.controls.getObject();
-		this.game_map = new game_map.GameMap(this.scene, this.models, player);
-
-		this.movement = new movement.Movement(this.game_map, this.controls);
+		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player);
 
 		this.renderer = new THREE.WebGLRenderer();
 		var h = window.innerHeight * .75;
@@ -54,18 +49,18 @@ class Merc {
 	}
 
 	animate() {
-		this.game_map.update(this.controls.getObject());
-		this.controls.update();
+		this.game_map.update();
 		this.movement.update();
 		this.renderer.render(this.scene, this.camera);
 
-		var x = Math.round(this.controls.getObject().position.x / game_map.SECTOR_SIZE);
-		var y = Math.round(this.controls.getObject().position.y / game_map.SECTOR_SIZE);
-		var z = Math.round(this.controls.getObject().position.z) - movement.DEFAULT_Z;
+		var x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
+		var y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+		var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
 		$("#loc").text("" + x + "-" + y);
 		$("#alt").text("" + z);
 		$("#speed").text("" + Math.round(this.movement.speed / 100.0));
-		$("#el").text("" + Math.round(util.rad2angle(this.controls.getPitch())));
+		$("#el").text("" + Math.round(util.rad2angle(this.movement.getPitch())));
+		$("#comp").text("" + Math.round(util.rad2angle(this.movement.getHeading())));
 
 		if(LIMIT_FPS) {
 			setTimeout(()=> {
