@@ -6,6 +6,7 @@ import THREE from 'three.js';
 import $ from 'jquery';
 import * as models from 'model'
 import * as util from 'util'
+import * as noise from 'noise'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
@@ -14,7 +15,9 @@ export class Movement {
 	constructor(main) {
 		this.main = main;
 
-		this.noise = new util.PinkNoise();
+		var ac = new AudioContext();
+		this.noise = new noise.Noise(ac);
+		this.noise.setMode("walk");
 
 		this.prevTime = Date.now();
 		this.velocity = new THREE.Vector3();
@@ -65,12 +68,14 @@ export class Movement {
 				case 187: // +
 					this.speed = this.speed > 0 ? this.speed * 1.25 : 200;
 					if(this.speed > this.getMaxSpeed()) this.speed = this.getMaxSpeed();
+					if(this.speed > 0) this.noise.start();
 					break;
 				case 189: // -
 					this.speed = this.speed * .75;
 					if(Math.abs(this.speed) < 1) {
 						this.speed = 0;
 					}
+					if(this.speed <= 0) this.noise.stop();
 					break;
 			}
 		});
@@ -94,6 +99,7 @@ export class Movement {
 	exitVehicle() {
 		console.log("Exited " + this.vehicle.model.name);
 		this.noise.stop();
+		this.noise.setMode("walk");
 		this.main.game_map.addModelAt(
 			this.player.position.x,
 			this.player.position.y,
@@ -111,8 +117,11 @@ export class Movement {
 				this.vehicle.parent.remove(this.vehicle);
 				console.log("Entered " + o.model.name);
 				this.speed = 0;
-				this.noise.setFreq(0);
-				this.noise.start();
+				if (this.vehicle.model.flies) {
+					this.noise.setMode("jet");
+				} else {
+					this.noise.setMode("car");
+				}
 				break;
 			}
 		}
@@ -177,14 +186,9 @@ export class Movement {
 			this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
 		}
 
+		this.noise.setLevel(this.speed / this.getMaxSpeed());
+
 		// forward movement
-		var sp = (this.speed / this.getMaxSpeed());
-		if(this.speed == 0) {
-			this.noise.setGain(0);
-		} else {
-			this.noise.setFreq(100.0 + 150.0 * sp);
-			this.noise.setGain(3 + sp * 9);
-		}
 		var dx = this.speed / 20 * delta;
 		this.player.translateY(dx);
 
