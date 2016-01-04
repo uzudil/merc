@@ -5,7 +5,7 @@ import * as game_map from 'game_map';
 	To use colors, use the "vertex paint" feature of blender.
 	Then, export with vertex colors on (no materials needed.)
  */
-const MODELS = [ "opera", "asha", "car", "plane" ];
+const MODELS = [ "opera", "asha", "car", "plane", "tower" ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false },

@@ -32,11 +32,35 @@ class Merc {
 		var h = window.innerHeight * .75;
 		this.renderer.setSize( h * ASPECT_RATIO, h );
 
+		var height = h * 0.333;
 		$("#ui").css({
 			width: h * ASPECT_RATIO + "px",
-			height: h *  0.333 + "px",
+			height: height + "px",
 		});
-		$(".uibox").css("font-size", Math.round(h/200*10) + "px");
+		$(".uibox .value").css("font-size", Math.round(h/200*10) + "px");
+		this.canvas_width = $("#el").width();
+		this.canvas_height = height - 40;
+		$("#el_canvas").css({
+			width: this.canvas_width + "px",
+			height: this.canvas_height + "px"
+		});
+
+		this.compScale = 3.0;
+		$("#comp_canvas").css({
+			width: 540 * this.compScale + "px",
+			height: this.canvas_height + "px"
+		});
+		var ctx = $("#comp_canvas")[0].getContext('2d');
+		ctx.fillStyle = "#ffffff";
+		ctx.font = "8px sans-serif";
+		for(let angle = 0; angle < 540; angle++) {
+			if(angle % 10 == 0) {
+				ctx.fillRect(angle * this.compScale, 0, this.compScale, this.canvas_height/2);
+				ctx.fillText("" + angle, (angle - 5) * this.compScale, this.canvas_height / 2 + 10);
+			} else if(angle % 5 == 0) {
+				ctx.fillRect(angle * this.compScale, 0, this.compScale, this.canvas_height/4);
+			}
+		}
 
 		$("body").append( this.renderer.domElement );
 		$("body").click((event) => {
@@ -56,11 +80,16 @@ class Merc {
 		var x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
 		var y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
 		var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-		$("#loc").text("" + x + "-" + y);
-		$("#alt").text("" + z);
-		$("#speed").text("" + Math.round(this.movement.speed / 100.0));
-		$("#el").text("" + Math.round(util.rad2angle(this.movement.getPitch()) + 360) % 360);
-		$("#comp").text("" + Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
+		$("#loc .value").text("" + x + "-" + y);
+		$("#alt .value").text("" + z);
+		$("#speed .value").text("" + Math.round(this.movement.speed / 100.0));
+		//$("#el .value").text("" + Math.round(util.rad2angle(this.movement.getPitch())) % 360);
+		//$("#comp .value").text("" + Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
+
+		this.drawEl(Math.round(util.rad2angle(this.movement.getPitch())) % 360);
+		this.drawComp(Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
+		var compAngle = Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360;
+		$("#comp_canvas").css("margin-left", "-" + ((compAngle - this.canvas_width/2) * this.compScale) + "px");
 
 		if(LIMIT_FPS) {
 			setTimeout(()=> {
@@ -69,7 +98,13 @@ class Merc {
 		} else {
 			requestAnimationFrame(util.bind(this, this.animate));
 		}
+	}
 
+	drawEl(angle) {
+
+	}
+
+	drawComp(angle) {
 	}
 
 

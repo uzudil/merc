@@ -10,6 +10,7 @@ import * as noise from 'noise'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
+const STALL_SPEED = 1500;
 
 export class Movement {
 	constructor(main) {
@@ -153,7 +154,7 @@ export class Movement {
 	}
 
 	getPitchSpeed() {
-		if(this.vehicle && this.vehicle.model.flies && this.speed > 5000) {
+		if(this.vehicle && this.vehicle.model.flies && this.speed > STALL_SPEED) {
 			return 0.0005;
 		} else {
 			return 0;
@@ -169,7 +170,7 @@ export class Movement {
 	}
 
 	isStalling() {
-		return this.vehicle && this.vehicle.model.flies && this.speed < 5000 && this.player.position.z > DEFAULT_Z;
+		return this.vehicle && this.vehicle.model.flies && this.speed < STALL_SPEED && this.player.position.z > DEFAULT_Z;
 	}
 
 	update() {

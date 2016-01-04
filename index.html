@@ -21,14 +21,34 @@
 
 		.uibox {
 			border: 10px inset #888;
-			overflow: hidden;
 			color: white;
 			padding: 2px;
 		}
 
+		.uibox label {
+			position: relative;
+			z-index: 1000;
+			left: -10px;
+			top: -14px;
+			font-weight: bold;
+			font-size: 10px;
+			color: #888;
+			text-shadow: 1px 1px #000;
+		}
+
+		.uibox .value {
+			overflow: hidden;
+			margin: 0;
+			padding: 0;
+			margin-top: -14px;
+		}
+
+		.uibox .value canvas {
+			margin-left: -1px;
+		}
+
 		#el {
 			background: darkgreen;
-			height: 100%;
 		}
 
 		#loc {
@@ -45,7 +65,6 @@
 
 		#comp {
 			background: brown;
-			height: 100%;
 		}
 
 		#message {
@@ -64,14 +83,14 @@
 	<div id="ui">
 	<table>
 		<tr>
-			<td rowspan="2"><div id="el" class="uibox"></div></td>
-			<td valign="bottom"><div id="loc" class="uibox">0</div></td>
-			<td valign="bottom"><div id="alt" class="uibox">0</div></td>
-			<td valign="bottom"><div id="speed" class="uibox">0</div></td>
-			<td rowspan="2"><div id="comp" class="uibox"></div></td>
+			<td rowspan="2"><div id="el" class="uibox"><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
+			<td valign="bottom"><div id="loc" class="uibox"><label>LOC</label><div class="value"></div></div></td>
+			<td valign="bottom"><div id="alt" class="uibox"><label>ALT</label><div class="value"></div></div></td>
+			<td valign="bottom"><div id="speed" class="uibox"><label>SPEED</label><div class="value"></div></div></td>
+			<td rowspan="2"><div id="comp" class="uibox"><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
 		</tr>
 		<tr>
-			<td colspan="3" valign="top"><div id="message" class="uibox">Welcome.</div></td>
+			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value">Welcome.</div></div></td>
 		</tr>
 	</table>
 	</div>

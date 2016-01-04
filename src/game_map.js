@@ -13,10 +13,20 @@ var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
 	opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
-	asha: [[10, 10], [12, 10], [14, 10], [16, 1]],
+	asha: [[10, 10], [12, 10], [14, 10]],
 	car: [[10, 12]],
-	plane: [[10, 14]]
+	plane: [[10, 14]],
+	tower: [[9, 1], [11, -19], [11, -18]]
 };
+
+const ROAD_POSITIONS = [
+	[11, 0, 0, 15],
+	[0, 0, 15, 0],
+	[0, 11, 15, 0],
+	[0, 0, 0, 15],
+	[10, -20, 0, 25],
+	[10, 4, 5, 0]
+];
 
 export class GameMap {
 	constructor(scene, models, player) {
@@ -41,10 +51,10 @@ export class GameMap {
 		}
 
 		// roads
-		this.addRoad(11, 0, 0, 15);
-		this.addRoad(0, 0, 15, 0);
-		this.addRoad(0, 11, 15, 0);
-		this.addRoad(0, 0, 0, 15);
+		for(let road of ROAD_POSITIONS) {
+			console.log(road);
+			this.addRoad(...road);
+		}
 
 		this.drawRoads();
 
