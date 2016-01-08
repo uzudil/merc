@@ -10,7 +10,7 @@ import * as noise from 'noise'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
-const STALL_SPEED = 1500;
+const STALL_SPEED = 5000;
 
 export class Movement {
 	constructor(main) {

@@ -1,6 +1,6 @@
 import THREE from 'three.js'
 
-export const SECTOR_SIZE = 512.0;
+export const SECTOR_SIZE = 1024.0;
 
 export const GRASS_COLOR = new THREE.Color("rgb(39,79,6)");
 export const SKY_COLOR = new THREE.Color("rgb(157,161,253)");
@@ -16,7 +16,8 @@ const MAP_POSITIONS = {
 	asha: [[10, 10], [12, 10], [14, 10]],
 	car: [[10, 12]],
 	plane: [[10, 14]],
-	tower: [[9, 1], [11, -19], [11, -18]]
+	tower: [[9, 1], [11, -19], [11, -18]],
+	elevator: [[9, 2]]
 };
 
 const ROAD_POSITIONS = [

@@ -5,11 +5,16 @@ import * as game_map from 'game_map';
 	To use colors, use the "vertex paint" feature of blender.
 	Then, export with vertex colors on (no materials needed.)
  */
-const MODELS = [ "opera", "asha", "car", "plane", "tower" ];
+const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator" ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false },
 	"plane": { speed: 20000, flies: true }
+};
+
+const SCALE = {
+	"car": 20,
+	"plane": 20
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
@@ -61,7 +66,8 @@ export class Model {
 			geometry.rotateX(Math.PI/2);
 			geometry.rotateZ(Math.PI/2);
 			geometry.translate(0, 0, geometry.boundingBox.size().z/2 + 1/60);
-			geometry.scale(60, 60, 60);
+			let scale = SCALE[this.name] || 60;
+			geometry.scale(scale, scale, scale);
 
 			// cheap/fake per-face shading
 			for (var i = 0; i < geometry.faces.length; i++) {

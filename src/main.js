@@ -22,7 +22,7 @@ class Merc {
 		this.scene = new THREE.Scene();
 
 		this.movement = new movement.Movement(this);
-		this.movement.player.position.set(game_map.SECTOR_SIZE * 10, game_map.SECTOR_SIZE * 12, movement.DEFAULT_Z);
+		this.movement.player.position.set(game_map.SECTOR_SIZE * 10, game_map.SECTOR_SIZE * 14, movement.DEFAULT_Z);
 
 		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
