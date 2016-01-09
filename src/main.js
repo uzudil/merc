@@ -75,7 +75,7 @@ class Merc {
 		$("#loc .value").text("" + x + "-" + y);
 		$("#alt .value").text("" + z);
 		$("#speed .value").text("" + Math.round(this.movement.speed / 100.0));
-		this.compass.update(this.movement.getHeadingAngles());
+		this.compass.update(this.movement.getHeadingAngle());
 		this.horizon.update(this.movement.getPitchAngle());
 
 		if(LIMIT_FPS) {

@@ -62,6 +62,8 @@ export class Movement {
 				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
 				this.roll.rotation.y = 0;
 			}
+
+			// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
 			this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
 		});
 
@@ -169,13 +171,18 @@ export class Movement {
 	}
 
 	getPitch() {
+		// clamp to 0,360
 		let p = (this.pitch.rotation.x - Math.PI/2) % (Math.PI * 2);
 		if(p < 0) p += Math.PI * 2;
 		return p;
 	}
 
 	getPitchAngle() {
-		return Math.round(util.rad2angle(this.getPitch()));
+		var p = Math.round(util.rad2angle(this.getPitch()));
+		if(p > 90) p = 90 - (p - 90);
+		if(p > 180) p = -(360 - p);
+		if(p < -90) p = -(180 + p);
+		return p;
 	}
 
 	getHeading() {
@@ -193,7 +200,11 @@ export class Movement {
 		return angle;
 	}
 
-	getHeadingAngles() {
+	getRollAngle() {
+		return Math.round(util.rad2angle(this.getRoll()));
+	}
+
+	getHeadingAngle() {
 		return Math.round(util.rad2angle(this.getHeading()));
 	}
 
@@ -204,6 +215,8 @@ export class Movement {
 	update() {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
+
+		var in_air_before = this.player.position.z > DEFAULT_Z;
 
 		var dx = this.speed / 20 * delta;
 		if(this.player.position.z > DEFAULT_Z) {
@@ -218,10 +231,10 @@ export class Movement {
 		this.player.translateOnAxis(this.direction, dx);
 		this.direction.set(0, 1, 0);
 
-		$("#message .value").text(
-			"YAW:" + this.getHeading().toFixed(2) +
-			" PITCH:" + this.getPitch().toFixed(2) +
-			" ROLL:" + this.getRoll().toFixed(2));
+		//$("#message .value").text(
+		//	"YAW:" + this.getHeadingAngle() +
+		//	" PITCH:" + this.getPitchAngle() +
+		//	" ROLL:" + this.getRollAngle());
 
 		// stalling
 		if(this.isStalling()) {
@@ -231,7 +244,15 @@ export class Movement {
 		this.noise.setLevel(this.speed / this.getMaxSpeed());
 
 		if(this.player.position.z <= DEFAULT_Z) {
-			this.pitch.rotation.x = Math.max(this.pitch.rotation.x, Math.PI/2);
+			// reset speed and pitch on crash
+			if(in_air_before && (Math.abs(this.getPitchAngle()) > 25 || Math.abs(this.getRollAngle()) > 25)) {
+				console.log("Crash");
+				this.pitch.rotation.x = Math.PI / 2;
+				this.speed = 0;
+			} else {
+				// limit pitch on ground
+				this.pitch.rotation.x = Math.min(Math.max(this.pitch.rotation.x, Math.PI / 2), Math.PI);
+			}
 			this.roll.rotation.y = 0;
 		}
 
