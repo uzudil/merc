@@ -11,6 +11,7 @@ import * as noise from 'noise'
 const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
+const DEBUG = false;
 
 export class Movement {
 	constructor(main) {
@@ -18,10 +19,12 @@ export class Movement {
 
 		var ac = new AudioContext();
 		this.noise = new noise.Noise(ac);
+		this.noise.setEnabled(!DEBUG);
 		this.noise.setMode("walk");
 
 		this.prevTime = Date.now();
-		this.velocity = new THREE.Vector3();
+		this.direction = new THREE.Vector3(0, 1, 0);
+		this.rotation = new THREE.Euler(0, 0, 0, "ZXY");
 
 		this.intersections = [];
 		this.bbox = new THREE.Box3(new THREE.Vector3(-SIZE, -SIZE, -SIZE), new THREE.Vector3(SIZE, SIZE, SIZE));
@@ -52,14 +55,12 @@ export class Movement {
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
 
-			//this.player.rotation.z -= this.movementX * this.getTurnSpeed();
-
-			if(this.player.position.z <= DEFAULT_Z) {
+			if(this.player.position.z > DEFAULT_Z) {
+				let p = this.getPitch();
+				this.roll.rotation.y += (p >= Math.PI*.5 && p < Math.PI*1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
+			} else {
 				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
 				this.roll.rotation.y = 0;
-				//this.pitch.rotation.y = 0;
-			} else {
-				this.roll.rotation.y += this.movementX * this.getRollSpeed();
 			}
 			this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
 		});
@@ -82,7 +83,7 @@ export class Movement {
 		});
 
 		$(document).keyup(( event ) => {
-			console.log(event.keyCode);
+			//console.log(event.keyCode);
 			switch( event.keyCode ) {
 				case 32:
 					if(this.vehicle) {
@@ -129,6 +130,8 @@ export class Movement {
 	}
 
 	getMaxSpeed() {
+		if(DEBUG) return 20000;
+
 		if(this.vehicle) {
 			return this.vehicle.model.speed;
 		} else {
@@ -146,6 +149,8 @@ export class Movement {
 	}
 
 	getRollSpeed() {
+		if(DEBUG) return this.getTurnSpeed();
+
 		if(this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z) {
 			return this.getTurnSpeed();
 		} else {
@@ -154,6 +159,8 @@ export class Movement {
 	}
 
 	getPitchSpeed() {
+		if(DEBUG) return 0.0005;
+
 		if(this.vehicle && this.vehicle.model.flies && this.speed > STALL_SPEED) {
 			return 0.0005;
 		} else {
@@ -162,11 +169,32 @@ export class Movement {
 	}
 
 	getPitch() {
-		return this.pitch.rotation.x - Math.PI/2;
+		let p = (this.pitch.rotation.x - Math.PI/2) % (Math.PI * 2);
+		if(p < 0) p += Math.PI * 2;
+		return p;
+	}
+
+	getPitchAngle() {
+		return Math.round(util.rad2angle(this.getPitch()));
 	}
 
 	getHeading() {
-		return this.player.rotation.z;
+		var angle = this.player.rotation.z;
+		// clamp to 0,2pi
+		angle = angle % (Math.PI*2);
+		if(angle < 0) angle += Math.PI*2;
+		return angle;
+	}
+
+	getRoll() {
+		var angle = this.roll.rotation.y;
+		// cap -2pi,2pi
+		angle = angle % (Math.PI*2);
+		return angle;
+	}
+
+	getHeadingAngles() {
+		return Math.round(util.rad2angle(this.getHeading()));
 	}
 
 	isStalling() {
@@ -177,10 +205,23 @@ export class Movement {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 
-		// turning in flight
+		var dx = this.speed / 20 * delta;
 		if(this.player.position.z > DEFAULT_Z) {
-			this.player.rotation.z -= this.roll.rotation.y * 0.075;
+			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
 		}
+
+		// the roll affects the pitch's direction
+		let r = Math.abs(this.getRoll());
+		let d = r >= Math.PI*.5 && r < Math.PI*1.5 ? -1 : 1;
+		this.rotation.set( this.getPitch() * d, this.getHeading(), 0 );
+		this.direction.applyEuler( this.rotation );
+		this.player.translateOnAxis(this.direction, dx);
+		this.direction.set(0, 1, 0);
+
+		$("#message .value").text(
+			"YAW:" + this.getHeading().toFixed(2) +
+			" PITCH:" + this.getPitch().toFixed(2) +
+			" ROLL:" + this.getRoll().toFixed(2));
 
 		// stalling
 		if(this.isStalling()) {
@@ -188,13 +229,6 @@ export class Movement {
 		}
 
 		this.noise.setLevel(this.speed / this.getMaxSpeed());
-
-		// forward movement
-		var dx = this.speed / 20 * delta;
-		this.player.translateY(dx);
-
-		// up/down movement
-		this.player.translateZ(dx * Math.tan(this.pitch.rotation.x - Math.PI / 2));
 
 		if(this.player.position.z <= DEFAULT_Z) {
 			this.pitch.rotation.x = Math.max(this.pitch.rotation.x, Math.PI/2);

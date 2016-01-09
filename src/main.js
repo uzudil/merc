@@ -1,10 +1,11 @@
-import THREE from 'three.js';
-import * as game_map from 'game_map';
-import $ from 'jquery';
-import * as util from 'util';
-import * as movement from 'movement';
+import THREE from 'three.js'
+import * as game_map from 'game_map'
+import $ from 'jquery'
+import * as util from 'util'
+import * as movement from 'movement'
 import * as skybox from "skybox"
 import * as model from 'model'
+import * as compass from 'compass'
 
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
@@ -32,35 +33,26 @@ class Merc {
 		var h = window.innerHeight * .75;
 		this.renderer.setSize( h * ASPECT_RATIO, h );
 
-		var height = h * 0.333;
+		var height = (h * 0.333)|0;
 		$("#ui").css({
 			width: h * ASPECT_RATIO + "px",
 			height: height + "px",
 		});
 		$(".uibox .value").css("font-size", Math.round(h/200*10) + "px");
-		this.canvas_width = $("#el").width();
-		this.canvas_height = height - 40;
-		$("#el_canvas").css({
-			width: this.canvas_width + "px",
-			height: this.canvas_height + "px"
+		let canvas_width = $("#el").width();
+		let canvas_height = height - 40;
+		$("#el .value").css({
+			height: canvas_height + "px",
+			overflow: "hidden"
+		});
+		// sizing via css will make the canvas blurry :-(
+		$("#el_canvas").attr({
+			width: canvas_width,
+			height: canvas_height
 		});
 
-		this.compScale = 3.0;
-		$("#comp_canvas").css({
-			width: 540 * this.compScale + "px",
-			height: this.canvas_height + "px"
-		});
-		var ctx = $("#comp_canvas")[0].getContext('2d');
-		ctx.fillStyle = "#ffffff";
-		ctx.font = "8px sans-serif";
-		for(let angle = 0; angle < 540; angle++) {
-			if(angle % 10 == 0) {
-				ctx.fillRect(angle * this.compScale, 0, this.compScale, this.canvas_height/2);
-				ctx.fillText("" + angle, (angle - 5) * this.compScale, this.canvas_height / 2 + 10);
-			} else if(angle % 5 == 0) {
-				ctx.fillRect(angle * this.compScale, 0, this.compScale, this.canvas_height/4);
-			}
-		}
+		this.compass = new compass.Compass(canvas_width, canvas_height * 0.5);
+		this.horizon = new compass.Horizon(canvas_width * 0.5, canvas_height);
 
 		$("body").append( this.renderer.domElement );
 		$("body").click((event) => {
@@ -83,13 +75,8 @@ class Merc {
 		$("#loc .value").text("" + x + "-" + y);
 		$("#alt .value").text("" + z);
 		$("#speed .value").text("" + Math.round(this.movement.speed / 100.0));
-		//$("#el .value").text("" + Math.round(util.rad2angle(this.movement.getPitch())) % 360);
-		//$("#comp .value").text("" + Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
-
-		this.drawEl(Math.round(util.rad2angle(this.movement.getPitch())) % 360);
-		this.drawComp(Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360);
-		var compAngle = Math.round(util.rad2angle(this.movement.getHeading()) + 360) % 360;
-		$("#comp_canvas").css("margin-left", "-" + ((compAngle - this.canvas_width/2) * this.compScale) + "px");
+		this.compass.update(this.movement.getHeadingAngles());
+		this.horizon.update(this.movement.getPitchAngle());
 
 		if(LIMIT_FPS) {
 			setTimeout(()=> {
@@ -99,15 +86,6 @@ class Merc {
 			requestAnimationFrame(util.bind(this, this.animate));
 		}
 	}
-
-	drawEl(angle) {
-
-	}
-
-	drawComp(angle) {
-	}
-
-
 }
 
 $(document).ready(function() {

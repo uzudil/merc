@@ -6,13 +6,19 @@ import * as util from 'util'
 export class Noise {
 	constructor(audioContext) {
 		this.audioContext = audioContext;
+		this.enabled = true;
 		this.initNoises();
 
 		this.setMode("jet");
 	}
 
+	setEnabled(enabled) {
+		this.enabled = enabled;
+		if(this.component && !this.enabled) this.stop();
+	}
+
 	start() {
-		if(this.component) this.component.getComponent().connect(this.audioContext.destination);
+		if(this.component && this.enabled) this.component.getComponent().connect(this.audioContext.destination);
 	}
 
 	stop() {

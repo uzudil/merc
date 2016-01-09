@@ -53,7 +53,6 @@ export class GameMap {
 
 		// roads
 		for(let road of ROAD_POSITIONS) {
-			console.log(road);
 			this.addRoad(...road);
 		}
 
