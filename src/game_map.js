@@ -1,4 +1,5 @@
 import THREE from 'three.js'
+import * as room from 'room'
 
 export const SECTOR_SIZE = 1024.0;
 
@@ -15,7 +16,7 @@ const MAP_POSITIONS = {
 	opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
 	asha: [[10, 10], [12, 10], [14, 10]],
 	car: [[10, 12]],
-	plane: [[10, 14]],
+	plane: [[10, 14], [9, 3]],
 	tower: [[9, 1], [11, -19], [11, -18]],
 	elevator: [[9, 2]]
 };
@@ -29,11 +30,19 @@ const ROAD_POSITIONS = [
 	[10, 4, 5, 0]
 ];
 
+const COMPOUNDS = {
+	"9,2": {
+		_start_: new room.Room(4, 4, "#eeddd8", "#cc8800", { n: "meeting_room", e: "bunks" }, true),
+		meeting_room: new room.Room(2, 6, "#d8ddee", "#88cc00"),
+		bunks: new room.Room(3, 9, "#ddeed8", "#0000cc")
+	}
+};
+
 export class GameMap {
 	constructor(scene, models, player) {
 		this.player = player;
 		this.land = new THREE.Object3D();
-		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.DoubleSide });
+		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.FrontSide });
 		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), mat);
 		this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
 		this.land.add(this.plane);
@@ -59,6 +68,11 @@ export class GameMap {
 		this.drawRoads();
 
 		scene.add(this.land);
+	}
+
+	getRoom(sectorX, sectorY) {
+		var key = "" + sectorX + "," + sectorY;
+		return COMPOUNDS[key] ? COMPOUNDS[key]._start_ : null;
 	}
 
 	addRoad(sectorX, sectorY, w, h) {

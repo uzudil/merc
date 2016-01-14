@@ -10,10 +10,12 @@ import * as compass from 'compass'
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
+const START_X = 9;
+const START_Y = 3;
 
 class Merc {
 	constructor() {
-		var models = new model.Models((models)=>this.init(models))
+		new model.Models((models)=>this.init(models))
 	}
 
 	init(models) {
@@ -23,7 +25,7 @@ class Merc {
 		this.scene = new THREE.Scene();
 
 		this.movement = new movement.Movement(this);
-		this.movement.player.position.set(game_map.SECTOR_SIZE * 10, game_map.SECTOR_SIZE * 14, movement.DEFAULT_Z);
+		this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, movement.DEFAULT_Z);
 
 		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
@@ -74,7 +76,7 @@ class Merc {
 		var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
 		$("#loc .value").text("" + x + "-" + y);
 		$("#alt .value").text("" + z);
-		$("#speed .value").text("" + Math.round(this.movement.speed / 100.0));
+		$("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
 		this.compass.update(this.movement.getHeadingAngle());
 		this.horizon.update(this.movement.getPitchAngle());
 
