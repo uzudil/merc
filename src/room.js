@@ -29,7 +29,8 @@ export class Room {
 
 		if(this.elevator) {
 			let z = -movement.ROOM_DEPTH - ROOM_SIZE*.5 - 0.2;
-			this.lift_geo = new THREE.BoxGeometry(ROOM_SIZE, ROOM_SIZE, z, 1, 1, 10);
+			let stripes = 15;
+			this.lift_geo = new THREE.BoxGeometry(ROOM_SIZE, ROOM_SIZE, z, 1, 1, stripes);
 			let dark = new THREE.Color("#cccc88");
 			let light = new THREE.Color("#ffffcc");
 			for (var i = 0; i < this.lift_geo.faces.length; i++) {
@@ -38,7 +39,7 @@ export class Room {
 					reduce(function(previous, current){
 						return previous.z < current.z ? previous : current;
 					});
-				f.color = ((v.z / 10)|0) % 2 == 0 ? dark.clone() : light.clone();
+				f.color = ((v.z / stripes)|0) % 2 == 0 ? dark.clone() : light.clone();
 			}
 			this.lift_mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, vertexColors: THREE.FaceColors });
 			util.shadeGeo(this.lift_geo, null);

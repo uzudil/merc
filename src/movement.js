@@ -14,7 +14,7 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
-export const ROOM_DEPTH = -100;
+export const ROOM_DEPTH = -300;
 
 export class Movement {
 	constructor(main) {
@@ -288,7 +288,7 @@ export class Movement {
 		if(this.liftDirection != 0) {
 			let room_z = ROOM_DEPTH;
 			let pz = this.player.position.z / room_z;
-			let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 45;
+			let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
 			this.player.position.z += this.liftDirection * delta * liftSpeed;
 			if (this.liftDirection < 0 && this.player.position.z <= room_z) {
 				this.player.position.z = room_z;
@@ -340,6 +340,11 @@ export class Movement {
 				this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
 			}
 
+			if(this.getSpeed() > 0) {
+				this.noise.start();
+			} else {
+				this.noise.stop();
+			}
 			this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
 
 			if (this.player.position.z <= DEFAULT_Z) {

@@ -7,6 +7,7 @@ export class Noise {
 	constructor(audioContext) {
 		this.audioContext = audioContext;
 		this.enabled = true;
+		this.started = false;
 		this.initNoises();
 
 		this.setMode("jet");
@@ -18,11 +19,17 @@ export class Noise {
 	}
 
 	start() {
-		if(this.component && this.enabled) this.component.getComponent().connect(this.audioContext.destination);
+		if(this.component && this.enabled && !this.started) {
+			this.component.getComponent().connect(this.audioContext.destination);
+			this.started = true;
+		}
 	}
 
 	stop() {
-		if(this.component) this.component.getComponent().disconnect();
+		if(this.component && this.started) {
+			this.component.getComponent().disconnect();
+			this.started = false;
+		}
 	}
 
 	setLevel(level) {
