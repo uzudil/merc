@@ -52,6 +52,8 @@ export class Horizon {
 		ctx.fillStyle = "#8888cc";
 		let horizon = 540 * COMP_SCALE/2 - 5 * COMP_SCALE + COMP_SCALE/2;
 		ctx.fillRect(0, 0, this.w, horizon);
+		ctx.fillStyle = "#006400";
+		ctx.fillRect(0, horizon, this.w, horizon);
 
 		ctx.fillStyle = "#ffffff";
 		ctx.font = "8px sans-serif";

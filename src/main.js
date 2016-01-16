@@ -43,6 +43,16 @@ class Merc {
 		$(".uibox .value").css("font-size", Math.round(h/200*10) + "px");
 		let canvas_width = $("#el").width();
 		let canvas_height = height - 40;
+
+		$("#el .horiz_line").css({
+			"top": ((canvas_height/2)|0) + "px",
+			"width": ((canvas_width + 2)|0) + "px"
+		});
+		$("#comp .vert_line").css({
+			"left": ((canvas_width/2)|0) + "px",
+			"height": ((canvas_height/2 + 2)|0) + "px"
+		});
+
 		$("#el .value").css({
 			height: canvas_height + "px",
 			overflow: "hidden"
