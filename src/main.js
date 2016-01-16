@@ -54,7 +54,7 @@ class Merc {
 		});
 
 		this.compass = new compass.Compass(canvas_width, canvas_height * 0.5);
-		this.horizon = new compass.Horizon(canvas_width * 0.5, canvas_height);
+		this.horizon = new compass.Horizon(canvas_width, canvas_height);
 
 		$("body").append( this.renderer.domElement );
 		$("body").click((event) => {

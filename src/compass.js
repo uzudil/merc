@@ -49,6 +49,10 @@ export class Horizon {
 			height: 540 * COMP_SCALE
 		});
 		var ctx = this.el[0].getContext('2d');
+		ctx.fillStyle = "#8888cc";
+		let horizon = 540 * COMP_SCALE/2 - 5 * COMP_SCALE + COMP_SCALE/2;
+		ctx.fillRect(0, 0, this.w, horizon);
+
 		ctx.fillStyle = "#ffffff";
 		ctx.font = "8px sans-serif";
 		for(let a = -270; a < 270; a++) {
