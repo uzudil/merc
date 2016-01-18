@@ -15,6 +15,7 @@ export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
 export const ROOM_DEPTH = -300;
+const WALL_ACTIVATE_DIST = 20;
 
 export class Movement {
 	constructor(main) {
@@ -28,6 +29,8 @@ export class Movement {
 		this.prevTime = Date.now();
 		this.direction = new THREE.Vector3(0, 1, 0);
 		this.rotation = new THREE.Euler(0, 0, 0, "ZXY");
+		this.prevPos = new THREE.Vector3();
+		this.worldPos = new THREE.Vector3();
 
 		this.intersections = [];
 		this.bbox = new THREE.Box3(new THREE.Vector3(-SIZE, -SIZE, -SIZE), new THREE.Vector3(SIZE, SIZE, SIZE));
@@ -58,6 +61,12 @@ export class Movement {
 		this.player.add(this.roll);
 		this.player.rotation.z = Math.PI;
 		this.main.scene.add(this.player);
+
+		this.pitch.add(Movement.makeCrossHair());
+
+		// room collisions
+		this.raycaster = new THREE.Raycaster();
+		this.center = new THREE.Vector2(.5 * 2 - 1, -.5 * 2 + 1);
 
 		this.movementX = 0.0;
 		this.movementY = 0.0;
@@ -119,6 +128,17 @@ export class Movement {
 					break;
 			}
 		});
+	}
+
+	static makeCrossHair() {
+		// the crosshair
+		let crossHair = new THREE.Object3D();
+		let horiz = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.01), new THREE.MeshBasicMaterial({color: "#ffffff"}));
+		crossHair.add(horiz);
+		let vert = new THREE.Mesh(new THREE.PlaneGeometry(0.01, 0.1), new THREE.MeshBasicMaterial({color: "#ffffff"}));
+		crossHair.add(vert);
+		crossHair.position.z = -2;
+		return crossHair;
 	}
 
 	useElevator() {
@@ -318,6 +338,8 @@ export class Movement {
 					this.direction.set(1, 0, 0);
 				}
 			}
+
+			// while flying, roll affects heading
 			if (this.player.position.z > DEFAULT_Z) {
 				this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
 			}
@@ -325,21 +347,63 @@ export class Movement {
 			// the roll affects the pitch's direction
 			let r = Math.abs(this.getRoll());
 			let d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
-			this.rotation.set(this.getPitch() * d, this.getHeading(), 0);
+			//this.rotation.set(this.getPitch() * d, this.getHeading(), 0);
+			this.rotation.set(this.getPitch() * d, 0, 0);
 			this.direction.applyEuler(this.rotation);
+
+			if(this.room) {
+				this.raycaster.setFromCamera(this.center, this.main.camera);
+				let closest = null;
+				for(let o of this.raycaster.intersectObject(this.room.mesh, true)) {
+					if(o.distance < WALL_ACTIVATE_DIST && (!closest || o.distance < closest.distance)) {
+						closest = o;
+					}
+				}
+				if(closest) {
+					let o = closest;
+					//console.log("closest=", o.object.name, o.distance, " normal=", o.face.normal);
+					if(o.object.type == "door") {
+						console.log("Opening door: " + o.object.dir);
+					} else {
+						// wall sheer
+						this.player.localToWorld(this.direction);
+						let wall = o.face.normal;
+						if(wall.x) {
+							// move along y
+							let tmp = this.direction.y;
+							this.direction.copy(this.player.getWorldPosition());
+							this.direction.y = tmp;
+						} else {
+							// move along x
+							let tmp = this.direction.x;
+							this.direction.copy(this.player.getWorldPosition());
+							this.direction.x = tmp;
+						}
+						this.player.worldToLocal(this.direction).normalize();
+					}
+				}
+			}
+
+			// actually move player forward
+			this.prevPos.copy(this.player.position);
 			this.player.translateOnAxis(this.direction, dx);
+			this.player.getWorldPosition(this.worldPos);
 
-
-			//$("#message .value").text(
-			//	"YAW:" + this.getHeadingAngle() +
-			//	" PITCH:" + this.getPitchAngle() +
-			//	" ROLL:" + this.getRollAngle());
+			if(this.room) {
+				// player gets tangled in corners and ends up outside room: fix that here
+				this.player.updateMatrix();
+				this.player.updateMatrixWorld();
+				if(!this.room.isPositionInside(this.worldPos, 3)) {
+					this.player.position.copy(this.prevPos);
+				}
+			}
 
 			// stalling
 			if (this.isStalling()) {
 				this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
 			}
 
+			// adjust noise
 			if(this.getSpeed() > 0) {
 				this.noise.start();
 			} else {

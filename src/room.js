@@ -55,6 +55,9 @@ class Door {
 			new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, vertexColors: THREE.FaceColors }));
 		//door_mesh.position.set(x + dx, y + dy, movement.ROOM_DEPTH - (ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5);
 		door_mesh.position.set(this.dx, this.dy, -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5);
+		door_mesh["name"] = "door_" + this.dir;
+		door_mesh["type"] = "door";
+		door_mesh["dir"] = this.dir;
 		return door_mesh;
 	}
 }
@@ -95,6 +98,8 @@ export class Room {
 		this.mat = new THREE.MeshBasicMaterial({ color: this.bg, side: THREE.DoubleSide, vertexColors: THREE.FaceColors });
 		this.mesh = subtract_bsp.toMesh( this.mat );
 		this.mesh.position.set(x, y, movement.ROOM_DEPTH);
+		this.mesh["name"] = "room_wall";
+		this.mesh["type"] = "wall";
 		this.geo = this.mesh.geometry;
 		this.geo.computeVertexNormals();
 		util.shadeGeo(this.geo, LIGHT, this.bg);
@@ -107,6 +112,17 @@ export class Room {
 		this.sector.add( this.mesh );
 
 		if(this.elevator) this.makeElevator(x, y);
+
+		this.mesh.updateMatrix();
+		this.mesh.updateMatrixWorld();
+		this.worldPos = this.mesh.getWorldPosition();
+	}
+
+	isPositionInside(worldPos, buffer) {
+		let w = this.w/2 * ROOM_SIZE - WALL_THICKNESS - buffer;
+		let h = this.h/2 * ROOM_SIZE - WALL_THICKNESS - buffer;
+		return worldPos.x >= this.worldPos.x - w && worldPos.x < this.worldPos.x + w &&
+			worldPos.y >= this.worldPos.y - h && worldPos.y < this.worldPos.y + h;
 	}
 
 	makeElevator(x, y) {

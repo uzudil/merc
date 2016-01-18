@@ -21,7 +21,7 @@ const SCALE = {
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
 const MATERIAL = new THREE.MeshBasicMaterial({
 	color: 0xffffff,
-	side: THREE.doubleSided,
+	side: THREE.DoubleSide,
 	vertexColors: THREE.FaceColors
 	//overdraw: true
 });
