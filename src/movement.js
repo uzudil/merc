@@ -73,7 +73,6 @@ export class Movement {
 		this.worldDir = new THREE.Vector3();
 		this.worldNor = new THREE.Vector3();
 		this.normalMatrix = new THREE.Matrix3();
-		this.intendedDir = new THREE.Vector3();
 
 		this.movementX = 0.0;
 		this.movementY = 0.0;
