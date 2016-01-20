@@ -14,8 +14,10 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
+const SOUND_ENABLED = false;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
+
 
 export class Movement {
 	constructor(main) {
@@ -23,14 +25,12 @@ export class Movement {
 
 		var ac = new AudioContext();
 		this.noise = new noise.Noise(ac);
-		this.noise.setEnabled(!DEBUG);
+		this.noise.setEnabled(SOUND_ENABLED);
 		this.noise.setMode("walk");
 
 		this.prevTime = Date.now();
 		this.direction = new THREE.Vector3(0, 1, 0);
 		this.rotation = new THREE.Euler(0, 0, 0, "ZXY");
-		this.prevPos = new THREE.Vector3();
-		this.worldPos = new THREE.Vector3();
 
 		this.intersections = [];
 		this.bbox = new THREE.Box3(new THREE.Vector3(-SIZE, -SIZE, -SIZE), new THREE.Vector3(SIZE, SIZE, SIZE));
@@ -66,7 +66,14 @@ export class Movement {
 
 		// room collisions
 		this.raycaster = new THREE.Raycaster();
-		this.center = new THREE.Vector2(.5 * 2 - 1, -.5 * 2 + 1);
+		this.raycaster.far = WALL_ACTIVATE_DIST;
+
+		// tmp variables for ray casting
+		this.worldPos = new THREE.Vector3();
+		this.worldDir = new THREE.Vector3();
+		this.worldNor = new THREE.Vector3();
+		this.normalMatrix = new THREE.Matrix3();
+		this.intendedDir = new THREE.Vector3();
 
 		this.movementX = 0.0;
 		this.movementY = 0.0;
@@ -300,143 +307,195 @@ export class Movement {
 		this.fw = this.bw = this.left = this.right = false;
 	}
 
+	updateLift(delta) {
+		let room_z = ROOM_DEPTH;
+		let pz = this.player.position.z / room_z;
+		let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
+		this.player.position.z += this.liftDirection * delta * liftSpeed;
+		if (this.liftDirection < 0 && this.player.position.z <= room_z) {
+			this.player.position.z = room_z;
+			this.liftDirection = 0;
+		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
+			this.player.position.z = DEFAULT_Z;
+			this.liftDirection = 0;
+			this.room.destroy();
+			this.room = null;
+		}
+	}
+
+	updateVehicle(dx) {
+		var in_air_before = this.player.position.z > DEFAULT_Z;
+
+		this.direction.set(0, 1, 0);
+
+		// while flying, roll affects heading
+		if (this.player.position.z > DEFAULT_Z) {
+			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
+		}
+
+		// the roll affects the pitch's direction
+		let r = Math.abs(this.getRoll());
+		let d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
+		this.rotation.set(this.getPitch() * d, 0, 0);
+		this.direction.applyEuler(this.rotation);
+
+		// actually move player forward
+		this.player.translateOnAxis(this.direction, dx);
+
+		// stalling
+		if (this.isStalling()) {
+			this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
+		}
+
+		if (this.player.position.z <= DEFAULT_Z) {
+			// reset speed and pitch on crash
+			if (in_air_before && (Math.abs(this.getPitchAngle()) > 25 || Math.abs(this.getRollAngle()) > 25)) {
+				console.log("Crash");
+				this.pitch.rotation.x = Math.PI / 2;
+				this.stop();
+			} else {
+				// limit pitch on ground
+				this.pitch.rotation.x = Math.min(Math.max(this.pitch.rotation.x, Math.PI / 2), Math.PI);
+			}
+			this.roll.rotation.y = 0;
+		}
+
+		if (!this.room && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
+	}
+
+	updateWalking(dx) {
+		this.direction.set(0, 1, 0)
+
+		if(this.fw) {
+			this.direction.set(0, 1, 0);
+		} else if(this.bw) {
+			this.direction.set(0, -1, 0);
+		} else if(this.right) {
+			this.direction.set(1, 0, 0);
+		} else if(this.left) {
+			this.direction.set(-1, 0, 0);
+		}
+
+		// actually move player forward
+		if(this.room) {
+			this.updateWalkingInRoom(dx);
+		} else {
+			this.player.translateOnAxis(this.direction, dx);
+		}
+	}
+
+
+	/**
+	 * Convert a face normal of an object to world coordinates.
+	 * @param object the object whose face normal this is
+	 * @param normal the face normal
+	 * @param worldNor where to store the results
+	 * @returns {*}
+	 */
+	normalToWorld(object, normal, worldNor) {
+		this.normalMatrix.getNormalMatrix(object.matrixWorld);
+		worldNor.copy(normal);
+		worldNor.applyMatrix3(this.normalMatrix).normalize();
+		return worldNor;
+	}
+
+	updateWalkingInRoom(dx) {
+
+		// find the world pos of player
+		this.player.getWorldPosition(this.worldPos);
+
+		// cast a ray in this direction
+		this.normalToWorld(this.player, this.direction, this.worldDir);
+
+		// find the closest intersection
+		this.raycaster.set(this.worldPos, this.worldDir);
+		let intersections = this.raycaster.intersectObject(this.room.mesh, true);
+		let closest = intersections.length > 0 ? intersections[0] : null;
+
+		let blocked = false;
+		if(closest) {
+			if(closest.object.type == "door") {
+				// open door
+				console.log("Opening door: " + closest.object.dir);
+			}
+
+			// intersected face's normal in world coords
+			this.normalToWorld(closest.object, closest.face.normal, this.worldNor);
+
+			// translate the normal to the intersection point
+			this.worldNor.add(closest.point);
+
+			// find a point perpendicular to the new normal from out current position
+			// credit: http://stackoverflow.com/questions/10301001/perpendicular-on-a-line-segment-from-a-given-point
+			var x1=closest.point.x, y1=closest.point.y,
+				x2=this.worldNor.x, y2=this.worldNor.y,
+				x3=this.worldPos.x, y3=this.worldPos.y;
+			var px = x2-x1, py = y2-y1, dAB = px*px + py*py;
+			var u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
+			var x = x1 + u * px, y = y1 + u * py;
+
+			// these two points form the new direction
+			this.worldDir.set(x, y, this.worldPos.z).sub(this.worldPos);
+
+			// cast a ray this way too to make sure there isn't a corner we're running into
+			this.raycaster.set(this.worldPos, this.worldDir);
+			intersections = this.raycaster.intersectObject(this.room.mesh, true);
+			if(intersections.length > 0 &&
+				(intersections[0].face.normal.x != closest.face.normal.x ||
+				intersections[0].face.normal.y != closest.face.normal.y)) {
+				blocked = true;
+			} else {
+				// translate back to model coords
+				this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
+			}                                                                                                        ``
+		}
+
+		// move player if we're not blocked
+		if(!blocked) this.player.translateOnAxis(this.direction, dx);
+	}
+
+	checkBoundingBox() {
+		// check for intersections
+		this.bbox.min.set(this.player.position.x - SIZE, this.player.position.y - SIZE, this.player.position.z - SIZE);
+		this.bbox.max.set(this.player.position.x + SIZE, this.player.position.y + SIZE, this.player.position.z + SIZE);
+
+		this.intersections.splice(0, this.intersections.length);
+		for (let o of this.main.game_map.structures) {
+			this.model_bbox.setFromObject(o);
+			if (this.model_bbox.isIntersectionBox(this.bbox)) {
+				this.intersections.push(o);
+			}
+		}
+	}
+
+	checkNoise() {
+		// adjust noise
+		if(this.getSpeed() > 0) {
+			this.noise.start();
+		} else {
+			this.noise.stop();
+		}
+		this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
+	}
+
 	update() {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 		this.prevTime = time;
 
 		if(this.liftDirection != 0) {
-			let room_z = ROOM_DEPTH;
-			let pz = this.player.position.z / room_z;
-			let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
-			this.player.position.z += this.liftDirection * delta * liftSpeed;
-			if (this.liftDirection < 0 && this.player.position.z <= room_z) {
-				this.player.position.z = room_z;
-				this.liftDirection = 0;
-			} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
-				this.player.position.z = DEFAULT_Z;
-				this.liftDirection = 0;
-				this.room.destroy();
-				this.room = null;
-			}
+			this.updateLift(delta);
 		} else {
-			var in_air_before = this.player.position.z > DEFAULT_Z;
-
 			var dx = this.getSpeed() / 20 * delta;
 			if(this.vehicle) {
-				this.direction.set(0, 1, 0);
+				this.updateVehicle(dx);
 			} else {
-				if(this.fw) {
-					this.direction.set(0, 1, 0);
-				} else if(this.bw) {
-					dx *= -1;
-					this.direction.set(0, 1, 0);
-				} else if(this.right) {
-					this.direction.set(1, 0, 0);
-				} else if(this.left) {
-					dx *= -1;
-					this.direction.set(1, 0, 0);
-				}
+				this.updateWalking(dx);
 			}
 
-			// while flying, roll affects heading
-			if (this.player.position.z > DEFAULT_Z) {
-				this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
-			}
+			this.checkNoise();
 
-			// the roll affects the pitch's direction
-			let r = Math.abs(this.getRoll());
-			let d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
-			//this.rotation.set(this.getPitch() * d, this.getHeading(), 0);
-			this.rotation.set(this.getPitch() * d, 0, 0);
-			this.direction.applyEuler(this.rotation);
-
-			if(this.room) {
-				this.raycaster.setFromCamera(this.center, this.main.camera);
-				let closest = null;
-				for(let o of this.raycaster.intersectObject(this.room.mesh, true)) {
-					if(o.distance < WALL_ACTIVATE_DIST && (!closest || o.distance < closest.distance)) {
-						closest = o;
-					}
-				}
-				if(closest) {
-					let o = closest;
-					//console.log("closest=", o.object.name, o.distance, " normal=", o.face.normal);
-					if(o.object.type == "door") {
-						console.log("Opening door: " + o.object.dir);
-					} else {
-						// wall sheer
-						this.player.localToWorld(this.direction);
-						let wall = o.face.normal;
-						if(wall.x) {
-							// move along y
-							let tmp = this.direction.y;
-							this.direction.copy(this.player.getWorldPosition());
-							this.direction.y = tmp;
-						} else {
-							// move along x
-							let tmp = this.direction.x;
-							this.direction.copy(this.player.getWorldPosition());
-							this.direction.x = tmp;
-						}
-						this.player.worldToLocal(this.direction).normalize();
-					}
-				}
-			}
-
-			// actually move player forward
-			this.prevPos.copy(this.player.position);
-			this.player.translateOnAxis(this.direction, dx);
-			this.player.getWorldPosition(this.worldPos);
-
-			if(this.room) {
-				// player gets tangled in corners and ends up outside room: fix that here
-				this.player.updateMatrix();
-				this.player.updateMatrixWorld();
-				if(!this.room.isPositionInside(this.worldPos, 3)) {
-					this.player.position.copy(this.prevPos);
-				}
-			}
-
-			// stalling
-			if (this.isStalling()) {
-				this.pitch.rotation.x += (this.pitch.rotation.x > 0 ? -1 : 1) * 0.02;
-			}
-
-			// adjust noise
-			if(this.getSpeed() > 0) {
-				this.noise.start();
-			} else {
-				this.noise.stop();
-			}
-			this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
-
-			if (this.player.position.z <= DEFAULT_Z) {
-				// reset speed and pitch on crash
-				if (in_air_before && (Math.abs(this.getPitchAngle()) > 25 || Math.abs(this.getRollAngle()) > 25)) {
-					console.log("Crash");
-					this.pitch.rotation.x = Math.PI / 2;
-					this.stop();
-				} else {
-					// limit pitch on ground
-					this.pitch.rotation.x = Math.min(Math.max(this.pitch.rotation.x, Math.PI / 2), Math.PI);
-				}
-				this.roll.rotation.y = 0;
-			}
-
-			if (!this.room && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
-
-			this.bbox.min.set(this.player.position.x - SIZE, this.player.position.y - SIZE, this.player.position.z - SIZE);
-			this.bbox.max.set(this.player.position.x + SIZE, this.player.position.y + SIZE, this.player.position.z + SIZE);
-
-			// check for intersections
-			this.intersections.splice(0, this.intersections.length);
-			for (let o of this.main.game_map.structures) {
-				this.model_bbox.setFromObject(o);
-				if (this.model_bbox.isIntersectionBox(this.bbox)) {
-					this.intersections.push(o);
-				}
-			}
+			this.checkBoundingBox();
 		}
 	}
 }

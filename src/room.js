@@ -118,13 +118,6 @@ export class Room {
 		this.worldPos = this.mesh.getWorldPosition();
 	}
 
-	isPositionInside(worldPos, buffer) {
-		let w = this.w/2 * ROOM_SIZE - WALL_THICKNESS - buffer;
-		let h = this.h/2 * ROOM_SIZE - WALL_THICKNESS - buffer;
-		return worldPos.x >= this.worldPos.x - w && worldPos.x < this.worldPos.x + w &&
-			worldPos.y >= this.worldPos.y - h && worldPos.y < this.worldPos.y + h;
-	}
-
 	makeElevator(x, y) {
 		let z = -movement.ROOM_DEPTH - ROOM_SIZE*.5 - 0.2;
 		let stripes = 15;
