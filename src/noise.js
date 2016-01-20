@@ -20,14 +20,14 @@ export class Noise {
 
 	start() {
 		if(this.component && this.enabled && !this.started) {
-			this.component.getComponent().connect(this.audioContext.destination);
+			this.component.start(this.audioContext);
 			this.started = true;
 		}
 	}
 
 	stop() {
 		if(this.component && this.started) {
-			this.component.getComponent().disconnect();
+			this.component.stop();
 			this.started = false;
 		}
 	}
@@ -48,7 +48,8 @@ export class Noise {
 			jet: new JetNoise(this),
 			car: new CarNoise(this),
 			pink: new PinkNoise(this),
-			walk: new WalkNoise(this)
+			walk: new WalkNoise(this),
+			lift: new LiftNoise(this)
 		};
 	}
 
@@ -121,8 +122,12 @@ class PinkNoise {
 		this.filter.connect(this.gain);
 	}
 
-	getComponent() {
-		return this.gain;
+	start(context) {
+		this.gain.connect(context.destination);
+	}
+
+	stop() {
+		this.gain.disconnect();
 	}
 
 	setLevel(level) {
@@ -133,55 +138,158 @@ class PinkNoise {
 
 class JetNoise {
 	constructor(noise) {
-		this.whiteNoise = noise.audioContext.createBufferSource();
-		this.whiteNoise.buffer = noise.createNoiseBuffer();
-		this.whiteNoise.loop = true;
-		this.whiteNoise.start(0);
+		this.distortion = noise.audioContext.createBufferSource();
+		this.distortion.buffer = noise.createNoiseBuffer();
+		this.distortion.loop = true;
+		this.distortion.start(0);
 
 		this.filter = noise.audioContext.createBiquadFilter();
 		this.filter.frequency.value = 440.0;
 
-		this.whiteNoise.connect(this.filter);
+		this.gain = noise.audioContext.createGain();
+		this.gain.gain.value = 0.1;
+
+		this.distortion.connect(this.filter);
+		this.filter.connect(this.gain);
 	}
 
-	getComponent() {
-		return this.filter;
+	start(context) {
+		this.gain.connect(context.destination);
+	}
+
+	stop() {
+		this.gain.disconnect();
 	}
 
 	setLevel(level) {
 		var x = Math.sin(0.5 * Math.PI * level);
 		this.filter.frequency.value = x * 400.0 + 600.0;
-		this.whiteNoise.playbackRate.value = x * 0.01 + 0.025;
+		this.distortion.playbackRate.value = x * 0.01 + 0.025;
+		this.gain.gain.value = 0.2 + x * 0.3;
+	}
+}
+
+// credit: http://blog.chrislowis.co.uk/demos/polyphonic_synthesis/demo2/synth.js
+class Voice {
+
+	constructor(context, volume, frequency) {
+		this.context = context;
+		this.frequency = frequency;
+		this.volume = volume;
+
+		/* VCO */
+		this.vco = this.context.createOscillator();
+		this.vco.type = "sine";
+		this.vco.frequency.value = this.frequency;
+		this.vco.start(0);
+
+		/* VCA */
+		this.vca = context.createGain();
+		this.vca.gain.value = this.volume;
+
+		/* connections */
+		this.vco.connect(this.vca);
+	}
+
+	setLevel(level) {
+		var x = Math.sin(0.5 * Math.PI * level);
+		this.vco.frequency.value = this.frequency * 0.5 + x * this.frequency * 0.5;
+	}
+
+	start() {
+		this.vca.connect(this.context.destination);
+	};
+
+	stop() {
+		this.vca.disconnect();
+	}
+}
+
+class Distortion {
+	constructor(noise, volume, frequency, gapNoise) {
+		this.volume = volume;
+		this.context = noise.audioContext;
+		this.frequency = frequency || 440.0;
+		this.distortion = noise.audioContext.createBufferSource();
+		this.distortion.buffer = gapNoise ? noise.createGapNoiseBuffer() : noise.createNoiseBuffer();
+		this.distortion.loop = true;
+		this.distortion.start(0);
+
+		this.filter = noise.audioContext.createBiquadFilter();
+		this.filter.frequency.value = this.frequency;
+
+		this.gain = noise.audioContext.createGain();
+		this.gain.gain.value = this.volume;
+
+		this.distortion.connect(this.filter);
+		this.filter.connect(this.gain);
+	}
+
+	setLevel(level) {
+		var x = Math.sin(0.5 * Math.PI * level);
+		this.gain.gain.value = (0.1 + x * 0.9) * this.volume;
+	}
+
+	start() {
+		this.gain.connect(this.context.destination);
+	};
+
+	stop() {
+		this.gain.disconnect();
+	}
+}
+
+class LiftNoise {
+
+	// credit: http://blog.chrislowis.co.uk/demos/polyphonic_synthesis/demo2/synth.js
+	constructor(noise) {
+		this.voice1 = new Voice(noise.audioContext, 0.2, 400);
+		this.voice2 = new Voice(noise.audioContext, 0.2, 500);
+		this.distortion = new Distortion(noise, 0.5, 440);
+	}
+
+	start(context) {
+		this.voice1.start();
+		this.voice2.start();
+		this.distortion.start();
+	}
+
+	stop() {
+		this.voice1.stop();
+		this.voice2.stop();
+		this.distortion.stop();
+	}
+
+	setLevel(level) {
+		this.voice1.setLevel(level);
+		this.voice2.setLevel(level);
+		this.distortion.setLevel(level);
 	}
 }
 
 class CarNoise {
 	constructor(noise) {
-
-		this.source = noise.audioContext.createBufferSource();
-		this.source.buffer = noise.createGapNoiseBuffer();
-		this.source.loop = true;
-		this.source.start();
-
-		this.filter = noise.audioContext.createBiquadFilter();
-		this.filter.frequency.value = 800.0;
-
-		this.gain = noise.audioContext.createGain();
-		this.gain.gain.value = 1;
-
-		this.source.connect(this.filter);
-		this.filter.connect(this.gain);
+		this.voice1 = new Voice(noise.audioContext, 0.2, 300);
+		this.voice2 = new Voice(noise.audioContext, 0.2, 400);
+		this.distortion = new Distortion(noise, 2, 400, true);
 	}
 
-	getComponent() {
-		return this.gain;
+	start(context) {
+		this.voice1.start();
+		this.voice2.start();
+		this.distortion.start();
+	}
+
+	stop() {
+		this.voice1.stop();
+		this.voice2.stop();
+		this.distortion.stop();
 	}
 
 	setLevel(level) {
-		var x = Math.sin(0.5 * Math.PI * level);
-		this.filter.frequency.value = 100.0 * x + 300;
-		this.source.playbackRate.value = x * 0.01 + 0.25;
-		//this.gain.gain.value = 3 + level * 9;
+		this.voice1.setLevel(level);
+		this.voice2.setLevel(level);
+		this.distortion.setLevel(level);
 	}
 }
 
@@ -203,8 +311,12 @@ class WalkNoise {
 		this.filter.connect(this.gain);
 	}
 
-	getComponent() {
-		return this.gain;
+	start(context) {
+		this.gain.connect(context.destination);
+	}
+
+	stop() {
+		this.gain.disconnect();
 	}
 
 	setLevel(level) {

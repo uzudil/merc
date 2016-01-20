@@ -14,7 +14,7 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
-const SOUND_ENABLED = false;
+const SOUND_ENABLED = true;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
 
@@ -154,6 +154,7 @@ export class Movement {
 		var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
 		if(this.room && this.room.elevator) {
 			// up
+			this.noise.setMode("lift");
 			this.liftDirection = 1;
 			this.room.positionLift(offsetX, offsetY);
 			console.log("heading up");
@@ -164,6 +165,7 @@ export class Movement {
 
 			this.room = this.main.game_map.getRoom(this.sectorX, this.sectorY);
 			if(this.room) {
+				this.noise.setMode("lift");
 				this.liftDirection = -1;
 				console.log("heading down");
 				// create room
@@ -310,15 +312,20 @@ export class Movement {
 		let room_z = ROOM_DEPTH;
 		let pz = this.player.position.z / room_z;
 		let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
+		this.noise.setLevel(liftSpeed / 150);
 		this.player.position.z += this.liftDirection * delta * liftSpeed;
 		if (this.liftDirection < 0 && this.player.position.z <= room_z) {
 			this.player.position.z = room_z;
 			this.liftDirection = 0;
+			this.noise.stop();
+			this.noise.setMode("walk");
 		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 			this.player.position.z = DEFAULT_Z;
 			this.liftDirection = 0;
 			this.room.destroy();
 			this.room = null;
+			this.noise.stop();
+			this.noise.setMode("walk");
 		}
 	}
 
@@ -469,12 +476,16 @@ export class Movement {
 
 	checkNoise() {
 		// adjust noise
-		if(this.getSpeed() > 0) {
+		if(this.getSpeed() > 0 || this.liftDirection != 0) {
 			this.noise.start();
 		} else {
 			this.noise.stop();
 		}
-		this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
+		if(this.liftDirection != 0) {
+			// pass: set in updateLift
+		} else {
+			this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
+		}
 	}
 
 	update() {
@@ -491,10 +502,9 @@ export class Movement {
 			} else {
 				this.updateWalking(dx);
 			}
-
-			this.checkNoise();
-
 			this.checkBoundingBox();
 		}
+
+		this.checkNoise();
 	}
 }

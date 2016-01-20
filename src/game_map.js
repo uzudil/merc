@@ -15,8 +15,8 @@ var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 const MAP_POSITIONS = {
 	opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
 	asha: [[10, 10], [12, 10], [14, 10]],
-	car: [[10, 12]],
-	plane: [[10, 14], [9, 3]],
+	car: [[10, 12], [9, 3]],
+	plane: [[10, 14], [9, 2]],
 	tower: [[9, 1], [11, -19], [11, -18]],
 	elevator: [[9, 2]]
 };
