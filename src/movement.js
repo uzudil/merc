@@ -7,7 +7,8 @@ import $ from 'jquery';
 import * as models from 'model'
 import * as util from 'util'
 import * as noise from 'noise'
-import * as room from 'room'
+import * as room_package from 'room'
+import * as compounds from 'compounds'
 import * as game_map from 'game_map'
 
 const SIZE = 20;
@@ -149,12 +150,11 @@ export class Movement {
 		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
 		if(this.player.position.z == ROOM_DEPTH) {
-			this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
-			console.log("Loaded level=", this.level);
+			this.level = compounds.getLevel(this.sectorX, this.sectorY);
 			if(this.level) {
-				var offsetX = this.player.position.x % game_map.SECTOR_SIZE;
-				var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
-				this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+				var offsetX = this.player.position.x;
+				var offsetY = this.player.position.y;
+				this.level.create(this.main.scene, offsetX, offsetY, offsetX - this.main.models.models["elevator"].bbox.size().x/2, offsetY - this.main.models.models["elevator"].bbox.size().y/2);
 			}
 		}
 	}
@@ -198,7 +198,7 @@ export class Movement {
 				this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
 				this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 
-				this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
+				this.level = compounds.getLevel(this.sectorX, this.sectorY);
 				if (this.level) {
 					this.noise.setMode("lift");
 					this.liftDirection = -1;
@@ -456,10 +456,10 @@ export class Movement {
 			for(let i = 0; i < this.doorsUp.length; i++) {
 				let door = this.doorsUp[i];
 				door.getWorldPosition(this.worldPos);
-				let dz = ROOM_DEPTH + room.DOOR_HEIGHT * .8;
+				let dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
 				if(this.worldPos.z < dz) {
 					door.position.z += delta * 50;
-					this.noise.setLevel((room.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room.DOOR_HEIGHT);
+					this.noise.setLevel((room_package.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room_package.DOOR_HEIGHT);
 				} else {
 					door.moving = "down";
 					this.doorsUp.splice(i, 1);
@@ -480,7 +480,7 @@ export class Movement {
 					// todo: check for player...
 					door.position.z -= delta * 50;
 					if(door.position.z < door.original_z) door.position.z = door.original_z;
-					this.noise.setLevel((door.position.z - door.original_z) / room.DOOR_HEIGHT);
+					this.noise.setLevel((door.position.z - door.original_z) / room_package.DOOR_HEIGHT);
 				} else {
 					door.position.z = door.original_z;
 					door.moving = null;
