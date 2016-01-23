@@ -31,11 +31,11 @@ const ROAD_POSITIONS = [
 ];
 
 const COMPOUNDS = {
-	"9,2": {
-		_start_: new room.Room(4, 4, "#eeddd8", "#cc8800", { n: "meeting_room", e: "bunks" }, true),
-		meeting_room: new room.Room(2, 6, "#d8ddee", "#88cc00"),
-		bunks: new room.Room(3, 9, "#ddeed8", "#0000cc")
-	}
+	"9,2": new room.Level({
+		_start_: new room.Room("_start_", 4, 4, "#eeddd8", "#cc8800", { n: "meeting_room", e: "bunks" }, true),
+		meeting_room: new room.Room("meeting_room", 2, 6, "#d8ddee", "#88cc00"),
+		bunks: new room.Room("bunks", 3, 9, "#ddeed8", "#0000cc")
+	})
 };
 
 export class GameMap {
@@ -72,7 +72,11 @@ export class GameMap {
 
 	getRoom(sectorX, sectorY) {
 		var key = "" + sectorX + "," + sectorY;
-		return COMPOUNDS[key] ? COMPOUNDS[key]._start_ : null;
+		return COMPOUNDS[key] ? COMPOUNDS[key].getRoom("_start_") : null;
+	}
+
+	getLevel(sectorX, sectorY) {
+		return COMPOUNDS["" + sectorX + "," + sectorY];
 	}
 
 	addRoad(sectorX, sectorY, w, h) {

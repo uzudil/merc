@@ -17,7 +17,7 @@ const DEBUG = false;
 const SOUND_ENABLED = true;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
-
+const ROOM_COLLISION_ENABLED = true;
 
 export class Movement {
 	constructor(main) {
@@ -37,7 +37,9 @@ export class Movement {
 		this.model_bbox = new THREE.Box3();
 
 		this.vehicle = null;
-		this.room = null;
+		this.level = null;
+		this.doorsUp = [];
+		this.doorsDown = [];
 		this.liftDirection = 0;
 		this.sectorX = 0;
 		this.sectorY = 0;
@@ -136,6 +138,27 @@ export class Movement {
 		});
 	}
 
+	loadGame(gameState) {
+		this.player.position.set(
+			gameState.sectorX * game_map.SECTOR_SIZE + gameState.x,
+			gameState.sectorY * game_map.SECTOR_SIZE + gameState.y,
+			gameState.z
+		);
+		this.vehicle = gameState.vehicle;
+		this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
+		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
+		this.liftDirection = 0;
+		if(this.player.position.z == ROOM_DEPTH) {
+			this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
+			console.log("Loaded level=", this.level);
+			if(this.level) {
+				var offsetX = this.player.position.x % game_map.SECTOR_SIZE;
+				var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
+				this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+			}
+		}
+	}
+
 	static makeCrossHair() {
 		// the crosshair
 		let crossHair = new THREE.Object3D();
@@ -152,24 +175,26 @@ export class Movement {
 
 		var offsetX = this.player.position.x % game_map.SECTOR_SIZE;
 		var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
-		if(this.room && this.room.elevator) {
+		if(this.level) {
 			// up
-			this.noise.setMode("lift");
-			this.liftDirection = 1;
-			this.room.positionLift(offsetX, offsetY);
-			console.log("heading up");
-		} else if(!this.room && this.inElevator()) {
+			let room = this.level.getRoomAt(offsetX, offsetY);
+			if(room && room.elevator) {
+				this.noise.setMode("lift");
+				this.liftDirection = 1;
+				this.level.positionLift(offsetX, offsetY);
+				console.log("heading up");
+			}
+		} else if(!this.level && this.inElevator()) {
 			// down
 			this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
 			this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 
-			this.room = this.main.game_map.getRoom(this.sectorX, this.sectorY);
-			if(this.room) {
+			this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
+			if(this.level) {
 				this.noise.setMode("lift");
 				this.liftDirection = -1;
-				console.log("heading down");
 				// create room
-				this.room.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+				this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
 			}
 		}
 	}
@@ -322,8 +347,8 @@ export class Movement {
 		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 			this.player.position.z = DEFAULT_Z;
 			this.liftDirection = 0;
-			this.room.destroy();
-			this.room = null;
+			this.level.destroy();
+			this.level = null;
 			this.noise.stop();
 			this.noise.setMode("walk");
 		}
@@ -366,10 +391,10 @@ export class Movement {
 			this.roll.rotation.y = 0;
 		}
 
-		if (!this.room && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
+		if (!this.level && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
 	}
 
-	updateWalking(dx) {
+	updateWalking(dx, delta) {
 		this.direction.set(0, 1, 0)
 
 		if(this.fw) {
@@ -383,8 +408,8 @@ export class Movement {
 		}
 
 		// actually move player forward
-		if(this.room) {
-			this.updateWalkingInRoom(dx);
+		if(ROOM_COLLISION_ENABLED && this.level) {
+			this.updateWalkingInRoom(dx, delta);
 		} else {
 			this.player.translateOnAxis(this.direction, dx);
 		}
@@ -405,7 +430,58 @@ export class Movement {
 		return worldNor;
 	}
 
-	updateWalkingInRoom(dx) {
+	openDoor(door) {
+		if(door["original_z"] == null) door["original_z"] = door.position.z;
+		door["moving"] = "up";
+		this.doorsUp.push(door);
+		this.noise.setMode("door");
+		this.noise.start();
+	}
+
+	updateDoors(dx, delta) {
+		if(this.doorsUp.length > 0) {
+			for(let i = 0; i < this.doorsUp.length; i++) {
+				let door = this.doorsUp[i];
+				door.getWorldPosition(this.worldPos);
+				let dz = ROOM_DEPTH + room.DOOR_HEIGHT * .8;
+				if(this.worldPos.z < dz) {
+					door.position.z += delta * 50;
+					this.noise.setLevel((room.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room.DOOR_HEIGHT);
+				} else {
+					door.moving = "down";
+					this.doorsUp.splice(i, 1);
+					this.noise.setMode("walk");
+					i--;
+					setTimeout(()=>{
+						this.noise.setMode("door");
+						this.noise.start();
+						this.doorsDown.push(door);
+					}, 1500);
+				}
+			}
+		}
+		if(this.doorsDown.length > 0) {
+			for(let i = 0; i < this.doorsDown.length; i++) {
+				let door = this.doorsDown[i];
+				if(door.position.z > door.original_z) {
+					// todo: check for player...
+					door.position.z -= delta * 50;
+					if(door.position.z < door.original_z) door.position.z = door.original_z;
+					this.noise.setLevel((door.position.z - door.original_z) / room.DOOR_HEIGHT);
+				} else {
+					door.position.z = door.original_z;
+					door.moving = null;
+					this.doorsDown.splice(i, 1);
+					this.noise.setMode("walk");
+					i--;
+				}
+			}
+		}
+	}
+
+	updateWalkingInRoom(dx, delta) {
+
+		this.updateDoors(dx, delta);
 
 		// find the world pos of player
 		this.player.getWorldPosition(this.worldPos);
@@ -415,14 +491,13 @@ export class Movement {
 
 		// find the closest intersection
 		this.raycaster.set(this.worldPos, this.worldDir);
-		let intersections = this.raycaster.intersectObject(this.room.mesh, true);
+		let intersections = this.raycaster.intersectObject(this.level.mesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
 
 		let blocked = false;
 		if(closest) {
-			if(closest.object.type == "door") {
-				// open door
-				console.log("Opening door: " + closest.object.dir);
+			if(closest.object.type == "door" && closest.object["moving"] == null) {
+				this.openDoor(closest.object);
 			}
 
 			// intersected face's normal in world coords
@@ -445,7 +520,7 @@ export class Movement {
 
 			// cast a ray this way too to make sure there isn't a corner we're running into
 			this.raycaster.set(this.worldPos, this.worldDir);
-			intersections = this.raycaster.intersectObject(this.room.mesh, true);
+			intersections = this.raycaster.intersectObject(this.level.mesh, true);
 			if(intersections.length > 0 &&
 				(intersections[0].face.normal.x != closest.face.normal.x ||
 				intersections[0].face.normal.y != closest.face.normal.y)) {
@@ -453,7 +528,7 @@ export class Movement {
 			} else {
 				// translate back to model coords
 				this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
-			}                                                                                                        ``
+			}
 		}
 
 		// move player if we're not blocked
@@ -481,8 +556,8 @@ export class Movement {
 		} else {
 			this.noise.stop();
 		}
-		if(this.liftDirection != 0) {
-			// pass: set in updateLift
+		if(this.liftDirection != 0 || this.doorsUp.length > 0) {
+			// pass: set in updateLift, etc
 		} else {
 			this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
 		}
@@ -500,7 +575,7 @@ export class Movement {
 			if(this.vehicle) {
 				this.updateVehicle(dx);
 			} else {
-				this.updateWalking(dx);
+				this.updateWalking(dx, delta);
 			}
 			this.checkBoundingBox();
 		}

@@ -40,7 +40,7 @@ export class Noise {
 		this.stop();
 		this.mode = mode;
 		this.component = this.noises[this.mode];
-		console.log("Setting mode to " + this.mode + " comp=", this.component);
+		//console.log("Setting mode to " + this.mode + " comp=", this.component);
 	}
 
 	initNoises() {
@@ -49,7 +49,8 @@ export class Noise {
 			car: new CarNoise(this),
 			pink: new PinkNoise(this),
 			walk: new WalkNoise(this),
-			lift: new LiftNoise(this)
+			lift: new LiftNoise(this),
+			door: new DoorNoise(this)
 		};
 	}
 
@@ -241,7 +242,6 @@ class Distortion {
 
 class LiftNoise {
 
-	// credit: http://blog.chrislowis.co.uk/demos/polyphonic_synthesis/demo2/synth.js
 	constructor(noise) {
 		this.voice1 = new Voice(noise.audioContext, 0.2, 400);
 		this.voice2 = new Voice(noise.audioContext, 0.2, 500);
@@ -263,6 +263,29 @@ class LiftNoise {
 	setLevel(level) {
 		this.voice1.setLevel(level);
 		this.voice2.setLevel(level);
+		this.distortion.setLevel(level);
+	}
+}
+
+class DoorNoise {
+
+	constructor(noise) {
+		this.voice1 = new Voice(noise.audioContext, 0.2, 700);
+		this.distortion = new Distortion(noise, 0.5, 500);
+	}
+
+	start(context) {
+		this.voice1.start();
+		this.distortion.start();
+	}
+
+	stop() {
+		this.voice1.stop();
+		this.distortion.stop();
+	}
+
+	setLevel(level) {
+		this.voice1.setLevel(level);
 		this.distortion.setLevel(level);
 	}
 }

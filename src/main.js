@@ -73,6 +73,14 @@ class Merc {
 			element.requestPointerLock();
 		});
 
+
+		// hack: start in a room
+		this.movement.loadGame({
+			sectorX: 9, sectorY: 2,
+			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			vehicle: null
+		});
+
 		this.animate();
 	}
 
