@@ -1,6 +1,6 @@
 ## Merc
 
-Some kind of es6 riff on the [original](http://plus4world.powweb.com/software/Mercenary_Escape_From_Targ).
+An open-ended exploration game with a minimalist plot. A variation and alternate sequel of the  [original](http://plus4world.powweb.com/software/Mercenary_Escape_From_Targ).
 
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen.png" width="200">
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen2.png" width="200">
@@ -10,8 +10,10 @@ Some kind of es6 riff on the [original](http://plus4world.powweb.com/software/Me
 
 It's very early in development, but here are some things you can do:
 - click in the game for cursor lock
-- walk around (wasd keys)
-- walk into a plane and press SPACE to drive it. All vehicles work by pressing 0-9 for power levels. Press ~ to stop. Drive with the mouse.
+- walk around (wasd keys, turn with mouse)
+- walk into a vehicle and press SPACE to drive it. 
+- All vehicles work by pressing 0-9 for power levels. Press ~ to stop. Drive with the mouse. 
+- Planes can take off after power level 3.
 - to exit a vehicle press SPACE again.
 - walk (or drive) into an elevator (thing with red stripe). Make sure you exit your vehicle (SPACE) and press E to activate the elevator.
 - walk around downstairs (wasd)
@@ -34,3 +36,6 @@ Uses ES6, webpack, npm and three.js.
 
 - ./bin/server.sh
  
+### To publish it
+
+- the game is automatically hosted by github from the gh-pages branch ([more info](https://help.github.com/articles/creating-project-pages-manually/))
