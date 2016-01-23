@@ -4,6 +4,7 @@ Some kind of es6 riff on the [original](http://plus4world.powweb.com/software/Me
 
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen.png" width="350">
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen2.png" width="350">
+<img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen3.png" width="350">
 
 ## Development
 
