@@ -173,35 +173,48 @@ export class Movement {
 	useElevator() {
 		if(this.vehicle || this.liftDirection) return;
 
-		var offsetX = this.player.position.x % game_map.SECTOR_SIZE;
-		var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
+		let offsetX = this.player.position.x;
+		let offsetY = this.player.position.y;
 		if(this.level) {
 			// up
-			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z));
+			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true, true);
 			if(room && room.elevator) {
+
+				// Reposition the level, the lift and the player at the elevator platform position.
+				// This is so the player pops up in the middle of the elevator back on the surface.
+				let dx = this.player.position.x - this.level.liftX;
+				let dy = this.player.position.y - this.level.liftY;
+				this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+				this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
+
 				this.noise.setMode("lift");
 				this.liftDirection = 1;
-				this.level.positionLift(offsetX, offsetY);
 				console.log("heading up");
 			}
-		} else if(!this.level && this.inElevator()) {
-			// down
-			this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
-			this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
+		} else if(!this.level) {
+			let elevator = this.getElevator();
+			if(elevator) {
+				// down
+				this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
+				this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 
-			this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
-			if(this.level) {
-				this.noise.setMode("lift");
-				this.liftDirection = -1;
-				// create room
-				this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+				this.level = this.main.game_map.getLevel(this.sectorX, this.sectorY);
+				if (this.level) {
+					this.noise.setMode("lift");
+					this.liftDirection = -1;
+					// create room
+					//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+
+					let liftPos = elevator.getWorldPosition();
+					this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y);
+				}
 			}
 		}
 	}
 
-	inElevator() {
-		// todo: use any instead
-		return this.intersections.filter((o)=>o.model.name == "elevator").length > 0;
+	getElevator() {
+		let objects = this.intersections.filter((o)=>o.model.name == "elevator");
+		return objects.length > 0 ? objects[0] : null;
 	}
 
 	exitVehicle() {

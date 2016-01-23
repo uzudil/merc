@@ -86,12 +86,7 @@ export class Room {
 			this.doors[dir] = new Door(this, dir, doors[dir]);
 		}
 		this.elevator = elevator;
-		this.sector = null;
-	}
-
-	positionLift(x, y) {
-		this.lift_mesh.position.x = x;
-		this.lift_mesh.position.y = y;
+		this.scene = null;
 	}
 }
 
@@ -99,6 +94,14 @@ export class Level {
 	constructor(rooms) {
 		this.rooms = rooms;
 		this.roomPos = {};
+
+		// where the level is located (world pos)
+		this.offsetX = 0;
+		this.offsetY = 0;
+
+		// where the lift is located (world pos)
+		this.liftX = 0;
+		this.liftY = 0;
 
 		var [minx, miny, maxx, maxy] = this.getDimensions("_start_");
 		this.w = maxx - minx;
@@ -116,33 +119,20 @@ export class Level {
 		return this.rooms[name];
 	}
 
-	getRoomAtPos(point) {
-		//console.log("point=", point);
+	getRoomAtPos(point, externalPoint=false, debug=false) {
+		if(externalPoint) {
+			point.x -= this.offsetX - this.w * ROOM_SIZE/2;
+			point.y -= this.offsetY - this.h * ROOM_SIZE/2;
+		}
+		if(debug) console.log("point=", point);
 		for(let name in this.rooms) {
 			let room = this.rooms[name];
 			let min = new THREE.Vector3(room.pos.x * ROOM_SIZE, room.pos.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE/2);
 			let max = new THREE.Vector3((room.pos.x + room.w) * ROOM_SIZE, (room.pos.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE/2);
-			//console.log("...vs " + room.name + " min=",min, " max=", max);
+			if(debug) console.log("...vs " + room.name + " min=",min, " max=", max);
 			let box = new THREE.Box3(min, max);
 			if(box.containsPoint(point)) {
-				//console.log("!!!");
-				return room;
-			}
-		}
-		return null;
-	}
-
-	getRoomAt(x, y) {
-		console.log("pos=", x, ",", y, " offset:", this.offsetX, ",", this.offsetY);
-		for(let name in this.rooms) {
-			let room = this.rooms[name];
-
-			let px = (room.pos.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
-			let py = (room.pos.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
-			console.log("vs room:" + name + " pos=", room.pos, " dim=", room.w, ",", room.h + " pp=" + px + "," + py + "-" + (px + room.w * ROOM_SIZE) + "," + (py + room.h * ROOM_SIZE));
-
-			if(x >= px && x < px + room.w * ROOM_SIZE &&
-				y >= py && y < py + room.h * ROOM_SIZE) {
+				if(debug) console.log("!!!");
 				return room;
 			}
 		}
@@ -195,7 +185,13 @@ export class Level {
 		return [minx, miny, maxx, maxy];
 	}
 
-	create(sector, x, y) {
+	create(scene, x, y, liftX, liftY) {
+
+		this.offsetX = x;
+		this.offsetY = y;
+		this.liftX = liftX;
+		this.liftY = liftY;
+
 		console.log("Level block " + this.w + "," + this.h);
 		var level_geometry = new THREE.CubeGeometry( this.w * ROOM_SIZE + WALL_THICKNESS * 2, this.h * ROOM_SIZE + WALL_THICKNESS * 2, ROOM_SIZE );
 		level_geometry.computeVertexNormals();
@@ -279,10 +275,8 @@ export class Level {
 			this.mesh.add(door_mesh);
 		}
 
-		this.sector = sector;
+		this.scene = scene;
 		this.makeElevator(x, y);
-		this.offsetX = x;
-		this.offsetY = y;
 
 		this.mesh.position.set(x, y, movement.ROOM_DEPTH);
 
@@ -299,7 +293,7 @@ export class Level {
 		}
 		util.shadeGeo(this.geo, LIGHT);
 
-		sector.add( this.mesh );
+		scene.add( this.mesh );
 	}
 
 	makeElevator(x, y) {
@@ -327,20 +321,22 @@ export class Level {
 		this.lift_mesh = new THREE.Mesh(this.lift_geo, this.lift_mat);
 		this.lift_mesh.position.set(x, y, -z / 2);
 
-		this.sector.add( this.lift_mesh );
+		this.scene.add( this.lift_mesh );
 	}
 
-	positionLift(x, y) {
-		this.lift_mesh.position.x = x;
-		this.lift_mesh.position.y = y;
+	setPosition(x, y) {
+		this.mesh.position.x = x;
+		this.mesh.position.y = y;
+		this.lift_mesh.position.x = this.liftX;
+		this.lift_mesh.position.y = this.liftY;
 	}
 
 	destroy() {
-		this.sector.remove(this.lift_mesh);
+		this.scene.remove(this.lift_mesh);
 		this.lift_geo.dispose();
 		this.lift_mat.dispose();
 
-		this.sector.remove(this.mesh);
+		this.scene.remove(this.mesh);
 		this.geo.dispose();
 		this.mat.dispose();
 
