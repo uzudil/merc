@@ -116,13 +116,33 @@ export class Level {
 		return this.rooms[name];
 	}
 
+	getRoomAtPos(point) {
+		//console.log("point=", point);
+		for(let name in this.rooms) {
+			let room = this.rooms[name];
+			let min = new THREE.Vector3(room.pos.x * ROOM_SIZE, room.pos.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE/2);
+			let max = new THREE.Vector3((room.pos.x + room.w) * ROOM_SIZE, (room.pos.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE/2);
+			//console.log("...vs " + room.name + " min=",min, " max=", max);
+			let box = new THREE.Box3(min, max);
+			if(box.containsPoint(point)) {
+				//console.log("!!!");
+				return room;
+			}
+		}
+		return null;
+	}
+
 	getRoomAt(x, y) {
 		console.log("pos=", x, ",", y, " offset:", this.offsetX, ",", this.offsetY);
 		for(let name in this.rooms) {
 			let room = this.rooms[name];
-			console.log("vs room:" + name + " pos=", room.pos, " dim=", room.w, ",", room.h);
-			if(x >= room.pos.x * ROOM_SIZE && x < (room.pos.x + room.w) * ROOM_SIZE &&
-				y >= room.pos.y * ROOM_SIZE && y < (room.pos.y + room.h) * ROOM_SIZE) {
+
+			let px = (room.pos.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
+			let py = (room.pos.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
+			console.log("vs room:" + name + " pos=", room.pos, " dim=", room.w, ",", room.h + " pp=" + px + "," + py + "-" + (px + room.w * ROOM_SIZE) + "," + (py + room.h * ROOM_SIZE));
+
+			if(x >= px && x < px + room.w * ROOM_SIZE &&
+				y >= py && y < py + room.h * ROOM_SIZE) {
 				return room;
 			}
 		}
@@ -240,7 +260,6 @@ export class Level {
 		this.mesh["type"] = "wall";
 		this.geo = this.mesh.geometry;
 		this.geo.computeVertexNormals();
-		util.shadeGeo(this.geo, LIGHT, new THREE.Color("#ffffcc"));
 
 		// color rooms' walls separately
 
@@ -266,6 +285,19 @@ export class Level {
 		this.offsetY = y;
 
 		this.mesh.position.set(x, y, movement.ROOM_DEPTH);
+
+		// color the rooms
+		for(let face of this.geo.faces) {
+			let p = this.geo.vertices[face.a].clone();
+			p.x += this.w * ROOM_SIZE * .5;
+			p.y += this.h * ROOM_SIZE * .5;
+			p.z += movement.ROOM_DEPTH;
+			let room = this.getRoomAtPos(p);
+			if (room) {
+				face.color = room.bg.clone();
+			}
+		}
+		util.shadeGeo(this.geo, LIGHT);
 
 		sector.add( this.mesh );
 	}

@@ -75,11 +75,11 @@ class Merc {
 
 
 		// hack: start in a room
-		this.movement.loadGame({
-			sectorX: 9, sectorY: 2,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			vehicle: null
-		});
+		//this.movement.loadGame({
+		//	sectorX: 9, sectorY: 2,
+		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	vehicle: null
+		//});
 
 		this.animate();
 	}
@@ -89,8 +89,14 @@ class Merc {
 		this.movement.update();
 		this.renderer.render(this.scene, this.camera);
 
-		var x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
-		var y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+		var x, y;
+		if(this.movement.level) {
+			x = this.movement.sectorX;
+			y = this.movement.sectorY;
+		} else {
+			x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
+			y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+		}
 		var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
 		$("#loc .value").text("" + x + "-" + y);
 		$("#alt .value").text("" + z);

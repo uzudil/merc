@@ -177,7 +177,7 @@ export class Movement {
 		var offsetY = this.player.position.y % game_map.SECTOR_SIZE;
 		if(this.level) {
 			// up
-			let room = this.level.getRoomAt(offsetX, offsetY);
+			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z));
 			if(room && room.elevator) {
 				this.noise.setMode("lift");
 				this.liftDirection = 1;
