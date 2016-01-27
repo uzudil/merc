@@ -47415,24 +47415,32 @@
 		}
 	};
 	
-	var Room = exports.Room = function Room(name, x, y, w, h, color, elevator) {
+	var roomCount = 0;
+	
+	var Room = exports.Room = function Room(x, y, w, h, color) {
 		_classCallCheck(this, Room);
 	
-		this.name = name;
+		this.name = roomCount;
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.color = new _three2.default.Color(color);
-		this.elevator = elevator;
+		this.elevator = roomCount == 0;
+		roomCount++;
 	};
 	
 	var Level = exports.Level = (function () {
-		function Level(rooms, doors) {
+		function Level(data) {
 			_classCallCheck(this, Level);
 	
-			this.rooms = rooms;
-			this.doors = doors;
+			roomCount = 0;
+			this.rooms = data.rooms.map(function (r) {
+				return new Room(r.x, r.y, r.w, r.h, r.color, true);
+			});
+			this.doors = data.doors.map(function (d) {
+				return new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800");
+			});
 	
 			// where the level is located (world pos)
 			this.offsetX = 0;
@@ -47478,15 +47486,16 @@
 			this.h = maxy - miny;
 			console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
 	
-			this.roomMap = {};
 			var _iteratorNormalCompletion2 = true;
 			var _didIteratorError2 = false;
 			var _iteratorError2 = undefined;
 	
 			try {
-				for (var _iterator2 = this.rooms[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var room = _step2.value;
-					this.roomMap[room.name] = room;
+				for (var _iterator2 = this.doors[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var door = _step2.value;
+	
+					door.roomA = this.rooms[door.roomAName];
+					door.roomB = this.rooms[door.roomBName];
 				}
 			} catch (err) {
 				_didIteratorError2 = true;
@@ -47499,32 +47508,6 @@
 				} finally {
 					if (_didIteratorError2) {
 						throw _iteratorError2;
-					}
-				}
-			}
-	
-			var _iteratorNormalCompletion3 = true;
-			var _didIteratorError3 = false;
-			var _iteratorError3 = undefined;
-	
-			try {
-				for (var _iterator3 = this.doors[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-					var door = _step3.value;
-	
-					door.roomA = this.roomMap[door.roomAName];
-					door.roomB = this.roomMap[door.roomBName];
-				}
-			} catch (err) {
-				_didIteratorError3 = true;
-				_iteratorError3 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion3 && _iterator3.return) {
-						_iterator3.return();
-					}
-				} finally {
-					if (_didIteratorError3) {
-						throw _iteratorError3;
 					}
 				}
 			}
@@ -47541,13 +47524,13 @@
 					point.y -= this.offsetY - this.h * ROOM_SIZE / 2;
 				}
 				if (debug) console.log("point=", point);
-				var _iteratorNormalCompletion4 = true;
-				var _didIteratorError4 = false;
-				var _iteratorError4 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-						var room = _step4.value;
+					for (var _iterator3 = this.rooms[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var room = _step3.value;
 	
 						var min = new _three2.default.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE / 2);
 						var max = new _three2.default.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE / 2);
@@ -47559,16 +47542,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError4 = true;
-					_iteratorError4 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion4 && _iterator4.return) {
-							_iterator4.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError4) {
-							throw _iteratorError4;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
@@ -47589,13 +47572,13 @@
 				var level_bsp = new csg.ThreeBSP(level_mesh);
 	
 				// cut out the rooms
-				var _iteratorNormalCompletion5 = true;
-				var _didIteratorError5 = false;
-				var _iteratorError5 = undefined;
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
 	
 				try {
-					for (var _iterator5 = this.rooms[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-						var room = _step5.value;
+					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var room = _step4.value;
 	
 						var rx = (room.x + room.w / 2) * ROOM_SIZE + WALL_THICKNESS;
 						var ry = (room.y + room.h / 2) * ROOM_SIZE + WALL_THICKNESS;
@@ -47611,27 +47594,27 @@
 	
 					// door cutouts
 				} catch (err) {
-					_didIteratorError5 = true;
-					_iteratorError5 = err;
+					_didIteratorError4 = true;
+					_iteratorError4 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion5 && _iterator5.return) {
-							_iterator5.return();
+						if (!_iteratorNormalCompletion4 && _iterator4.return) {
+							_iterator4.return();
 						}
 					} finally {
-						if (_didIteratorError5) {
-							throw _iteratorError5;
+						if (_didIteratorError4) {
+							throw _iteratorError4;
 						}
 					}
 				}
 	
-				var _iteratorNormalCompletion6 = true;
-				var _didIteratorError6 = false;
-				var _iteratorError6 = undefined;
+				var _iteratorNormalCompletion5 = true;
+				var _didIteratorError5 = false;
+				var _iteratorError5 = undefined;
 	
 				try {
-					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-						var door = _step6.value;
+					for (var _iterator5 = this.doors[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+						var door = _step5.value;
 	
 						console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
 	
@@ -47646,16 +47629,16 @@
 						level_bsp = level_bsp.subtract(shell_bsp);
 					}
 				} catch (err) {
-					_didIteratorError6 = true;
-					_iteratorError6 = err;
+					_didIteratorError5 = true;
+					_iteratorError5 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion6 && _iterator6.return) {
-							_iterator6.return();
+						if (!_iteratorNormalCompletion5 && _iterator5.return) {
+							_iterator5.return();
 						}
 					} finally {
-						if (_didIteratorError6) {
-							throw _iteratorError6;
+						if (_didIteratorError5) {
+							throw _iteratorError5;
 						}
 					}
 				}
@@ -47668,13 +47651,13 @@
 				this.geo.computeVertexNormals();
 	
 				// actual doors
-				var _iteratorNormalCompletion7 = true;
-				var _didIteratorError7 = false;
-				var _iteratorError7 = undefined;
+				var _iteratorNormalCompletion6 = true;
+				var _didIteratorError6 = false;
+				var _iteratorError6 = undefined;
 	
 				try {
-					for (var _iterator7 = this.doors[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var door = _step7.value;
+					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+						var door = _step6.value;
 	
 						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
@@ -47695,16 +47678,16 @@
 						this.mesh.add(door_mesh);
 					}
 				} catch (err) {
-					_didIteratorError7 = true;
-					_iteratorError7 = err;
+					_didIteratorError6 = true;
+					_iteratorError6 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion7 && _iterator7.return) {
-							_iterator7.return();
+						if (!_iteratorNormalCompletion6 && _iterator6.return) {
+							_iterator6.return();
 						}
 					} finally {
-						if (_didIteratorError7) {
-							throw _iteratorError7;
+						if (_didIteratorError6) {
+							throw _iteratorError6;
 						}
 					}
 				}
@@ -47713,19 +47696,19 @@
 				this.makeElevator(x, y);
 	
 				// center in start room
-				var start = this.roomMap["_start_"];
+				var start = this.rooms[0];
 				this.offsetX = x + (this.w / 2 - start.x - start.w / 2) * ROOM_SIZE;
 				this.offsetY = y + (this.h / 2 - start.y - start.h / 2) * ROOM_SIZE;
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
 	
 				// color the rooms
-				var _iteratorNormalCompletion8 = true;
-				var _didIteratorError8 = false;
-				var _iteratorError8 = undefined;
+				var _iteratorNormalCompletion7 = true;
+				var _didIteratorError7 = false;
+				var _iteratorError7 = undefined;
 	
 				try {
-					for (var _iterator8 = this.geo.faces[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-						var face = _step8.value;
+					for (var _iterator7 = this.geo.faces[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+						var face = _step7.value;
 	
 						var p = this.geo.vertices[face.a].clone();
 						p.x += this.w * ROOM_SIZE * .5;
@@ -47737,16 +47720,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError8 = true;
-					_iteratorError8 = err;
+					_didIteratorError7 = true;
+					_iteratorError7 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion8 && _iterator8.return) {
-							_iterator8.return();
+						if (!_iteratorNormalCompletion7 && _iterator7.return) {
+							_iterator7.return();
 						}
 					} finally {
-						if (_didIteratorError8) {
-							throw _iteratorError8;
+						if (_didIteratorError7) {
+							throw _iteratorError7;
 						}
 					}
 				}
@@ -48395,12 +48378,13 @@
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
+	// edit these via: http://localhost:8000/compound_editor/rooms.html
 	var LEVELS = exports.LEVELS = {
-		"9,2": new room.Level([new room.Room("_start_", 0, 6, 4, 4, "#eeddd8", true), new room.Room("meeting_room", 0, 0, 2, 6, "#ddeedd"), new room.Room("bunks", 4, 6, 3, 9, "#ddeed8"), new room.Room("storage_room", 7, 7, 2, 2, "#d8ddee"), new room.Room("cable_room", 7, 11, 2, 2, "#ddeed8"), new room.Room("exercise_room", 1, 14, 3, 2, "#d8d8dd")], [new room.Door(0, 6, "n", "_start_", "meeting_room", "#cc8800"), new room.Door(3, 7, "e", "_start_", "bunks", "#cc8800"), new room.Door(6, 8, "e", "bunks", "storage_room", "#cc8800"), new room.Door(6, 12, "e", "bunks", "cable_room", "#cc8800"), new room.Door(4, 14, "w", "bunks", "exercise_room", "#cc8800")])
+		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 26, "y": 21, "w": 3, "h": 3, "color": "#ffffcc" }, { "x": 26, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 29, "y": 22, "w": 19, "h": 1, "color": "#cccccc" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 48, "y": 8, "w": 3, "h": 16, "color": "#ccccff" }, { "x": 29, "y": 9, "w": 19, "h": 1, "color": "#ffffcc" }, { "x": 42, "y": 10, "w": 2, "h": 4, "color": "#ffccff" }, { "x": 35, "y": 10, "w": 2, "h": 4, "color": "#ccccff" }, { "x": 35, "y": 18, "w": 2, "h": 4, "color": "#ffcc88" }, { "x": 42, "y": 18, "w": 2, "h": 4, "color": "#ffffcc" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1 }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 2 }, { "x": 27, "y": 11, "dir": "n", "roomA": 0, "roomB": 3 }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 4 }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 5 }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 7 }, { "x": 43, "y": 14, "dir": "n", "roomA": 1, "roomB": 10 }, { "x": 36, "y": 14, "dir": "n", "roomA": 1, "roomB": 11 }, { "x": 36, "y": 17, "dir": "s", "roomA": 1, "roomB": 12 }, { "x": 43, "y": 17, "dir": "s", "roomA": 1, "roomB": 13 }, { "x": 28, "y": 22, "dir": "e", "roomA": 2, "roomB": 6 }, { "x": 28, "y": 9, "dir": "e", "roomA": 3, "roomB": 9 }, { "x": 47, "y": 22, "dir": "e", "roomA": 6, "roomB": 8 }, { "x": 36, "y": 22, "dir": "n", "roomA": 6, "roomB": 12 }, { "x": 43, "y": 22, "dir": "n", "roomA": 6, "roomB": 13 }, { "x": 47, "y": 16, "dir": "e", "roomA": 7, "roomB": 8 }, { "x": 48, "y": 9, "dir": "w", "roomA": 8, "roomB": 9 }, { "x": 43, "y": 9, "dir": "s", "roomA": 9, "roomB": 10 }, { "x": 36, "y": 9, "dir": "s", "roomA": 9, "roomB": 11 }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {
-		return LEVELS["" + sectorX + "," + sectorY];
+		return new room.Level(LEVELS["" + sectorX + "," + sectorY]);
 	}
 
 /***/ },
