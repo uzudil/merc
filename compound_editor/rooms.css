@@ -1,0 +1,103 @@
+* {
+	padding: 0; margin: 0;
+}
+
+.clearfix {
+  overflow: auto;
+  zoom: 1;
+}
+
+#visual {
+	overflow: visible;
+	width: 70%;
+	height: 100%;
+	position: fixed;
+	left: 0; top: 0;
+	background: #ccc;
+	background-size: 10px 10px;
+    background-image: linear-gradient(
+		to right,
+		#aaa 1px,
+		transparent 1px
+	),
+	linear-gradient(
+		to bottom,
+		#aaa 1px,
+		transparent 1px
+	);
+}
+
+#code {
+	background: #888;
+	overflow: hidden;
+	width: 30%;
+	height: 100%;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
+
+#editor {
+	width: 100%;
+	height: 70%;
+	border: 10px solid #888;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+#cursor {
+	position: absolute;
+	top: 0; left: 0;
+	width: 10px;
+	height: 10px;
+	background-color: orangered;
+}
+
+.room {
+	position: absolute;
+	background: #fff;
+	opacity: 0.5;
+	border: 1px solid #000;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+.door {
+	position: absolute;
+	background: #444;
+	opacity: 0.5;
+	width: 5px;
+	height: 5px;
+}
+
+#palette {
+	padding: 10px;
+}
+
+button {
+	border: 1px solid #888;
+	padding: 5px;
+	text-transform: uppercase;
+}
+
+.swatch {
+	width: 25px;
+	height: 25px;
+	border: 2px solid black;
+	cursor: pointer;
+}
+
+.swatch.active {
+	border-color: #fff;
+}
+
+#pink { background: #fcc; }
+#blue { background: #ccf; }
+#green { background: #cfc; }
+#yellow { background: #ffc; }
+#brown { background: #f86; }
+#orange { background: #fc8; }
+#turquoise { background: #cff; }
+#purple { background: #fcf; }
+#grey { background: #ccc; }

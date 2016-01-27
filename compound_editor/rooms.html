@@ -1,0 +1,39 @@
+<html>
+<head><title>Compound editor</title></head>
+<link rel="stylesheet" type="text/css" href="rooms.css">
+<script src="../node_modules/jquery/dist/jquery.js"></script>
+<script src="rooms.js"></script>
+<body>
+<div id="main" class="clearfix">
+	<div id="visual">
+		<div id="cursor"></div>
+	</div>
+	<div id="code">
+		<textarea id="editor"></textarea>
+		<div id="palette">
+			<button id="load">Load</button>
+			<table>
+				<tr>
+					<td><div class="swatch" id="pink"></div></td>
+					<td><div class="swatch" id="blue"></div></td>
+					<td><div class="swatch" id="green"></div></td>
+					<td><div class="swatch" id="yellow"></div></td>
+					<td><div class="swatch" id="brown"></div></td>
+					<td><div class="swatch" id="orange"></div></td>
+					<td><div class="swatch" id="turquoise"></div></td>
+					<td><div class="swatch" id="purple"></div></td>
+					<td><div class="swatch" id="grey"></div></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<script>
+		$(function(){
+			window.editor = new Editor();
+			window.editor.start();
+		});
+	</script>
+</div>
+</body>
+</html>

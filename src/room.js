@@ -49,23 +49,26 @@ export class Door {
 	}
 }
 
+var roomCount = 0;
 export class Room {
-	constructor(name, x, y, w, h, color, elevator) {
-		this.name = name;
+	constructor(x, y, w, h, color) {
+		this.name = roomCount;
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.color = new THREE.Color(color);
-		this.elevator = elevator;
+		this.elevator = roomCount == 0;
+		roomCount++;
 	}
 }
 
 export class Level {
 
-	constructor(rooms, doors) {
-		this.rooms = rooms;
-		this.doors = doors;
+	constructor(data) {
+		roomCount = 0;
+		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, true));
+		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800"));
 
 		// where the level is located (world pos)
 		this.offsetX = 0;
@@ -86,12 +89,9 @@ export class Level {
 		this.h = maxy - miny;
 		console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
 
-		this.roomMap = {};
-		for(let room of this.rooms) this.roomMap[room.name] = room;
-
 		for(let door of this.doors) {
-			door.roomA = this.roomMap[door.roomAName];
-			door.roomB = this.roomMap[door.roomBName];
+			door.roomA = this.rooms[door.roomAName];
+			door.roomB = this.rooms[door.roomBName];
 		}
 	}
 
@@ -188,7 +188,7 @@ export class Level {
 		this.makeElevator(x, y);
 
 		// center in start room
-		let start = this.roomMap["_start_"];
+		let start = this.rooms[0];
 		this.offsetX = x + (this.w/2 - start.x - start.w/2) * ROOM_SIZE;
 		this.offsetY = y + (this.h/2 - start.y - start.h/2) * ROOM_SIZE;
 		this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
