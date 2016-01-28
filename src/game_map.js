@@ -46,8 +46,10 @@ export class GameMap {
 		this.structures = [];
 		for(let name in models.models) {
 			var m = models.models[name];
-			for(let [sx, sy] of MAP_POSITIONS[name]) {
-				this.addStructure(m, sx, sy);
+			if(MAP_POSITIONS[name]) {
+				for(let [sx, sy] of MAP_POSITIONS[name]) {
+					this.addStructure(m, sx, sy);
+				}
 			}
 		}
 

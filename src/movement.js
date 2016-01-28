@@ -37,6 +37,7 @@ export class Movement {
 		this.bbox = new THREE.Box3(new THREE.Vector3(-SIZE, -SIZE, -SIZE), new THREE.Vector3(SIZE, SIZE, SIZE));
 		this.model_bbox = new THREE.Box3();
 
+		this.inventory = [];
 		this.vehicle = null;
 		this.level = null;
 		this.doorsUp = [];
@@ -106,7 +107,7 @@ export class Movement {
 		});
 
 		$(document).keyup(( event ) => {
-			//console.log(event.keyCode);
+			console.log(event.keyCode);
 			switch( event.keyCode ) {
 				case 87: this.fw = false; break;
 				case 83: this.bw = false; break;
@@ -135,6 +136,12 @@ export class Movement {
 				case 69: // e
 					this.useElevator();
 					break;
+				case 80: // p
+					this.pickup();
+					break;
+				case 68: // d
+					this.drop();
+					break;
 			}
 		});
 	}
@@ -154,7 +161,11 @@ export class Movement {
 			if(this.level) {
 				var offsetX = this.player.position.x;
 				var offsetY = this.player.position.y;
-				this.level.create(this.main.scene, offsetX, offsetY, offsetX - this.main.models.models["elevator"].bbox.size().x/2, offsetY - this.main.models.models["elevator"].bbox.size().y/2);
+				this.level.create(this.main.scene,
+					offsetX, offsetY,
+					offsetX - this.main.models.models["elevator"].bbox.size().x/2,
+					offsetY - this.main.models.models["elevator"].bbox.size().y/2,
+					this.main.models);
 			}
 		}
 	}
@@ -168,6 +179,33 @@ export class Movement {
 		crossHair.add(vert);
 		crossHair.position.z = -2;
 		return crossHair;
+	}
+
+	pickup() {
+		// find the world pos of player
+		this.player.getWorldPosition(this.worldPos);
+
+		// cast a ray in this direction
+		this.normalToWorld(this.player, this.direction, this.worldDir);
+
+		// find the closest intersection
+		this.raycaster.set(this.worldPos, this.worldDir);
+		let intersections = this.raycaster.intersectObject(this.main.scene, true);
+		let closest = intersections.length > 0 ? intersections[0] : null;
+		if(closest && closest.object.model) {
+			this.inventory.push(closest.object.model);
+			closest.object.parent.remove(closest.object);
+			console.log("You pick up " + closest.object.model.name);
+		}
+	}
+
+	drop() {
+		if(this.level) {
+			// attach to current pos or in front of player on level; save level
+
+		} else {
+			// attach to land
+		}
 	}
 
 	useElevator() {
@@ -206,7 +244,7 @@ export class Movement {
 					//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
 
 					let liftPos = elevator.getWorldPosition();
-					this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y);
+					this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
 				}
 			}
 		}
@@ -513,34 +551,38 @@ export class Movement {
 				this.openDoor(closest.object);
 			}
 
-			// intersected face's normal in world coords
-			this.normalToWorld(closest.object, closest.face.normal, this.worldNor);
+			// models we can walk into
+			if(!closest.object.model) {
 
-			// translate the normal to the intersection point
-			this.worldNor.add(closest.point);
+				// intersected face's normal in world coords
+				this.normalToWorld(closest.object, closest.face.normal, this.worldNor);
 
-			// find a point perpendicular to the new normal from out current position
-			// credit: http://stackoverflow.com/questions/10301001/perpendicular-on-a-line-segment-from-a-given-point
-			var x1=closest.point.x, y1=closest.point.y,
-				x2=this.worldNor.x, y2=this.worldNor.y,
-				x3=this.worldPos.x, y3=this.worldPos.y;
-			var px = x2-x1, py = y2-y1, dAB = px*px + py*py;
-			var u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
-			var x = x1 + u * px, y = y1 + u * py;
+				// translate the normal to the intersection point
+				this.worldNor.add(closest.point);
 
-			// these two points form the new direction
-			this.worldDir.set(x, y, this.worldPos.z).sub(this.worldPos);
+				// find a point perpendicular to the new normal from out current position
+				// credit: http://stackoverflow.com/questions/10301001/perpendicular-on-a-line-segment-from-a-given-point
+				var x1 = closest.point.x, y1 = closest.point.y,
+					x2 = this.worldNor.x, y2 = this.worldNor.y,
+					x3 = this.worldPos.x, y3 = this.worldPos.y;
+				var px = x2 - x1, py = y2 - y1, dAB = px * px + py * py;
+				var u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
+				var x = x1 + u * px, y = y1 + u * py;
 
-			// cast a ray this way too to make sure there isn't a corner we're running into
-			this.raycaster.set(this.worldPos, this.worldDir);
-			intersections = this.raycaster.intersectObject(this.level.mesh, true);
-			if(intersections.length > 0 &&
-				(intersections[0].face.normal.x != closest.face.normal.x ||
-				intersections[0].face.normal.y != closest.face.normal.y)) {
-				blocked = true;
-			} else {
-				// translate back to model coords
-				this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
+				// these two points form the new direction
+				this.worldDir.set(x, y, this.worldPos.z).sub(this.worldPos);
+
+				// cast a ray this way too to make sure there isn't a corner we're running into
+				this.raycaster.set(this.worldPos, this.worldDir);
+				intersections = this.raycaster.intersectObject(this.level.mesh, true);
+				if (intersections.length > 0 &&
+					(intersections[0].face.normal.x != closest.face.normal.x ||
+					intersections[0].face.normal.y != closest.face.normal.y)) {
+					blocked = true;
+				} else {
+					// translate back to model coords
+					this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
+				}
 			}
 		}
 

@@ -6,7 +6,8 @@ import * as util from 'util';
 	To use colors, use the "vertex paint" feature of blender.
 	Then, export with vertex colors on (no materials needed.)
  */
-const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator" ];
+const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator",
+	"keya", "keyb", "keyc", "keyd" ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false },
@@ -15,7 +16,11 @@ const VEHICLES = {
 
 const SCALE = {
 	"car": 20,
-	"plane": 20
+	"plane": 20,
+	"keya": 10,
+	"keyb": 10,
+	"keyc": 10,
+	"keyd": 10,
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });

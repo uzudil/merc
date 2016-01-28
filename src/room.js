@@ -69,6 +69,7 @@ export class Level {
 		roomCount = 0;
 		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, true));
 		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800"));
+		this.objects = data.objects;
 
 		// where the level is located (world pos)
 		this.offsetX = 0;
@@ -87,7 +88,7 @@ export class Level {
 		}
 		this.w = maxx - minx;
 		this.h = maxy - miny;
-		console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
+		//console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
 
 		for(let door of this.doors) {
 			door.roomA = this.rooms[door.roomAName];
@@ -114,7 +115,7 @@ export class Level {
 		return null;
 	}
 
-	create(scene, x, y, liftX, liftY) {
+	create(scene, x, y, liftX, liftY, models) {
 		this.liftX = liftX;
 		this.liftY = liftY;
 
@@ -129,7 +130,7 @@ export class Level {
 		for(let room of this.rooms) {
 			let rx = (room.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
 			let ry = (room.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
-			console.log("rendering room: " + name + " at " + room.x + "," + room.y + " size=" + room.w + "," + room.h + " pos=" + rx + "," + ry);
+			//console.log("rendering room: " + name + " at " + room.x + "," + room.y + " size=" + room.w + "," + room.h + " pos=" + rx + "," + ry);
 
 			let inner_geometry = new THREE.CubeGeometry( room.w * ROOM_SIZE - WALL_THICKNESS, room.h * ROOM_SIZE - WALL_THICKNESS, ROOM_SIZE - WALL_THICKNESS );
 			let inner_mesh = new THREE.Mesh( inner_geometry );
@@ -141,7 +142,7 @@ export class Level {
 
 		// door cutouts
 		for(let door of this.doors) {
-			console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
+			//console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
 
 			let dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
 			let dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
@@ -182,6 +183,17 @@ export class Level {
 			door_mesh["dir"] = door.dir;
 
 			this.mesh.add(door_mesh);
+		}
+
+		// objects
+		for(let object of this.objects) {
+			let m = models.models[object.object];
+			let mesh = m.createObject();
+			let dx = (object.x + .5) * ROOM_SIZE + WALL_THICKNESS - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
+			let dy = (object.y + .5) * ROOM_SIZE + WALL_THICKNESS - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
+			let dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+			mesh.position.set(dx, dy, dz);
+			this.mesh.add(mesh);
 		}
 
 		this.scene = scene;

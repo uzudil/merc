@@ -70,6 +70,15 @@
 	width: 5px;
 	height: 5px;
 }
+.object {
+	position: absolute;
+	background: #848;
+	opacity: 0.5;
+	width: 5px;
+	height: 5px;
+	margin: 2px;
+	border: 1px solid #848;
+}
 
 #palette {
 	padding: 10px;

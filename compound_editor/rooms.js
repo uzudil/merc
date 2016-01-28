@@ -26,6 +26,7 @@ function Editor() {
 		this.sy = -1;
 		this.rooms = [];
 		this.doors = [];
+		this.objects = [];
 		this.cursor = $("#cursor");
 		this.size = this.cursor.width();
 		this.viewport = $("#visual");
@@ -72,8 +73,9 @@ function Editor() {
 		}));
 		$("#load").click(bind(this, function(event) {
 			var d = JSON.parse($("#editor").val());
-			this.rooms = d.rooms;
-			this.doors = d.doors;
+			this.rooms = d.rooms || [];
+			this.doors = d.doors || [];
+			this.objects = d.objects || [];
 			this.roomsChanged = true;
 			this.render();
 			return false;
@@ -89,6 +91,14 @@ function Editor() {
 			}
 			this.render();
 		}));
+		$("#add_object").click(bind(this, function(event) {
+			var index = this.getRoomIndex();
+			if(index > -1) {
+				this.objects.push({x:this.x, y:this.y, object:$("#objects").val(), room: index});
+				this.roomsChanged = true;
+				this.render();
+			}
+		}));
 	};
 
 	Editor.prototype.getRoomIndex = function() {
@@ -103,10 +113,28 @@ function Editor() {
 
 	Editor.prototype.deleteRoom = function() {
 		this.sx = this.sy = -1;
-		var index = this.getRoomIndex();
-		if(index > -1) {
-			this.rooms.splice(index, 1);
-			this.roomsChanged = true;
+
+		var done = false;
+		for(var i = 0; i < this.objects.length; i++) {
+			if(this.objects[i].x == this.x && this.objects[i].y == this.y) {
+				this.objects.splice(i, 1);
+				this.roomsChanged = true;
+				done = true;
+				break;
+			}
+		}
+
+		if(!done) {
+			var index = this.getRoomIndex();
+			if (index > -1) {
+				var a = [];
+				for (var i = 0; i < this.objects.length; i++) {
+					if (this.objects[i].room != index) a.push(this.objects[i]);
+				}
+				this.objects = a;
+				this.rooms.splice(index, 1);
+				this.roomsChanged = true;
+			}
 		}
 	};
 
@@ -159,7 +187,17 @@ function Editor() {
 				});
 			}
 
-			$("#editor").val(JSON.stringify({rooms: this.rooms, doors: this.doors }));
+			$(".object", this.viewport).remove();
+			for(var i = 0; i < this.objects.length; i++) {
+				var o = this.objects[i];
+				this.viewport.append("<div class='object'></div>");
+				$(".object", this.viewport).last().css({
+					left: (o.x * this.size) + "px",
+					top: (o.y * this.size) + "px"
+				});
+			}
+
+			$("#editor").val(JSON.stringify({rooms: this.rooms, doors: this.doors, objects: this.objects }));
 		}
 		if(this.sx > -1) {
 			if($(".room.active").length == 0) {
