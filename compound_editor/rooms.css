@@ -70,6 +70,7 @@
 	width: 5px;
 	height: 5px;
 }
+
 .object {
 	position: absolute;
 	background: #848;
@@ -80,8 +81,29 @@
 	border: 1px solid #848;
 }
 
+.keya {
+	background: #844;
+}
+
+.keyb {
+	background: #484;
+}
+
+.keyc {
+	background: #448;
+}
+
+.keyd {
+	background: #488;
+}
+
 #palette {
 	padding: 10px;
+}
+
+#palette .section {
+	padding: 5px;
+	border-top: 1px solid #666;
 }
 
 button {

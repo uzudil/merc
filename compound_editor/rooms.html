@@ -11,27 +11,42 @@
 	<div id="code">
 		<textarea id="editor"></textarea>
 		<div id="palette">
-			<button id="load">Load</button>
-			<table>
-				<tr>
-					<td><div class="swatch" id="pink"></div></td>
-					<td><div class="swatch" id="blue"></div></td>
-					<td><div class="swatch" id="green"></div></td>
-					<td><div class="swatch" id="yellow"></div></td>
-					<td><div class="swatch" id="brown"></div></td>
-					<td><div class="swatch" id="orange"></div></td>
-					<td><div class="swatch" id="turquoise"></div></td>
-					<td><div class="swatch" id="purple"></div></td>
-					<td><div class="swatch" id="grey"></div></td>
-				</tr>
-			</table>
-			<select id="objects">
-				<option>keya</option>
-				<option>keyb</option>
-				<option>keyc</option>
-				<option>keyd</option>
-			</select>
-			<button id="add_object">Add Object</button>
+			<div class="section">
+				<button id="load">Load</button>
+			</div>
+			<div class="section">
+				<table>
+					<tr>
+						<td><div class="swatch" id="pink"></div></td>
+						<td><div class="swatch" id="blue"></div></td>
+						<td><div class="swatch" id="green"></div></td>
+						<td><div class="swatch" id="yellow"></div></td>
+						<td><div class="swatch" id="brown"></div></td>
+						<td><div class="swatch" id="orange"></div></td>
+						<td><div class="swatch" id="turquoise"></div></td>
+						<td><div class="swatch" id="purple"></div></td>
+						<td><div class="swatch" id="grey"></div></td>
+					</tr>
+				</table>
+			</div>
+			<div class="section">
+				<select id="objects">
+					<option>keya</option>
+					<option>keyb</option>
+					<option>keyc</option>
+					<option>keyd</option>
+				</select>
+				<button id="add_object">Add Object</button>
+			</div>
+			<div class="section">
+				<select id="doors">
+					<option value="keya">door A</option>
+					<option value="keyb">door B</option>
+					<option value="keyc">door C</option>
+					<option value="keyd">door D</option>
+				</select>
+				<button id="set_door_type">Set Door Type</button>
+			</div>
 		</div>
 	</div>
 

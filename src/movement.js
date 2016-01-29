@@ -15,7 +15,7 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
-const SOUND_ENABLED = true;
+const SOUND_ENABLED = false;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
 const ROOM_COLLISION_ENABLED = true;
@@ -107,7 +107,7 @@ export class Movement {
 		});
 
 		$(document).keyup(( event ) => {
-			console.log(event.keyCode);
+			//console.log(event.keyCode);
 			switch( event.keyCode ) {
 				case 87: this.fw = false; break;
 				case 83: this.bw = false; break;
@@ -138,9 +138,6 @@ export class Movement {
 					break;
 				case 80: // p
 					this.pickup();
-					break;
-				case 68: // d
-					this.drop();
 					break;
 			}
 		});
@@ -190,21 +187,12 @@ export class Movement {
 
 		// find the closest intersection
 		this.raycaster.set(this.worldPos, this.worldDir);
-		let intersections = this.raycaster.intersectObject(this.main.scene, true);
+		let intersections = this.raycaster.intersectObject(this.level.mesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
 		if(closest && closest.object.model) {
-			this.inventory.push(closest.object.model);
+			this.inventory.push(closest.object.model.name);
 			closest.object.parent.remove(closest.object);
 			console.log("You pick up " + closest.object.model.name);
-		}
-	}
-
-	drop() {
-		if(this.level) {
-			// attach to current pos or in front of player on level; save level
-
-		} else {
-			// attach to land
 		}
 	}
 
@@ -482,6 +470,10 @@ export class Movement {
 	}
 
 	openDoor(door) {
+		if(door.door.key != "" && this.inventory.filter((o)=>door.door.key == o).length == 0) {
+			// key needed
+			return;
+		}
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
 		door["moving"] = "up";
 		this.doorsUp.push(door);

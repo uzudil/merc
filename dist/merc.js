@@ -46005,7 +46005,7 @@
 	var DEFAULT_Z = exports.DEFAULT_Z = 20;
 	var STALL_SPEED = 5000;
 	var DEBUG = false;
-	var SOUND_ENABLED = true;
+	var SOUND_ENABLED = false;
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
 	var ROOM_COLLISION_ENABLED = true;
@@ -46105,7 +46105,7 @@
 			});
 	
 			(0, _jquery2.default)(document).keyup(function (event) {
-				console.log(event.keyCode);
+				//console.log(event.keyCode);
 				switch (event.keyCode) {
 					case 87:
 						_this.fw = false;break;
@@ -46154,10 +46154,6 @@
 						// p
 						_this.pickup();
 						break;
-					case 68:
-						// d
-						_this.drop();
-						break;
 				}
 			});
 		}
@@ -46190,23 +46186,13 @@
 	
 				// find the closest intersection
 				this.raycaster.set(this.worldPos, this.worldDir);
-				var intersections = this.raycaster.intersectObject(this.main.scene, true);
+				var intersections = this.raycaster.intersectObject(this.level.mesh, true);
 				var closest = intersections.length > 0 ? intersections[0] : null;
 				if (closest && closest.object.model) {
-					this.inventory.push(closest.object.model);
+					this.inventory.push(closest.object.model.name);
 					closest.object.parent.remove(closest.object);
 					console.log("You pick up " + closest.object.model.name);
 				}
-			}
-		}, {
-			key: 'drop',
-			value: function drop() {
-				if (this.level) {
-					// attach to current pos or in front of player on level; save level
-	
-				} else {
-						// attach to land
-					}
 			}
 		}, {
 			key: 'useElevator',
@@ -46525,6 +46511,12 @@
 		}, {
 			key: 'openDoor',
 			value: function openDoor(door) {
+				if (door.door.key != "" && this.inventory.filter(function (o) {
+					return door.door.key == o;
+				}).length == 0) {
+					// key needed
+					return;
+				}
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
 				door["moving"] = "up";
 				this.doorsUp.push(door);
@@ -47426,7 +47418,7 @@
 	
 	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
 	
-	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color) {
+	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color, key) {
 		_classCallCheck(this, Door);
 	
 		this.x = x;
@@ -47435,6 +47427,7 @@
 		this.roomAName = roomAName;
 		this.roomBName = roomBName;
 		this.color = new _three2.default.Color(color);
+		this.key = key;
 	
 		this.roomA = null;
 		this.roomB = null;
@@ -47487,7 +47480,7 @@
 				return new Room(r.x, r.y, r.w, r.h, r.color, true);
 			});
 			this.doors = data.doors.map(function (d) {
-				return new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800");
+				return new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key);
 			});
 			this.objects = data.objects;
 	
@@ -47671,8 +47664,34 @@
 						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
 						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 	
-						var shell_geo = new _three2.default.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
-						var shell_mesh = new _three2.default.Mesh(shell_geo);
+						var shell_mesh = undefined;
+						if (door.key == "") {
+							var shell_geo = new _three2.default.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
+							shell_mesh = new _three2.default.Mesh(shell_geo);
+						} else {
+							var keyModel = models.models[door.key];
+							shell_mesh = keyModel.createObject();
+							shell_mesh.geometry = shell_mesh.geometry.clone();
+	
+							// sizing and position by trial-and-error...
+							var w = undefined,
+							    h = undefined;
+							if (door.dir == "n" || door.dir == "s") {
+								shell_mesh.geometry.rotateZ(Math.PI / 2);
+								w = keyModel.bbox.size().x / door.h * 1.25;
+								h = keyModel.bbox.size().y / door.w * 2;
+							} else {
+								w = keyModel.bbox.size().x / door.w * 2;
+								h = keyModel.bbox.size().y / door.h;
+							}
+	
+							var modelZ = keyModel.bbox.size().z;
+							var zz = modelZ / DOOR_HEIGHT * 1.3;
+	
+							shell_mesh.geometry.scale(w, h, zz);
+							dz = -(ROOM_SIZE - DOOR_HEIGHT) - WALL_THICKNESS * .55;
+						}
+	
 						shell_mesh.position.set(dx, dy, dz);
 						var shell_bsp = new csg.ThreeBSP(shell_mesh);
 						level_bsp = level_bsp.subtract(shell_bsp);
@@ -47712,17 +47731,14 @@
 						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 	
-						var door_geo = new _three2.default.CubeGeometry(door.w, door.h, DOOR_HEIGHT);
-						util.shadeGeo(door_geo, LIGHT, door.color);
+						var door_geo = new _three2.default.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
 						var door_mesh = new _three2.default.Mesh(door_geo, new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors }));
-						//door_mesh.position.set(
-						//	door.x + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS,
-						//	door.y + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS,
-						//	-(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5);
+						util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
+	
 						door_mesh.position.set(dx, dy, dz);
 						door_mesh["name"] = "door_" + door.dir;
 						door_mesh["type"] = "door";
-						door_mesh["dir"] = door.dir;
+						door_mesh["door"] = door;
 	
 						this.mesh.add(door_mesh);
 					}
@@ -48462,7 +48478,7 @@
 	
 	// edit these via: http://localhost:8000/compound_editor/rooms.html
 	var LEVELS = exports.LEVELS = {
-		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1 }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2 }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3 }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4 }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5 }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6 }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7 }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8 }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9 }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10 }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }] }
+		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {

@@ -99,6 +99,23 @@ function Editor() {
 				this.render();
 			}
 		}));
+		$("#set_door_type").click(bind(this, function(event) {
+			var index = this.getDoorIndex();
+			if(index > -1) {
+				this.doors[index].key = $("#doors").val();
+				this.roomsChanged = true;
+				this.render();
+			}
+		}));
+	};
+
+	Editor.prototype.getDoorIndex = function() {
+		for(var i = 0; i < this.doors.length; i++) {
+			if(this.x == this.doors[i].x && this.y == this.doors[i].y) {
+				return i;
+			}
+		}
+		return -1;
 	};
 
 	Editor.prototype.getRoomIndex = function() {
@@ -181,6 +198,7 @@ function Editor() {
 			for (var i = 0; i < this.doors.length; i++) {
 				var door = this.doors[i];
 				this.viewport.append("<div class='door'></div>");
+				if(door.key != "") $(".door", this.viewport).last().addClass(door.key);
 				$(".door", this.viewport).last().css({
 					left: (door.x * this.size + this.getDoorDx(door.dir)) + "px",
 					top: (door.y * this.size + this.getDoorDy(door.dir)) + "px"
@@ -190,7 +208,7 @@ function Editor() {
 			$(".object", this.viewport).remove();
 			for(var i = 0; i < this.objects.length; i++) {
 				var o = this.objects[i];
-				this.viewport.append("<div class='object'></div>");
+				this.viewport.append("<div class='object " + o.object + "'></div>");
 				$(".object", this.viewport).last().css({
 					left: (o.x * this.size) + "px",
 					top: (o.y * this.size) + "px"
@@ -223,6 +241,15 @@ function Editor() {
 
 	Editor.prototype.findDoors = function() {
 		var seen = {};
+
+		// remember the keys
+		var keys = {};
+		for(var i = 0; i < this.doors.length; i++) {
+			var door = this.doors[i];
+			keys[door.roomA + ":" + door.roomB] = door.key;
+		}
+
+		// reset the doors
 		this.doors = [];
 		for(var i = 0; i < this.rooms.length; i++) {
 			var a = this.rooms[i];
@@ -257,7 +284,7 @@ function Editor() {
 						}
 
 						if(dir && x > -1 && y > -1) {
-							this.doors.push({x: x, y: y, dir: dir, roomA: i, roomB: t});
+							this.doors.push({x: x, y: y, dir: dir, roomA: i, roomB: t, key: keys[key] == null ? "" : keys[key]});
 						}
 					}
 				}
@@ -274,13 +301,15 @@ function Editor() {
 	};
 
 	Editor.prototype.getDoorDx = function(dir) {
-		if(dir == "n" || dir == "s") return 0;
-		return dir == "w" ? -this.size/2 : this.size/2;
+		//if(dir == "n" || dir == "s") return 0;
+		//return dir == "w" ? -this.size/2 : this.size/2;
+		return this.size * .25;
 	};
 
 	Editor.prototype.getDoorDy = function(dir) {
-		if(dir == "e" || dir == "w") return 0;
-		return dir == "n" ? -this.size/2 : this.size/2;
+		//if(dir == "e" || dir == "w") return 0;
+		//return dir == "n" ? -this.size/2 : this.size/2;
+		return this.size * .25;
 	};
 
 	Editor.prototype.scrollCursorIntoView = function() {

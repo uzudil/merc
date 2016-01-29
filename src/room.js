@@ -13,13 +13,14 @@ const DOOR_THICKNESS = WALL_THICKNESS * .25;
 const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
 
 export class Door {
-	constructor(x, y, dir, roomAName, roomBName, color) {
+	constructor(x, y, dir, roomAName, roomBName, color, key) {
 		this.x = x;
 		this.y = y;
 		this.dir = dir;
 		this.roomAName = roomAName;
 		this.roomBName = roomBName;
 		this.color = new THREE.Color(color);
+		this.key = key;
 
 		this.roomA = null;
 		this.roomB = null;
@@ -68,7 +69,7 @@ export class Level {
 	constructor(data) {
 		roomCount = 0;
 		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, true));
-		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800"));
+		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key));
 		this.objects = data.objects;
 
 		// where the level is located (world pos)
@@ -148,8 +149,33 @@ export class Level {
 			let dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
 			let dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 
-			let shell_geo = new THREE.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
-			let shell_mesh = new THREE.Mesh(shell_geo);
+			let shell_mesh;
+			if(door.key == "") {
+				let shell_geo = new THREE.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
+				shell_mesh = new THREE.Mesh(shell_geo);
+			} else {
+				let keyModel = models.models[door.key];
+				shell_mesh = keyModel.createObject();
+				shell_mesh.geometry = shell_mesh.geometry.clone();
+
+				// sizing and position by trial-and-error...
+				let w, h;
+				if(door.dir == "n" || door.dir == "s") {
+					shell_mesh.geometry.rotateZ(Math.PI/2);
+					w = (keyModel.bbox.size().x / door.h) * 1.25;
+					h = (keyModel.bbox.size().y / door.w) * 2;
+				} else {
+					w = (keyModel.bbox.size().x / door.w) * 2;
+					h = (keyModel.bbox.size().y / door.h);
+				}
+
+				let modelZ = keyModel.bbox.size().z;
+				let zz = (modelZ / DOOR_HEIGHT) * 1.3;
+
+				shell_mesh.geometry.scale(w, h, zz);
+				dz = -(ROOM_SIZE - DOOR_HEIGHT) - WALL_THICKNESS * .55;
+			}
+
 			shell_mesh.position.set(dx, dy, dz);
 			let shell_bsp = new csg.ThreeBSP(shell_mesh);
 			level_bsp = level_bsp.subtract(shell_bsp);
@@ -169,18 +195,15 @@ export class Level {
 			let dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 
-			let door_geo = new THREE.CubeGeometry(door.w, door.h, DOOR_HEIGHT);
-			util.shadeGeo(door_geo, LIGHT, door.color);
+			let door_geo = new THREE.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
 			let door_mesh = new THREE.Mesh(door_geo,
 				new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, vertexColors: THREE.FaceColors }));
-			//door_mesh.position.set(
-			//	door.x + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS,
-			//	door.y + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS,
-			//	-(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5);
+			util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
+
 			door_mesh.position.set(dx, dy, dz);
 			door_mesh["name"] = "door_" + door.dir;
 			door_mesh["type"] = "door";
-			door_mesh["dir"] = door.dir;
+			door_mesh["door"] = door;
 
 			this.mesh.add(door_mesh);
 		}
