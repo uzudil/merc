@@ -6,6 +6,7 @@ import * as movement from 'movement'
 import * as skybox from "skybox"
 import * as model from 'model'
 import * as compass from 'compass'
+import * as benson from 'benson'
 
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
@@ -35,12 +36,19 @@ class Merc {
 		var h = window.innerHeight * .75;
 		this.renderer.setSize( h * ASPECT_RATIO, h );
 
+		this.benson = new benson.Benson();
+		this.benson.addMessage("Welcome to Midris.");
+		this.benson.addMessage("Please proceed to 9-2,");
+		this.benson.addMessage("for your assignment.");
+
+
 		var height = (h * 0.333)|0;
 		$("#ui").css({
 			width: h * ASPECT_RATIO + "px",
 			height: height + "px",
 		});
-		$(".uibox .value").css("font-size", Math.round(h/200*10) + "px");
+		$(".uibox .value,#message").css("font-size", Math.round(h/200*7) + "px");
+		$(".uibox").css("min-height", Math.round(h/200*7) + "px");
 		let canvas_width = $("#el").width();
 		let canvas_height = height - 40;
 
@@ -50,7 +58,7 @@ class Merc {
 		});
 		$("#comp .vert_line").css({
 			"left": ((canvas_width/2)|0) + "px",
-			"height": ((canvas_height/2 + 2)|0) + "px"
+			"height": ((canvas_height/2 + 4)|0) + "px"
 		});
 
 		$("#el .value").css({
@@ -75,11 +83,11 @@ class Merc {
 
 
 		// hack: start in a room
-		this.movement.loadGame({
-			sectorX: 9, sectorY: 2,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			vehicle: null
-		});
+		//this.movement.loadGame({
+		//	sectorX: 9, sectorY: 2,
+		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	vehicle: null
+		//});
 
 		this.animate();
 	}
@@ -87,6 +95,7 @@ class Merc {
 	animate() {
 		this.game_map.update();
 		this.movement.update();
+		this.benson.update();
 		this.renderer.render(this.scene, this.camera);
 
 		var x, y;

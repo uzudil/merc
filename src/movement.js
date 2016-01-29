@@ -192,7 +192,7 @@ export class Movement {
 		if(closest && closest.object.model) {
 			this.inventory.push(closest.object.model.name);
 			closest.object.parent.remove(closest.object);
-			console.log("You pick up " + closest.object.model.name);
+			this.main.benson.addMessage(closest.object.model.description);
 		}
 	}
 

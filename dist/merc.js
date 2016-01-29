@@ -80,6 +80,10 @@
 	
 	var compass = _interopRequireWildcard(_compass);
 	
+	var _benson = __webpack_require__(13);
+	
+	var benson = _interopRequireWildcard(_benson);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -122,12 +126,18 @@
 				var h = window.innerHeight * .75;
 				this.renderer.setSize(h * ASPECT_RATIO, h);
 	
+				this.benson = new benson.Benson();
+				this.benson.addMessage("Welcome to Midris.");
+				this.benson.addMessage("Please proceed to 9-2,");
+				this.benson.addMessage("for your assignment.");
+	
 				var height = h * 0.333 | 0;
 				(0, _jquery2.default)("#ui").css({
 					width: h * ASPECT_RATIO + "px",
 					height: height + "px"
 				});
-				(0, _jquery2.default)(".uibox .value").css("font-size", Math.round(h / 200 * 10) + "px");
+				(0, _jquery2.default)(".uibox .value,#message").css("font-size", Math.round(h / 200 * 7) + "px");
+				(0, _jquery2.default)(".uibox").css("min-height", Math.round(h / 200 * 7) + "px");
 				var canvas_width = (0, _jquery2.default)("#el").width();
 				var canvas_height = height - 40;
 	
@@ -137,7 +147,7 @@
 				});
 				(0, _jquery2.default)("#comp .vert_line").css({
 					"left": (canvas_width / 2 | 0) + "px",
-					"height": (canvas_height / 2 + 2 | 0) + "px"
+					"height": (canvas_height / 2 + 4 | 0) + "px"
 				});
 	
 				(0, _jquery2.default)("#el .value").css({
@@ -161,11 +171,11 @@
 				});
 	
 				// hack: start in a room
-				this.movement.loadGame({
-					sectorX: 9, sectorY: 2,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.ROOM_DEPTH,
-					vehicle: null
-				});
+				//this.movement.loadGame({
+				//	sectorX: 9, sectorY: 2,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	vehicle: null
+				//});
 	
 				this.animate();
 			}
@@ -176,6 +186,7 @@
 	
 				this.game_map.update();
 				this.movement.update();
+				this.benson.update();
 				this.renderer.render(this.scene, this.camera);
 	
 				var x, y;
@@ -46191,7 +46202,7 @@
 				if (closest && closest.object.model) {
 					this.inventory.push(closest.object.model.name);
 					closest.object.parent.remove(closest.object);
-					console.log("You pick up " + closest.object.model.name);
+					this.main.benson.addMessage(closest.object.model.description);
 				}
 			}
 		}, {
@@ -46781,6 +46792,13 @@
 		"keyd": 10
 	};
 	
+	var DESCRIPTIONS = {
+		"keya": "Pentagon key",
+		"keyb": "Triangle key",
+		"keyc": "Gate key",
+		"keyd": "X key"
+	};
+	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
 	var MATERIAL = new _three2.default.MeshBasicMaterial({
 		color: 0xffffff,
@@ -46853,6 +46871,7 @@
 			this.name = name;
 			this.mesh = null;
 			this.bbox = null;
+			this.description = DESCRIPTIONS[name] || name;
 		}
 	
 		_createClass(Model, [{
@@ -48638,6 +48657,91 @@
 		}]);
 	
 		return Horizon;
+	})();
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Benson = undefined;
+	
+	var _jquery = __webpack_require__(3);
+	
+	var _jquery2 = _interopRequireDefault(_jquery);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var SPEED_MULT = 1;
+	var PAUSE_DELAY = 1500;
+	
+	var Benson = exports.Benson = (function () {
+		function Benson() {
+			_classCallCheck(this, Benson);
+	
+			this.el = (0, _jquery2.default)("#message .value");
+			this.scroll = 1;
+			this.el.css("left", this.scroll * 100 + "%");
+			this.messages = [];
+			this.prevTime = Date.now();
+			this.pause = null;
+			this.out = false;
+		}
+	
+		_createClass(Benson, [{
+			key: "addMessage",
+			value: function addMessage(message) {
+				this.messages.push(message);
+				if (this.messages.length == 1) {
+					this.el.empty().append(this.messages[0]);
+				}
+			}
+		}, {
+			key: "update",
+			value: function update() {
+				var time = Date.now();
+				var delta = (time - this.prevTime) / 1000;
+				this.prevTime = time;
+				if (this.messages.length > 0) {
+					if (this.pause) {
+						if (time - this.pause > PAUSE_DELAY) {
+							console.log("PAUSING: done");
+							this.pause = null;
+						}
+					} else if (this.scroll <= 0) {
+						if (this.messages.length > 1) {
+							this.el.css("left", this.scroll * 100 + "%");
+							this.scroll -= delta * SPEED_MULT;
+							if (this.scroll <= -1) {
+								this.scroll = 1;
+								this.el.css("left", this.scroll * 100 + "%");
+	
+								this.messages.splice(0, 1);
+								this.el.empty();
+								this.el.append(this.messages[0]);
+							}
+						}
+					} else {
+						this.el.css("left", this.scroll * 100 + "%");
+						this.scroll -= delta * SPEED_MULT;
+						if (this.scroll <= 0) {
+							this.scroll = 0;
+							this.pause = time;
+						}
+					}
+				}
+			}
+		}]);
+	
+		return Benson;
 	})();
 
 /***/ }

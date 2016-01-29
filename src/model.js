@@ -23,6 +23,13 @@ const SCALE = {
 	"keyd": 10,
 };
 
+const DESCRIPTIONS = {
+	"keya": "Pentagon key",
+	"keyb": "Triangle key",
+	"keyc": "Gate key",
+	"keyd": "X key"
+}
+
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
 const MATERIAL = new THREE.MeshBasicMaterial({
 	color: 0xffffff,
@@ -61,6 +68,7 @@ export class Model {
 		this.name = name;
 		this.mesh = null;
 		this.bbox = null;
+		this.description = DESCRIPTIONS[name] || name;
 	}
 
 	load(onLoad) {
