@@ -198,7 +198,7 @@
 					y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
 				}
 				var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-				(0, _jquery2.default)("#loc .value").text("" + x + "-" + y);
+				(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
 				(0, _jquery2.default)("#alt .value").text("" + z);
 				(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
 				this.compass.update(this.movement.getHeadingAngle());
@@ -45884,6 +45884,7 @@
 	exports.shadeGeo = shadeGeo;
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
+	exports.toHex = toHex;
 	
 	var _three = __webpack_require__(1);
 	
@@ -45957,6 +45958,15 @@
 		//console.log("overlap of A:", p1, ",", w1, " B:", p2, ",", w2 + " Res:", r);
 		return r;
 	}
+	
+	function toHex(num, digits) {
+		var s = num.toString(16);
+		if (digits) {
+			s = "000000000000000000" + s;
+			s = s.substr(s.length - digits);
+		}
+		return s;
+	}
 
 /***/ },
 /* 5 */
@@ -46016,7 +46026,7 @@
 	var DEFAULT_Z = exports.DEFAULT_Z = 20;
 	var STALL_SPEED = 5000;
 	var DEBUG = false;
-	var SOUND_ENABLED = false;
+	var SOUND_ENABLED = true;
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
 	var ROOM_COLLISION_ENABLED = true;
@@ -46165,6 +46175,10 @@
 						// p
 						_this.pickup();
 						break;
+					case 72:
+						// h
+						(0, _jquery2.default)("#help").toggle();
+						break;
 				}
 			});
 		}
@@ -46259,7 +46273,6 @@
 		}, {
 			key: 'exitVehicle',
 			value: function exitVehicle() {
-				console.log("Exited " + this.vehicle.model.name);
 				this.noise.stop();
 				this.noise.setMode("walk");
 				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.vehicle.model, this.player.rotation.z);
@@ -46281,7 +46294,7 @@
 							this.player.rotation.z = o.rotation.z;
 							this.vehicle = o;
 							this.vehicle.parent.remove(this.vehicle);
-							console.log("Entered " + o.model.name);
+							this.main.benson.addMessage(o.model.description);
 							this.stop();
 							if (this.vehicle.model.flies) {
 								this.noise.setMode("jet");
@@ -46796,7 +46809,9 @@
 		"keya": "Pentagon key",
 		"keyb": "Triangle key",
 		"keyc": "Gate key",
-		"keyd": "X key"
+		"keyd": "X key",
+		"car": "Tando groundcar",
+		"plane": "Harris skipjet"
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });

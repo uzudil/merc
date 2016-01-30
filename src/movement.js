@@ -15,7 +15,7 @@ const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
-const SOUND_ENABLED = false;
+const SOUND_ENABLED = true;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
 const ROOM_COLLISION_ENABLED = true;
@@ -139,6 +139,9 @@ export class Movement {
 				case 80: // p
 					this.pickup();
 					break;
+				case 72: // h
+					$("#help").toggle();
+					break;
 			}
 		});
 	}
@@ -244,7 +247,6 @@ export class Movement {
 	}
 
 	exitVehicle() {
-		console.log("Exited " + this.vehicle.model.name);
 		this.noise.stop();
 		this.noise.setMode("walk");
 		this.main.game_map.addModelAt(
@@ -262,7 +264,7 @@ export class Movement {
 				this.player.rotation.z = o.rotation.z;
 				this.vehicle = o;
 				this.vehicle.parent.remove(this.vehicle);
-				console.log("Entered " + o.model.name);
+				this.main.benson.addMessage(o.model.description);
 				this.stop();
 				if (this.vehicle.model.flies) {
 					this.noise.setMode("jet");

@@ -59,3 +59,12 @@ export function findAnOverlap(p1, w1, p2, w2) {
 	return r;
 
 }
+
+export function toHex(num, digits) {
+	let s = num.toString(16);
+	if(digits) {
+		s = "000000000000000000" + s;
+		s = s.substr(s.length - digits);
+	}
+	return s;
+}

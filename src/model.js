@@ -27,7 +27,9 @@ const DESCRIPTIONS = {
 	"keya": "Pentagon key",
 	"keyb": "Triangle key",
 	"keyc": "Gate key",
-	"keyd": "X key"
+	"keyd": "X key",
+	"car": "Tando groundcar",
+	"plane": "Harris skipjet"
 }
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });

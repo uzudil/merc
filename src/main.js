@@ -107,7 +107,7 @@ class Merc {
 			y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
 		}
 		var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-		$("#loc .value").text("" + x + "-" + y);
+		$("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
 		$("#alt .value").text("" + z);
 		$("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
 		this.compass.update(this.movement.getHeadingAngle());
