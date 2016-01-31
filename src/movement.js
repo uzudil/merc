@@ -21,7 +21,8 @@ const WALL_ACTIVATE_DIST = 20;
 const ROOM_COLLISION_ENABLED = true;
 const LANDING_TIME = 30000;
 const LANDING_ALT = 50000;
-const LANDING_LAST_PERCENT = .3;
+const LANDING_LAST_PERCENT = .5;
+const LANDING_BASE_PERCENT = .2;
 
 export class Movement {
 	constructor(main) {
@@ -624,11 +625,14 @@ export class Movement {
 	updateLanding(time, delta) {
 		if(this.landing > time) {
 			let p = ((this.landing - time)/LANDING_TIME);
-			this.player.position.z = p * p * LANDING_ALT + DEFAULT_Z;
+			this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
 			this.player.rotation.z += delta * 0.05;
-			if(p < LANDING_LAST_PERCENT) {
-				this.pitch.rotation.x = (1 - (p / LANDING_LAST_PERCENT)) * (Math.PI/2);
+			if(p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
+				this.pitch.rotation.x = (1 - ((p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT))) * (Math.PI/2);
 				this.noise.setLevel(1);
+			} else if(p < LANDING_BASE_PERCENT) {
+				this.noise.setLevel(1);
+				this.pitch.rotation.x = Math.PI/2;
 			}
 		} else {
 			this.player.position.z = DEFAULT_Z;
