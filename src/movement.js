@@ -19,6 +19,9 @@ const SOUND_ENABLED = true;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
 const ROOM_COLLISION_ENABLED = true;
+const LANDING_TIME = 30000;
+const LANDING_ALT = 50000;
+const LANDING_LAST_PERCENT = .3;
 
 export class Movement {
 	constructor(main) {
@@ -80,6 +83,8 @@ export class Movement {
 
 		this.movementX = 0.0;
 		this.movementY = 0.0;
+
+		this.landing = 0;
 
 		$(document).mousemove((event) => {
 			this.movementX = event.originalEvent.movementX;
@@ -358,7 +363,9 @@ export class Movement {
 	}
 
 	getSpeed() {
-		if(this.vehicle) {
+		if(this.landing) {
+			return (this.player.position.z/(LANDING_ALT + DEFAULT_Z)) * 100000;
+		} else if(this.vehicle) {
 			return this.power * this.getMaxSpeed();
 		} else {
 			if(this.fw || this.bw || this.left || this.right) {
@@ -600,6 +607,8 @@ export class Movement {
 
 	checkNoise() {
 		// adjust noise
+		if(this.landing != 0) return;
+
 		if(this.getSpeed() > 0 || this.liftDirection != 0) {
 			this.noise.start();
 		} else {
@@ -612,23 +621,66 @@ export class Movement {
 		}
 	}
 
+	updateLanding(time, delta) {
+		if(this.landing > time) {
+			let p = ((this.landing - time)/LANDING_TIME);
+			this.player.position.z = p * p * LANDING_ALT + DEFAULT_Z;
+			this.player.rotation.z += delta * 0.05;
+			if(p < LANDING_LAST_PERCENT) {
+				this.pitch.rotation.x = (1 - (p / LANDING_LAST_PERCENT)) * (Math.PI/2);
+				this.noise.setLevel(1);
+			}
+		} else {
+			this.player.position.z = DEFAULT_Z;
+			//this.player.rotation.z = 0;
+			this.pitch.rotation.x = Math.PI/2;
+			this.landing = false;
+			this.noise.stop();
+			this.noise.setMode("walk");
+			this.power = 0;
+
+			// add ship behind player
+			this.main.game_map.addModelAt(
+				this.player.position.x + 100,
+				this.player.position.y + 100,
+				this.main.models.models["plane"],
+				this.player.rotation.z);
+
+			this.main.benson.addMessage("Welcome to Targ.");
+			this.main.benson.addMessage("Please proceed to 9-2,");
+			this.main.benson.addMessage("for your assignment.");
+		}
+	}
+
 	update() {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 		this.prevTime = time;
 
-		if(this.liftDirection != 0) {
-			this.updateLift(delta);
+		if(this.landing) {
+			this.updateLanding(time, delta);
 		} else {
-			var dx = this.getSpeed() / 20 * delta;
-			if(this.vehicle) {
-				this.updateVehicle(dx);
+			if (this.liftDirection != 0) {
+				this.updateLift(delta);
 			} else {
-				this.updateWalking(dx, delta);
+				var dx = this.getSpeed() / 20 * delta;
+				if (this.vehicle) {
+					this.updateVehicle(dx);
+				} else {
+					this.updateWalking(dx, delta);
+				}
+				this.checkBoundingBox();
 			}
-			this.checkBoundingBox();
 		}
 
 		this.checkNoise();
+	}
+
+	startLanding() {
+		this.landing = Date.now() + LANDING_TIME;
+		this.pitch.rotation.x = 0;
+		this.noise.setMode("pink");
+		this.noise.start();
+		this.noise.setLevel(0);
 	}
 }

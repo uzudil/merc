@@ -14,10 +14,10 @@ export class Benson {
 		this.out = false;
 	}
 
-	addMessage(message) {
-		this.messages.push(message);
+	addMessage(message, onComplete) {
+		this.messages.push([message, onComplete]);
 		if(this.messages.length == 1) {
-			this.el.empty().append(this.messages[0]);
+			this.el.empty().append(this.messages[0][0]);
 		}
 	}
 
@@ -28,7 +28,7 @@ export class Benson {
 		if(this.messages.length > 0) {
 			if(this.pause) {
 				if (time - this.pause > PAUSE_DELAY) {
-					console.log("PAUSING: done");
+					if(this.messages[0][1]) this.messages[0][1]();
 					this.pause = null;
 				}
 			} else if(this.scroll <= 0) {
@@ -41,7 +41,7 @@ export class Benson {
 
 						this.messages.splice(0, 1);
 						this.el.empty();
-						this.el.append(this.messages[0]);
+						this.el.append(this.messages[0][0]);
 					}
 				}
 			} else {

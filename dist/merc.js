@@ -84,6 +84,10 @@
 	
 	var benson = _interopRequireWildcard(_benson);
 	
+	var _space = __webpack_require__(14);
+	
+	var space = _interopRequireWildcard(_space);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -95,6 +99,7 @@
 	var FAR_DIST = 100000;
 	var START_X = 9;
 	var START_Y = 3;
+	var START_Z = 50000;
 	
 	var Merc = (function () {
 		function Merc() {
@@ -115,22 +120,78 @@
 	
 				this.scene = new _three2.default.Scene();
 	
+				this.renderer = new _three2.default.WebGLRenderer();
+				this.height = window.innerHeight * .75;
+				this.renderer.setSize(this.height * ASPECT_RATIO, this.height);
+	
+				this.benson = new benson.Benson();
+	
+				this.setupUI();
+	
+				this.space = null;
+				this.movement = null;
+				//this.startGame();
+				this.startIntro();
+	
+				this.animate();
+			}
+		}, {
+			key: 'startIntro',
+			value: function startIntro() {
+				var _this2 = this;
+	
+				this.space = new space.Space(this.scene, this);
+				window.setTimeout(function () {
+					_this2.benson.addMessage("Set course to Novagen...");
+					_this2.benson.addMessage("Engaging Hyperdrive", function () {
+						_this2.space.power = 1;
+						_this2.benson.addMessage("Enjoy your trip.");
+						window.setTimeout(function () {
+							_this2.benson.addMessage("Message received.");
+							_this2.benson.addMessage("Sender: Targ city.");
+							_this2.benson.addMessage("Priority: urgent.", function () {
+								window.setTimeout(function () {
+									_this2.benson.addMessage("Request for assistance.");
+									_this2.benson.addMessage("Targ city emergency.");
+									_this2.benson.addMessage("Immediate help requested.", function () {
+										setTimeout(function () {
+											_this2.benson.addMessage("Starting deceleration...", function () {
+												_this2.space.power = -1;
+												setTimeout(function () {
+													_this2.benson.addMessage("Landing on Targ");
+												}, 3000);
+											});
+										}, 4000);
+									});
+								}, 2000);
+							});
+						}, 20000);
+					});
+				}, 5000);
+			}
+		}, {
+			key: 'startGame',
+			value: function startGame() {
 				this.movement = new movement.Movement(this);
-				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, movement.DEFAULT_Z);
+				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, START_Z);
+				//movement.DEFAULT_Z);
+				this.movement.startLanding();
 	
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player);
 	
-				this.renderer = new _three2.default.WebGLRenderer();
-				var h = window.innerHeight * .75;
-				this.renderer.setSize(h * ASPECT_RATIO, h);
-	
-				this.benson = new benson.Benson();
-				this.benson.addMessage("Welcome to Midris.");
-				this.benson.addMessage("Please proceed to 9-2,");
-				this.benson.addMessage("for your assignment.");
-	
+				// hack: start in a room
+				//this.movement.loadGame({
+				//	sectorX: 9, sectorY: 2,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	vehicle: null
+				//});
+			}
+		}, {
+			key: 'setupUI',
+			value: function setupUI() {
+				var h = this.height;
 				var height = h * 0.333 | 0;
 				(0, _jquery2.default)("#ui").css({
 					width: h * ASPECT_RATIO + "px",
@@ -169,44 +230,43 @@
 					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
 					element.requestPointerLock();
 				});
-	
-				// hack: start in a room
-				//this.movement.loadGame({
-				//	sectorX: 9, sectorY: 2,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	vehicle: null
-				//});
-	
-				this.animate();
 			}
 		}, {
 			key: 'animate',
 			value: function animate() {
-				var _this2 = this;
+				var _this3 = this;
 	
-				this.game_map.update();
-				this.movement.update();
 				this.benson.update();
+				if (this.movement) {
+					this.game_map.update();
+					this.movement.update();
+				} else if (this.space) {
+					this.space.update();
+				}
 				this.renderer.render(this.scene, this.camera);
 	
-				var x, y;
-				if (this.movement.level) {
-					x = this.movement.sectorX;
-					y = this.movement.sectorY;
-				} else {
-					x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
-					y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+				if (this.movement) {
+					var x, y;
+					if (this.movement.level) {
+						x = this.movement.sectorX;
+						y = this.movement.sectorY;
+					} else {
+						x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
+						y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+					}
+					var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
+					(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
+					(0, _jquery2.default)("#alt .value").text("" + z);
+					(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
+					this.compass.update(this.movement.getHeadingAngle());
+					this.horizon.update(this.movement.getPitchAngle());
+				} else if (this.space) {
+					(0, _jquery2.default)("#speed .value").text("" + this.space.getSpeed());
 				}
-				var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-				(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
-				(0, _jquery2.default)("#alt .value").text("" + z);
-				(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
-				this.compass.update(this.movement.getHeadingAngle());
-				this.horizon.update(this.movement.getPitchAngle());
 	
 				if (LIMIT_FPS) {
 					setTimeout(function () {
-						requestAnimationFrame(util.bind(_this2, _this2.animate));
+						requestAnimationFrame(util.bind(_this3, _this3.animate));
 					}, 1000 / LIMIT_FPS);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
@@ -36435,6 +36495,8 @@
 	
 	var ROAD_MAT = new _three2.default.LineBasicMaterial({ color: ROAD_COLOR, linewidth: 4 });
 	
+	var ROAD_Z = 1;
+	
 	var key = function key(sectorX, sectorY) {
 		return sectorX + "." + sectorY;
 	};
@@ -36620,32 +36682,32 @@
 			key: "createRoad",
 			value: function createRoad() {
 				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
 				return new _three2.default.LineSegments(geometry, ROAD_MAT);
 			}
 		}, {
 			key: "createCrossRoad",
 			value: function createCrossRoad() {
 				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, 0));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
 				return new _three2.default.LineSegments(geometry, ROAD_MAT);
 			}
 		}]);
@@ -46030,6 +46092,9 @@
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
 	var ROOM_COLLISION_ENABLED = true;
+	var LANDING_TIME = 30000;
+	var LANDING_ALT = 50000;
+	var LANDING_LAST_PERCENT = .3;
 	
 	var Movement = exports.Movement = (function () {
 		function Movement(main) {
@@ -46095,6 +46160,8 @@
 	
 			this.movementX = 0.0;
 			this.movementY = 0.0;
+	
+			this.landing = 0;
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
 				_this.movementX = event.originalEvent.movementX;
@@ -46414,7 +46481,9 @@
 		}, {
 			key: 'getSpeed',
 			value: function getSpeed() {
-				if (this.vehicle) {
+				if (this.landing) {
+					return this.player.position.z / (LANDING_ALT + DEFAULT_Z) * 100000;
+				} else if (this.vehicle) {
 					return this.power * this.getMaxSpeed();
 				} else {
 					if (this.fw || this.bw || this.left || this.right) {
@@ -46701,6 +46770,8 @@
 			key: 'checkNoise',
 			value: function checkNoise() {
 				// adjust noise
+				if (this.landing != 0) return;
+	
 				if (this.getSpeed() > 0 || this.liftDirection != 0) {
 					this.noise.start();
 				} else {
@@ -46713,25 +46784,66 @@
 					}
 			}
 		}, {
+			key: 'updateLanding',
+			value: function updateLanding(time, delta) {
+				if (this.landing > time) {
+					var p = (this.landing - time) / LANDING_TIME;
+					this.player.position.z = p * p * LANDING_ALT + DEFAULT_Z;
+					this.player.rotation.z += delta * 0.05;
+					if (p < LANDING_LAST_PERCENT) {
+						this.pitch.rotation.x = (1 - p / LANDING_LAST_PERCENT) * (Math.PI / 2);
+						this.noise.setLevel(1);
+					}
+				} else {
+					this.player.position.z = DEFAULT_Z;
+					//this.player.rotation.z = 0;
+					this.pitch.rotation.x = Math.PI / 2;
+					this.landing = false;
+					this.noise.stop();
+					this.noise.setMode("walk");
+					this.power = 0;
+	
+					// add ship behind player
+					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, this.main.models.models["plane"], this.player.rotation.z);
+	
+					this.main.benson.addMessage("Welcome to Targ.");
+					this.main.benson.addMessage("Please proceed to 9-2,");
+					this.main.benson.addMessage("for your assignment.");
+				}
+			}
+		}, {
 			key: 'update',
 			value: function update() {
 				var time = Date.now();
 				var delta = (time - this.prevTime) / 1000;
 				this.prevTime = time;
 	
-				if (this.liftDirection != 0) {
-					this.updateLift(delta);
+				if (this.landing) {
+					this.updateLanding(time, delta);
 				} else {
-					var dx = this.getSpeed() / 20 * delta;
-					if (this.vehicle) {
-						this.updateVehicle(dx);
+					if (this.liftDirection != 0) {
+						this.updateLift(delta);
 					} else {
-						this.updateWalking(dx, delta);
+						var dx = this.getSpeed() / 20 * delta;
+						if (this.vehicle) {
+							this.updateVehicle(dx);
+						} else {
+							this.updateWalking(dx, delta);
+						}
+						this.checkBoundingBox();
 					}
-					this.checkBoundingBox();
 				}
 	
 				this.checkNoise();
+			}
+		}, {
+			key: 'startLanding',
+			value: function startLanding() {
+				this.landing = Date.now() + LANDING_TIME;
+				this.pitch.rotation.x = 0;
+				this.noise.setMode("pink");
+				this.noise.start();
+				this.noise.setLevel(0);
 			}
 		}], [{
 			key: 'makeCrossHair',
@@ -48713,10 +48825,10 @@
 	
 		_createClass(Benson, [{
 			key: "addMessage",
-			value: function addMessage(message) {
-				this.messages.push(message);
+			value: function addMessage(message, onComplete) {
+				this.messages.push([message, onComplete]);
 				if (this.messages.length == 1) {
-					this.el.empty().append(this.messages[0]);
+					this.el.empty().append(this.messages[0][0]);
 				}
 			}
 		}, {
@@ -48728,7 +48840,7 @@
 				if (this.messages.length > 0) {
 					if (this.pause) {
 						if (time - this.pause > PAUSE_DELAY) {
-							console.log("PAUSING: done");
+							if (this.messages[0][1]) this.messages[0][1]();
 							this.pause = null;
 						}
 					} else if (this.scroll <= 0) {
@@ -48741,7 +48853,7 @@
 	
 								this.messages.splice(0, 1);
 								this.el.empty();
-								this.el.append(this.messages[0]);
+								this.el.append(this.messages[0][0]);
 							}
 						}
 					} else {
@@ -48757,6 +48869,220 @@
 		}]);
 	
 		return Benson;
+	})();
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Space = undefined;
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _noise = __webpack_require__(7);
+	
+	var noise = _interopRequireWildcard(_noise);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var SIZE = 100;
+	var DEPTH = 100;
+	var COUNT = 500;
+	var MAX_SPEED = 2.7;
+	var MIN_SPEED = 0.1;
+	
+	var Space = exports.Space = (function () {
+		function Space(scene, main) {
+			_classCallCheck(this, Space);
+	
+			this.power = 0;
+			this.landing = false;
+			this.main = main;
+			this.scene = scene;
+			this.obj = new _three2.default.Object3D();
+			this.speed = MIN_SPEED;
+			for (var i = 0; i < COUNT; i++) {
+				var mesh = new _three2.default.Mesh(new _three2.default.CubeGeometry(1, 1, 1), new _three2.default.MeshBasicMaterial({ color: 0xffffff }));
+				Space.positionStar(mesh, 1000);
+				this.obj.add(mesh);
+			}
+			this.scene.add(this.obj);
+	
+			for (var i = 0; i < 1000; i++) {
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
+	
+				try {
+					for (var _iterator = this.obj.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var mesh = _step.value;
+	
+						mesh.position.z += MAX_SPEED;
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
+					}
+				}
+			}
+			var _iteratorNormalCompletion2 = true;
+			var _didIteratorError2 = false;
+			var _iteratorError2 = undefined;
+	
+			try {
+				for (var _iterator2 = this.obj.children[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var mesh = _step2.value;
+	
+					if (mesh.position.z >= 0) {
+						Space.positionStar(mesh);
+					}
+				}
+			} catch (err) {
+				_didIteratorError2 = true;
+				_iteratorError2 = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion2 && _iterator2.return) {
+						_iterator2.return();
+					}
+				} finally {
+					if (_didIteratorError2) {
+						throw _iteratorError2;
+					}
+				}
+			}
+	
+			var ac = new AudioContext();
+			this.noise = new noise.Noise(ac);
+			this.noise.setEnabled(true);
+			this.noise.setMode("pink");
+			this.noise.start();
+		}
+	
+		_createClass(Space, [{
+			key: 'getSpeed',
+			value: function getSpeed() {
+				return this.speed / MAX_SPEED * 50000 | 0;
+			}
+		}, {
+			key: 'update',
+			value: function update() {
+				var time = Date.now();
+				var delta = (time - this.prevTime) / 1000;
+				this.prevTime = time;
+	
+				if (this.power > 0) {
+					if (this.speed < MAX_SPEED) {
+						this.speed *= 1.01;
+					} else {
+						this.speed = MAX_SPEED;
+						this.power = 0;
+					}
+				} else if (this.power < 0) {
+					if (this.speed > MIN_SPEED) {
+						this.speed *= .98;
+					} else {
+						this.speed = MIN_SPEED;
+						this.power = 0;
+						this.startLanding();
+					}
+				}
+	
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
+	
+				try {
+					for (var _iterator3 = this.obj.children[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var mesh = _step3.value;
+	
+						mesh.position.z += this.speed;
+						if (mesh.position.z >= 0) {
+							Space.positionStar(mesh);
+						}
+					}
+				} catch (err) {
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
+						}
+					} finally {
+						if (_didIteratorError3) {
+							throw _iteratorError3;
+						}
+					}
+				}
+	
+				if (this.landing) {
+					this.targ.position.z += delta * 2;
+					console.log("delta=" + delta + " z=" + this.targ.position.z);
+					var s = 1 - this.targ.position.z / -DEPTH;
+					this.targ.scale.set(s, s, s);
+					if (this.targ.position.z > -DEPTH * .67) {
+						this.landing = false;
+						this.speed = 0;
+						this.power = 0;
+						this.scene.remove(this.obj);
+						this.scene.remove(this.targ);
+						this.main.startGame();
+					}
+				}
+	
+				if (this.power != 0) {
+					this.noise.start();
+				} else {
+					this.noise.stop();
+				}
+				this.noise.setLevel(this.power > 0 ? .5 * this.power : -this.power);
+			}
+		}, {
+			key: 'startLanding',
+			value: function startLanding() {
+				this.landing = true;
+				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(DEPTH * 2), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.doubleSided, depthTest: false, depthWrite: false }));
+				this.targ.position.z = -DEPTH;
+				this.scene.add(this.targ);
+			}
+		}], [{
+			key: 'positionStar',
+			value: function positionStar(mesh) {
+				var rad = Math.random() * Math.PI * 2;
+				// don't put any stars in the middle
+				var d = Math.random() * (SIZE * .9) + SIZE * .1;
+				var x = d * Math.cos(rad);
+				var y = d * Math.sin(rad);
+				mesh.position.set(x, y, -(DEPTH * .5 + Math.random() * DEPTH * .5));
+				var s = 1 - mesh.position.z / -DEPTH;
+				mesh.scale.set(s, s, s);
+			}
+		}]);
+	
+		return Space;
 	})();
 
 /***/ }

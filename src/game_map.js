@@ -9,6 +9,8 @@ export const ROAD_COLOR = new THREE.Color("rgb(132,126,133)");
 
 const ROAD_MAT = new THREE.LineBasicMaterial({color: ROAD_COLOR, linewidth: 4});
 
+const ROAD_Z = 1;
+
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
@@ -101,31 +103,31 @@ export class GameMap {
 
 	static createRoad() {
 		var geometry = new THREE.Geometry();
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, 0));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
 		return new THREE.LineSegments(geometry, ROAD_MAT);
 	}
 
 	static createCrossRoad() {
 		var geometry = new THREE.Geometry();
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * 0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * 0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/4, 0));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/2, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/4, 0));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/2, 0));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * 0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * 0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/4, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/2, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/4, ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/2, ROAD_Z));
 		return new THREE.LineSegments(geometry, ROAD_MAT);
 	}
 
