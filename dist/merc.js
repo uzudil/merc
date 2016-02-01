@@ -80,6 +80,14 @@
 	
 	var compass = _interopRequireWildcard(_compass);
 	
+	var _benson = __webpack_require__(13);
+	
+	var benson = _interopRequireWildcard(_benson);
+	
+	var _space = __webpack_require__(14);
+	
+	var space = _interopRequireWildcard(_space);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -91,6 +99,7 @@
 	var FAR_DIST = 100000;
 	var START_X = 9;
 	var START_Y = 3;
+	var START_Z = 50000;
 	
 	var Merc = (function () {
 		function Merc() {
@@ -111,23 +120,86 @@
 	
 				this.scene = new _three2.default.Scene();
 	
+				this.renderer = new _three2.default.WebGLRenderer();
+				this.height = window.innerHeight * .75;
+				this.renderer.setSize(this.height * ASPECT_RATIO, this.height);
+	
+				this.benson = new benson.Benson();
+	
+				this.setupUI();
+	
+				this.space = null;
+				this.movement = null;
+				//this.startGame();
+				this.startIntro();
+	
+				this.animate();
+			}
+		}, {
+			key: 'startIntro',
+			value: function startIntro() {
+				var _this2 = this;
+	
+				this.space = new space.Space(this.scene, this);
+				window.setTimeout(function () {
+					_this2.benson.addMessage("Set course to Novagen...");
+					_this2.benson.addMessage("Engaging Hyperdrive", function () {
+						_this2.space.power = 1;
+						_this2.benson.addMessage("Enjoy your trip.");
+						window.setTimeout(function () {
+							_this2.benson.addMessage("Message received.");
+							_this2.benson.addMessage("Sender: Targ city.");
+							_this2.benson.addMessage("Priority: urgent.", function () {
+								window.setTimeout(function () {
+									_this2.benson.addMessage("Request for assistance.");
+									_this2.benson.addMessage("Targ city emergency.");
+									_this2.benson.addMessage("Immediate help requested.", function () {
+										setTimeout(function () {
+											_this2.benson.addMessage("Starting deceleration...", function () {
+												_this2.space.power = -1;
+												setTimeout(function () {
+													_this2.benson.addMessage("Landing on Targ");
+												}, 3000);
+											});
+										}, 4000);
+									});
+								}, 2000);
+							});
+						}, 20000);
+					});
+				}, 5000);
+			}
+		}, {
+			key: 'startGame',
+			value: function startGame() {
+				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
-				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, movement.DEFAULT_Z);
+				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, START_Z);
+				//movement.DEFAULT_Z);
+				this.movement.startLanding();
 	
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player);
 	
-				this.renderer = new _three2.default.WebGLRenderer();
-				var h = window.innerHeight * .75;
-				this.renderer.setSize(h * ASPECT_RATIO, h);
-	
+				// hack: start in a room
+				//this.movement.loadGame({
+				//	sectorX: 9, sectorY: 2,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	vehicle: null
+				//});
+			}
+		}, {
+			key: 'setupUI',
+			value: function setupUI() {
+				var h = this.height;
 				var height = h * 0.333 | 0;
 				(0, _jquery2.default)("#ui").css({
 					width: h * ASPECT_RATIO + "px",
 					height: height + "px"
 				});
-				(0, _jquery2.default)(".uibox .value").css("font-size", Math.round(h / 200 * 10) + "px");
+				(0, _jquery2.default)(".uibox .value,#message").css("font-size", Math.round(h / 200 * 7) + "px");
+				(0, _jquery2.default)(".uibox").css("min-height", Math.round(h / 200 * 7) + "px");
 				var canvas_width = (0, _jquery2.default)("#el").width();
 				var canvas_height = height - 40;
 	
@@ -137,7 +209,7 @@
 				});
 				(0, _jquery2.default)("#comp .vert_line").css({
 					"left": (canvas_width / 2 | 0) + "px",
-					"height": (canvas_height / 2 + 2 | 0) + "px"
+					"height": (canvas_height / 2 + 4 | 0) + "px"
 				});
 	
 				(0, _jquery2.default)("#el .value").css({
@@ -159,43 +231,43 @@
 					element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
 					element.requestPointerLock();
 				});
-	
-				// hack: start in a room
-				//this.movement.loadGame({
-				//	sectorX: 9, sectorY: 2,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	vehicle: null
-				//});
-	
-				this.animate();
 			}
 		}, {
 			key: 'animate',
 			value: function animate() {
-				var _this2 = this;
+				var _this3 = this;
 	
-				this.game_map.update();
-				this.movement.update();
+				this.benson.update();
+				if (this.movement) {
+					this.game_map.update();
+					this.movement.update();
+				} else if (this.space) {
+					this.space.update();
+				}
 				this.renderer.render(this.scene, this.camera);
 	
-				var x, y;
-				if (this.movement.level) {
-					x = this.movement.sectorX;
-					y = this.movement.sectorY;
-				} else {
-					x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
-					y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+				if (this.movement) {
+					var x, y;
+					if (this.movement.level) {
+						x = this.movement.sectorX;
+						y = this.movement.sectorY;
+					} else {
+						x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
+						y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+					}
+					var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
+					(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
+					(0, _jquery2.default)("#alt .value").text("" + z);
+					(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
+					this.compass.update(this.movement.getHeadingAngle());
+					this.horizon.update(this.movement.getPitchAngle());
+				} else if (this.space) {
+					(0, _jquery2.default)("#speed .value").text("" + this.space.getSpeed());
 				}
-				var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-				(0, _jquery2.default)("#loc .value").text("" + x + "-" + y);
-				(0, _jquery2.default)("#alt .value").text("" + z);
-				(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
-				this.compass.update(this.movement.getHeadingAngle());
-				this.horizon.update(this.movement.getPitchAngle());
 	
 				if (LIMIT_FPS) {
 					setTimeout(function () {
-						requestAnimationFrame(util.bind(_this2, _this2.animate));
+						requestAnimationFrame(util.bind(_this3, _this3.animate));
 					}, 1000 / LIMIT_FPS);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
@@ -36424,6 +36496,8 @@
 	
 	var ROAD_MAT = new _three2.default.LineBasicMaterial({ color: ROAD_COLOR, linewidth: 4 });
 	
+	var ROAD_Z = 1;
+	
 	var key = function key(sectorX, sectorY) {
 		return sectorX + "." + sectorY;
 	};
@@ -36445,11 +36519,6 @@
 	
 			this.player = player;
 			this.land = new _three2.default.Object3D();
-			var mat = new _three2.default.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: _three2.default.FrontSide });
-			this.plane = new _three2.default.Mesh(new _three2.default.PlaneGeometry(200000, 200000), mat);
-			this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
-			this.land.add(this.plane);
-	
 			this.sectors = {};
 			this.minSector = { x: 0, y: 0 };
 			this.maxSector = { x: 0, y: 0 };
@@ -36458,30 +36527,32 @@
 			this.structures = [];
 			for (var name in models.models) {
 				var m = models.models[name];
-				var _iteratorNormalCompletion = true;
-				var _didIteratorError = false;
-				var _iteratorError = undefined;
+				if (MAP_POSITIONS[name]) {
+					var _iteratorNormalCompletion = true;
+					var _didIteratorError = false;
+					var _iteratorError = undefined;
 	
-				try {
-					for (var _iterator = MAP_POSITIONS[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						var _step$value = _slicedToArray(_step.value, 2);
-	
-						var sx = _step$value[0];
-						var sy = _step$value[1];
-	
-						this.addStructure(m, sx, sy);
-					}
-				} catch (err) {
-					_didIteratorError = true;
-					_iteratorError = err;
-				} finally {
 					try {
-						if (!_iteratorNormalCompletion && _iterator.return) {
-							_iterator.return();
+						for (var _iterator = MAP_POSITIONS[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+							var _step$value = _slicedToArray(_step.value, 2);
+	
+							var sx = _step$value[0];
+							var sy = _step$value[1];
+	
+							this.addStructure(m, sx, sy);
 						}
+					} catch (err) {
+						_didIteratorError = true;
+						_iteratorError = err;
 					} finally {
-						if (_didIteratorError) {
-							throw _iteratorError;
+						try {
+							if (!_iteratorNormalCompletion && _iterator.return) {
+								_iterator.return();
+							}
+						} finally {
+							if (_didIteratorError) {
+								throw _iteratorError;
+							}
 						}
 					}
 				}
@@ -36558,9 +36629,7 @@
 			}
 		}, {
 			key: "update",
-			value: function update() {
-				this.plane.position.set(this.player.position.x, this.player.position.y, 0);
-			}
+			value: function update() {}
 		}, {
 			key: "addStructure",
 			value: function addStructure(model, sectorX, sectorY) {
@@ -36607,32 +36676,32 @@
 			key: "createRoad",
 			value: function createRoad() {
 				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
 				return new _three2.default.LineSegments(geometry, ROAD_MAT);
 			}
 		}, {
 			key: "createCrossRoad",
 			value: function createCrossRoad() {
 				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, 0));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, 0));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
 				return new _three2.default.LineSegments(geometry, ROAD_MAT);
 			}
 		}]);
@@ -45871,6 +45940,7 @@
 	exports.shadeGeo = shadeGeo;
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
+	exports.toHex = toHex;
 	
 	var _three = __webpack_require__(1);
 	
@@ -45944,6 +46014,15 @@
 		//console.log("overlap of A:", p1, ",", w1, " B:", p2, ",", w2 + " Res:", r);
 		return r;
 	}
+	
+	function toHex(num, digits) {
+		var s = num.toString(16);
+		if (digits) {
+			s = "000000000000000000" + s;
+			s = s.substr(s.length - digits);
+		}
+		return s;
+	}
 
 /***/ },
 /* 5 */
@@ -46007,6 +46086,10 @@
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
 	var ROOM_COLLISION_ENABLED = true;
+	var LANDING_TIME = 30000;
+	var LANDING_ALT = 50000;
+	var LANDING_LAST_PERCENT = .5;
+	var LANDING_BASE_PERCENT = .2;
 	
 	var Movement = exports.Movement = (function () {
 		function Movement(main) {
@@ -46029,6 +46112,7 @@
 			this.bbox = new _three2.default.Box3(new _three2.default.Vector3(-SIZE, -SIZE, -SIZE), new _three2.default.Vector3(SIZE, SIZE, SIZE));
 			this.model_bbox = new _three2.default.Box3();
 	
+			this.inventory = [];
 			this.vehicle = null;
 			this.level = null;
 			this.doorsUp = [];
@@ -46071,6 +46155,8 @@
 	
 			this.movementX = 0.0;
 			this.movementY = 0.0;
+	
+			this.landing = 0;
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
 				_this.movementX = event.originalEvent.movementX;
@@ -46147,6 +46233,14 @@
 						// e
 						_this.useElevator();
 						break;
+					case 80:
+						// p
+						_this.pickup();
+						break;
+					case 72:
+						// h
+						(0, _jquery2.default)("#help").toggle();
+						break;
 				}
 			});
 		}
@@ -46164,8 +46258,27 @@
 					if (this.level) {
 						var offsetX = this.player.position.x;
 						var offsetY = this.player.position.y;
-						this.level.create(this.main.scene, offsetX, offsetY, offsetX - this.main.models.models["elevator"].bbox.size().x / 2, offsetY - this.main.models.models["elevator"].bbox.size().y / 2);
+						this.level.create(this.main.scene, offsetX, offsetY, offsetX - this.main.models.models["elevator"].bbox.size().x / 2, offsetY - this.main.models.models["elevator"].bbox.size().y / 2, this.main.models);
 					}
+				}
+			}
+		}, {
+			key: 'pickup',
+			value: function pickup() {
+				// find the world pos of player
+				this.player.getWorldPosition(this.worldPos);
+	
+				// cast a ray in this direction
+				this.normalToWorld(this.player, this.direction, this.worldDir);
+	
+				// find the closest intersection
+				this.raycaster.set(this.worldPos, this.worldDir);
+				var intersections = this.raycaster.intersectObject(this.level.mesh, true);
+				var closest = intersections.length > 0 ? intersections[0] : null;
+				if (closest && closest.object.model) {
+					this.inventory.push(closest.object.model.name);
+					closest.object.parent.remove(closest.object);
+					this.main.benson.addMessage(closest.object.model.description);
 				}
 			}
 		}, {
@@ -46206,7 +46319,7 @@
 							//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
 	
 							var liftPos = elevator.getWorldPosition();
-							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y);
+							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
 						}
 					}
 				}
@@ -46222,7 +46335,6 @@
 		}, {
 			key: 'exitVehicle',
 			value: function exitVehicle() {
-				console.log("Exited " + this.vehicle.model.name);
 				this.noise.stop();
 				this.noise.setMode("walk");
 				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.vehicle.model, this.player.rotation.z);
@@ -46244,7 +46356,7 @@
 							this.player.rotation.z = o.rotation.z;
 							this.vehicle = o;
 							this.vehicle.parent.remove(this.vehicle);
-							console.log("Entered " + o.model.name);
+							this.main.benson.addMessage(o.model.description);
 							this.stop();
 							if (this.vehicle.model.flies) {
 								this.noise.setMode("jet");
@@ -46364,7 +46476,9 @@
 		}, {
 			key: 'getSpeed',
 			value: function getSpeed() {
-				if (this.vehicle) {
+				if (this.landing) {
+					return this.player.position.z / (LANDING_ALT + DEFAULT_Z) * 100000;
+				} else if (this.vehicle) {
 					return this.power * this.getMaxSpeed();
 				} else {
 					if (this.fw || this.bw || this.left || this.right) {
@@ -46485,6 +46599,12 @@
 		}, {
 			key: 'openDoor',
 			value: function openDoor(door) {
+				if (door.door.key != "" && this.inventory.filter(function (o) {
+					return door.door.key == o;
+				}).length == 0) {
+					// key needed
+					return;
+				}
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
 				door["moving"] = "up";
 				this.doorsUp.push(door);
@@ -46563,38 +46683,42 @@
 						this.openDoor(closest.object);
 					}
 	
-					// intersected face's normal in world coords
-					this.normalToWorld(closest.object, closest.face.normal, this.worldNor);
+					// models we can walk into
+					if (!closest.object.model) {
 	
-					// translate the normal to the intersection point
-					this.worldNor.add(closest.point);
+						// intersected face's normal in world coords
+						this.normalToWorld(closest.object, closest.face.normal, this.worldNor);
 	
-					// find a point perpendicular to the new normal from out current position
-					// credit: http://stackoverflow.com/questions/10301001/perpendicular-on-a-line-segment-from-a-given-point
-					var x1 = closest.point.x,
-					    y1 = closest.point.y,
-					    x2 = this.worldNor.x,
-					    y2 = this.worldNor.y,
-					    x3 = this.worldPos.x,
-					    y3 = this.worldPos.y;
-					var px = x2 - x1,
-					    py = y2 - y1,
-					    dAB = px * px + py * py;
-					var u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
-					var x = x1 + u * px,
-					    y = y1 + u * py;
+						// translate the normal to the intersection point
+						this.worldNor.add(closest.point);
 	
-					// these two points form the new direction
-					this.worldDir.set(x, y, this.worldPos.z).sub(this.worldPos);
+						// find a point perpendicular to the new normal from out current position
+						// credit: http://stackoverflow.com/questions/10301001/perpendicular-on-a-line-segment-from-a-given-point
+						var x1 = closest.point.x,
+						    y1 = closest.point.y,
+						    x2 = this.worldNor.x,
+						    y2 = this.worldNor.y,
+						    x3 = this.worldPos.x,
+						    y3 = this.worldPos.y;
+						var px = x2 - x1,
+						    py = y2 - y1,
+						    dAB = px * px + py * py;
+						var u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
+						var x = x1 + u * px,
+						    y = y1 + u * py;
 	
-					// cast a ray this way too to make sure there isn't a corner we're running into
-					this.raycaster.set(this.worldPos, this.worldDir);
-					intersections = this.raycaster.intersectObject(this.level.mesh, true);
-					if (intersections.length > 0 && (intersections[0].face.normal.x != closest.face.normal.x || intersections[0].face.normal.y != closest.face.normal.y)) {
-						blocked = true;
-					} else {
-						// translate back to model coords
-						this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
+						// these two points form the new direction
+						this.worldDir.set(x, y, this.worldPos.z).sub(this.worldPos);
+	
+						// cast a ray this way too to make sure there isn't a corner we're running into
+						this.raycaster.set(this.worldPos, this.worldDir);
+						intersections = this.raycaster.intersectObject(this.level.mesh, true);
+						if (intersections.length > 0 && (intersections[0].face.normal.x != closest.face.normal.x || intersections[0].face.normal.y != closest.face.normal.y)) {
+							blocked = true;
+						} else {
+							// translate back to model coords
+							this.direction.copy(this.player.worldToLocal(this.worldDir.add(this.worldPos)).normalize());
+						}
 					}
 				}
 	
@@ -46641,6 +46765,8 @@
 			key: 'checkNoise',
 			value: function checkNoise() {
 				// adjust noise
+				if (this.landing != 0) return;
+	
 				if (this.getSpeed() > 0 || this.liftDirection != 0) {
 					this.noise.start();
 				} else {
@@ -46653,25 +46779,69 @@
 					}
 			}
 		}, {
+			key: 'updateLanding',
+			value: function updateLanding(time, delta) {
+				if (this.landing > time) {
+					var p = (this.landing - time) / LANDING_TIME;
+					this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
+					this.player.rotation.z += delta * 0.05;
+					if (p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
+						this.pitch.rotation.x = (1 - (p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT)) * (Math.PI / 2);
+						this.noise.setLevel(1);
+					} else if (p < LANDING_BASE_PERCENT) {
+						this.noise.setLevel(1);
+						this.pitch.rotation.x = Math.PI / 2;
+					}
+				} else {
+					this.player.position.z = DEFAULT_Z;
+					//this.player.rotation.z = 0;
+					this.pitch.rotation.x = Math.PI / 2;
+					this.landing = false;
+					this.noise.stop();
+					this.noise.setMode("walk");
+					this.power = 0;
+	
+					// add ship behind player
+					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, this.main.models.models["plane"], this.player.rotation.z);
+	
+					this.main.benson.addMessage("Welcome to Targ.");
+					this.main.benson.addMessage("Please proceed to 9-2,");
+					this.main.benson.addMessage("for your assignment.");
+				}
+			}
+		}, {
 			key: 'update',
 			value: function update() {
 				var time = Date.now();
 				var delta = (time - this.prevTime) / 1000;
 				this.prevTime = time;
 	
-				if (this.liftDirection != 0) {
-					this.updateLift(delta);
+				if (this.landing) {
+					this.updateLanding(time, delta);
 				} else {
-					var dx = this.getSpeed() / 20 * delta;
-					if (this.vehicle) {
-						this.updateVehicle(dx);
+					if (this.liftDirection != 0) {
+						this.updateLift(delta);
 					} else {
-						this.updateWalking(dx, delta);
+						var dx = this.getSpeed() / 20 * delta;
+						if (this.vehicle) {
+							this.updateVehicle(dx);
+						} else {
+							this.updateWalking(dx, delta);
+						}
+						this.checkBoundingBox();
 					}
-					this.checkBoundingBox();
 				}
 	
 				this.checkNoise();
+			}
+		}, {
+			key: 'startLanding',
+			value: function startLanding() {
+				this.landing = Date.now() + LANDING_TIME;
+				this.pitch.rotation.x = 0;
+				this.noise.setMode("pink");
+				this.noise.start();
+				this.noise.setLevel(0);
 			}
 		}], [{
 			key: 'makeCrossHair',
@@ -46729,7 +46899,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false },
@@ -46738,7 +46908,20 @@
 	
 	var SCALE = {
 		"car": 20,
-		"plane": 20
+		"plane": 20,
+		"keya": 10,
+		"keyb": 10,
+		"keyc": 10,
+		"keyd": 10
+	};
+	
+	var DESCRIPTIONS = {
+		"keya": "Pentagon key",
+		"keyb": "Triangle key",
+		"keyc": "Gate key",
+		"keyd": "X key",
+		"car": "Tando groundcar",
+		"plane": "Harris skipjet"
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
@@ -46813,6 +46996,7 @@
 			this.name = name;
 			this.mesh = null;
 			this.bbox = null;
+			this.description = DESCRIPTIONS[name] || name;
 		}
 	
 		_createClass(Model, [{
@@ -47378,7 +47562,7 @@
 	
 	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
 	
-	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color) {
+	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color, key) {
 		_classCallCheck(this, Door);
 	
 		this.x = x;
@@ -47387,6 +47571,7 @@
 		this.roomAName = roomAName;
 		this.roomBName = roomBName;
 		this.color = new _three2.default.Color(color);
+		this.key = key;
 	
 		this.roomA = null;
 		this.roomB = null;
@@ -47415,24 +47600,33 @@
 		}
 	};
 	
-	var Room = exports.Room = function Room(name, x, y, w, h, color, elevator) {
+	var roomCount = 0;
+	
+	var Room = exports.Room = function Room(x, y, w, h, color) {
 		_classCallCheck(this, Room);
 	
-		this.name = name;
+		this.name = roomCount;
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.color = new _three2.default.Color(color);
-		this.elevator = elevator;
+		this.elevator = roomCount == 0;
+		roomCount++;
 	};
 	
 	var Level = exports.Level = (function () {
-		function Level(rooms, doors) {
+		function Level(data) {
 			_classCallCheck(this, Level);
 	
-			this.rooms = rooms;
-			this.doors = doors;
+			roomCount = 0;
+			this.rooms = data.rooms.map(function (r) {
+				return new Room(r.x, r.y, r.w, r.h, r.color, true);
+			});
+			this.doors = data.doors.map(function (d) {
+				return new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key);
+			});
+			this.objects = data.objects;
 	
 			// where the level is located (world pos)
 			this.offsetX = 0;
@@ -47476,17 +47670,18 @@
 	
 			this.w = maxx - minx;
 			this.h = maxy - miny;
-			console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
+			//console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
 	
-			this.roomMap = {};
 			var _iteratorNormalCompletion2 = true;
 			var _didIteratorError2 = false;
 			var _iteratorError2 = undefined;
 	
 			try {
-				for (var _iterator2 = this.rooms[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var room = _step2.value;
-					this.roomMap[room.name] = room;
+				for (var _iterator2 = this.doors[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var door = _step2.value;
+	
+					door.roomA = this.rooms[door.roomAName];
+					door.roomB = this.rooms[door.roomBName];
 				}
 			} catch (err) {
 				_didIteratorError2 = true;
@@ -47499,32 +47694,6 @@
 				} finally {
 					if (_didIteratorError2) {
 						throw _iteratorError2;
-					}
-				}
-			}
-	
-			var _iteratorNormalCompletion3 = true;
-			var _didIteratorError3 = false;
-			var _iteratorError3 = undefined;
-	
-			try {
-				for (var _iterator3 = this.doors[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-					var door = _step3.value;
-	
-					door.roomA = this.roomMap[door.roomAName];
-					door.roomB = this.roomMap[door.roomBName];
-				}
-			} catch (err) {
-				_didIteratorError3 = true;
-				_iteratorError3 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion3 && _iterator3.return) {
-						_iterator3.return();
-					}
-				} finally {
-					if (_didIteratorError3) {
-						throw _iteratorError3;
 					}
 				}
 			}
@@ -47541,13 +47710,13 @@
 					point.y -= this.offsetY - this.h * ROOM_SIZE / 2;
 				}
 				if (debug) console.log("point=", point);
-				var _iteratorNormalCompletion4 = true;
-				var _didIteratorError4 = false;
-				var _iteratorError4 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-						var room = _step4.value;
+					for (var _iterator3 = this.rooms[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var room = _step3.value;
 	
 						var min = new _three2.default.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE / 2);
 						var max = new _three2.default.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE / 2);
@@ -47558,6 +47727,58 @@
 							return room;
 						}
 					}
+				} catch (err) {
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
+						}
+					} finally {
+						if (_didIteratorError3) {
+							throw _iteratorError3;
+						}
+					}
+				}
+	
+				return null;
+			}
+		}, {
+			key: 'create',
+			value: function create(scene, x, y, liftX, liftY, models) {
+				this.liftX = liftX;
+				this.liftY = liftY;
+	
+				var level_geometry = new _three2.default.CubeGeometry(this.w * ROOM_SIZE + WALL_THICKNESS * 2, this.h * ROOM_SIZE + WALL_THICKNESS * 2, ROOM_SIZE);
+				level_geometry.computeVertexNormals();
+				util.shadeGeo(level_geometry, LIGHT, new _three2.default.Color("#ffffcc"));
+				var level_mesh = new _three2.default.Mesh(level_geometry);
+				level_mesh.position.set(this.w * ROOM_SIZE / 2 + WALL_THICKNESS, this.h * ROOM_SIZE / 2 + WALL_THICKNESS, 0);
+				var level_bsp = new csg.ThreeBSP(level_mesh);
+	
+				// cut out the rooms
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
+	
+				try {
+					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var room = _step4.value;
+	
+						var rx = (room.x + room.w / 2) * ROOM_SIZE + WALL_THICKNESS;
+						var ry = (room.y + room.h / 2) * ROOM_SIZE + WALL_THICKNESS;
+						//console.log("rendering room: " + name + " at " + room.x + "," + room.y + " size=" + room.w + "," + room.h + " pos=" + rx + "," + ry);
+	
+						var inner_geometry = new _three2.default.CubeGeometry(room.w * ROOM_SIZE - WALL_THICKNESS, room.h * ROOM_SIZE - WALL_THICKNESS, ROOM_SIZE - WALL_THICKNESS);
+						var inner_mesh = new _three2.default.Mesh(inner_geometry);
+						inner_mesh.position.set(rx, ry, 0);
+						var inner_bsp = new csg.ThreeBSP(inner_mesh);
+	
+						level_bsp = level_bsp.subtract(inner_bsp);
+					}
+	
+					// door cutouts
 				} catch (err) {
 					_didIteratorError4 = true;
 					_iteratorError4 = err;
@@ -47573,43 +47794,52 @@
 					}
 				}
 	
-				return null;
-			}
-		}, {
-			key: 'create',
-			value: function create(scene, x, y, liftX, liftY) {
-				this.liftX = liftX;
-				this.liftY = liftY;
-	
-				var level_geometry = new _three2.default.CubeGeometry(this.w * ROOM_SIZE + WALL_THICKNESS * 2, this.h * ROOM_SIZE + WALL_THICKNESS * 2, ROOM_SIZE);
-				level_geometry.computeVertexNormals();
-				util.shadeGeo(level_geometry, LIGHT, new _three2.default.Color("#ffffcc"));
-				var level_mesh = new _three2.default.Mesh(level_geometry);
-				level_mesh.position.set(this.w * ROOM_SIZE / 2 + WALL_THICKNESS, this.h * ROOM_SIZE / 2 + WALL_THICKNESS, 0);
-				var level_bsp = new csg.ThreeBSP(level_mesh);
-	
-				// cut out the rooms
 				var _iteratorNormalCompletion5 = true;
 				var _didIteratorError5 = false;
 				var _iteratorError5 = undefined;
 	
 				try {
-					for (var _iterator5 = this.rooms[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-						var room = _step5.value;
+					for (var _iterator5 = this.doors[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+						var door = _step5.value;
 	
-						var rx = (room.x + room.w / 2) * ROOM_SIZE + WALL_THICKNESS;
-						var ry = (room.y + room.h / 2) * ROOM_SIZE + WALL_THICKNESS;
-						console.log("rendering room: " + name + " at " + room.x + "," + room.y + " size=" + room.w + "," + room.h + " pos=" + rx + "," + ry);
+						//console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
 	
-						var inner_geometry = new _three2.default.CubeGeometry(room.w * ROOM_SIZE - WALL_THICKNESS, room.h * ROOM_SIZE - WALL_THICKNESS, ROOM_SIZE - WALL_THICKNESS);
-						var inner_mesh = new _three2.default.Mesh(inner_geometry);
-						inner_mesh.position.set(rx, ry, 0);
-						var inner_bsp = new csg.ThreeBSP(inner_mesh);
+						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
+						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
+						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 	
-						level_bsp = level_bsp.subtract(inner_bsp);
+						var shell_mesh = undefined;
+						if (door.key == "") {
+							var shell_geo = new _three2.default.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
+							shell_mesh = new _three2.default.Mesh(shell_geo);
+						} else {
+							var keyModel = models.models[door.key];
+							shell_mesh = keyModel.createObject();
+							shell_mesh.geometry = shell_mesh.geometry.clone();
+	
+							// sizing and position by trial-and-error...
+							var w = undefined,
+							    h = undefined;
+							if (door.dir == "n" || door.dir == "s") {
+								shell_mesh.geometry.rotateZ(Math.PI / 2);
+								w = keyModel.bbox.size().x / door.h * 1.25;
+								h = keyModel.bbox.size().y / door.w * 2;
+							} else {
+								w = keyModel.bbox.size().x / door.w * 2;
+								h = keyModel.bbox.size().y / door.h;
+							}
+	
+							var modelZ = keyModel.bbox.size().z;
+							var zz = modelZ / DOOR_HEIGHT * 1.3;
+	
+							shell_mesh.geometry.scale(w, h, zz);
+							dz = -(ROOM_SIZE - DOOR_HEIGHT) - WALL_THICKNESS * .55;
+						}
+	
+						shell_mesh.position.set(dx, dy, dz);
+						var shell_bsp = new csg.ThreeBSP(shell_mesh);
+						level_bsp = level_bsp.subtract(shell_bsp);
 					}
-	
-					// door cutouts
 				} catch (err) {
 					_didIteratorError5 = true;
 					_iteratorError5 = err;
@@ -47625,6 +47855,14 @@
 					}
 				}
 	
+				this.mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
+				this.mesh = level_bsp.toMesh(this.mat);
+				this.mesh["name"] = "room_wall";
+				this.mesh["type"] = "wall";
+				this.geo = this.mesh.geometry;
+				this.geo.computeVertexNormals();
+	
+				// actual doors
 				var _iteratorNormalCompletion6 = true;
 				var _didIteratorError6 = false;
 				var _iteratorError6 = undefined;
@@ -47633,18 +47871,23 @@
 					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
 						var door = _step6.value;
 	
-						console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
-	
-						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
-						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
+						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
+						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
 	
-						var shell_geo = new _three2.default.CubeGeometry(DOOR_WIDTH, DOOR_WIDTH, DOOR_HEIGHT);
-						var shell_mesh = new _three2.default.Mesh(shell_geo);
-						shell_mesh.position.set(dx, dy, dz);
-						var shell_bsp = new csg.ThreeBSP(shell_mesh);
-						level_bsp = level_bsp.subtract(shell_bsp);
+						var door_geo = new _three2.default.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
+						var door_mesh = new _three2.default.Mesh(door_geo, new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors }));
+						util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
+	
+						door_mesh.position.set(dx, dy, dz);
+						door_mesh["name"] = "door_" + door.dir;
+						door_mesh["type"] = "door";
+						door_mesh["door"] = door;
+	
+						this.mesh.add(door_mesh);
 					}
+	
+					// objects
 				} catch (err) {
 					_didIteratorError6 = true;
 					_iteratorError6 = err;
@@ -47660,39 +47903,21 @@
 					}
 				}
 	
-				this.mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
-				this.mesh = level_bsp.toMesh(this.mat);
-				this.mesh["name"] = "room_wall";
-				this.mesh["type"] = "wall";
-				this.geo = this.mesh.geometry;
-				this.geo.computeVertexNormals();
-	
-				// actual doors
 				var _iteratorNormalCompletion7 = true;
 				var _didIteratorError7 = false;
 				var _iteratorError7 = undefined;
 	
 				try {
-					for (var _iterator7 = this.doors[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var door = _step7.value;
+					for (var _iterator7 = this.objects[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+						var object = _step7.value;
 	
-						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
-						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
-						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
-	
-						var door_geo = new _three2.default.CubeGeometry(door.w, door.h, DOOR_HEIGHT);
-						util.shadeGeo(door_geo, LIGHT, door.color);
-						var door_mesh = new _three2.default.Mesh(door_geo, new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors }));
-						//door_mesh.position.set(
-						//	door.x + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS,
-						//	door.y + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS,
-						//	-(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5);
-						door_mesh.position.set(dx, dy, dz);
-						door_mesh["name"] = "door_" + door.dir;
-						door_mesh["type"] = "door";
-						door_mesh["dir"] = door.dir;
-	
-						this.mesh.add(door_mesh);
+						var m = models.models[object.object];
+						var mesh = m.createObject();
+						var dx = (object.x + .5) * ROOM_SIZE + WALL_THICKNESS - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
+						var dy = (object.y + .5) * ROOM_SIZE + WALL_THICKNESS - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
+						var dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+						mesh.position.set(dx, dy, dz);
+						this.mesh.add(mesh);
 					}
 				} catch (err) {
 					_didIteratorError7 = true;
@@ -47713,7 +47938,7 @@
 				this.makeElevator(x, y);
 	
 				// center in start room
-				var start = this.roomMap["_start_"];
+				var start = this.rooms[0];
 				this.offsetX = x + (this.w / 2 - start.x - start.w / 2) * ROOM_SIZE;
 				this.offsetY = y + (this.h / 2 - start.y - start.h / 2) * ROOM_SIZE;
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
@@ -48395,12 +48620,13 @@
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
+	// edit these via: http://localhost:8000/compound_editor/rooms.html
 	var LEVELS = exports.LEVELS = {
-		"9,2": new room.Level([new room.Room("_start_", 0, 6, 4, 4, "#eeddd8", true), new room.Room("meeting_room", 0, 0, 2, 6, "#ddeedd"), new room.Room("bunks", 4, 6, 3, 9, "#ddeed8"), new room.Room("storage_room", 7, 7, 2, 2, "#d8ddee"), new room.Room("cable_room", 7, 11, 2, 2, "#ddeed8"), new room.Room("exercise_room", 1, 14, 3, 2, "#d8d8dd")], [new room.Door(0, 6, "n", "_start_", "meeting_room", "#cc8800"), new room.Door(3, 7, "e", "_start_", "bunks", "#cc8800"), new room.Door(6, 8, "e", "bunks", "storage_room", "#cc8800"), new room.Door(6, 12, "e", "bunks", "cable_room", "#cc8800"), new room.Door(4, 14, "w", "bunks", "exercise_room", "#cc8800")])
+		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {
-		return LEVELS["" + sectorX + "," + sectorY];
+		return new room.Level(LEVELS["" + sectorX + "," + sectorY]);
 	}
 
 /***/ },
@@ -48441,7 +48667,8 @@
 			depthWrite: false,
 			side: _three2.default.BackSide
 		}),
-		    mesh = new _three2.default.Mesh(new _three2.default.BoxGeometry(far_dist, far_dist, far_dist), material);
+		    mesh = new _three2.default.Mesh(new _three2.default.BoxGeometry(far_dist, far_dist, far_dist / 2), material);
+		mesh.position.z = far_dist / 4;
 		scene.add(mesh);
 	};
 
@@ -48556,6 +48783,305 @@
 		}]);
 	
 		return Horizon;
+	})();
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Benson = undefined;
+	
+	var _jquery = __webpack_require__(3);
+	
+	var _jquery2 = _interopRequireDefault(_jquery);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var SPEED_MULT = 1;
+	var PAUSE_DELAY = 1500;
+	
+	var Benson = exports.Benson = (function () {
+		function Benson() {
+			_classCallCheck(this, Benson);
+	
+			this.el = (0, _jquery2.default)("#message .value");
+			this.scroll = 1;
+			this.el.css("left", this.scroll * 100 + "%");
+			this.messages = [];
+			this.prevTime = Date.now();
+			this.pause = null;
+			this.out = false;
+		}
+	
+		_createClass(Benson, [{
+			key: "addMessage",
+			value: function addMessage(message, onComplete) {
+				this.messages.push([message, onComplete]);
+				if (this.messages.length == 1) {
+					this.el.empty().append(this.messages[0][0]);
+				}
+			}
+		}, {
+			key: "update",
+			value: function update() {
+				var time = Date.now();
+				var delta = (time - this.prevTime) / 1000;
+				this.prevTime = time;
+				if (this.messages.length > 0) {
+					if (this.pause) {
+						if (time - this.pause > PAUSE_DELAY) {
+							if (this.messages[0][1]) this.messages[0][1]();
+							this.pause = null;
+						}
+					} else if (this.scroll <= 0) {
+						if (this.messages.length > 1) {
+							this.el.css("left", this.scroll * 100 + "%");
+							this.scroll -= delta * SPEED_MULT;
+							if (this.scroll <= -1) {
+								this.scroll = 1;
+								this.el.css("left", this.scroll * 100 + "%");
+	
+								this.messages.splice(0, 1);
+								this.el.empty();
+								this.el.append(this.messages[0][0]);
+							}
+						}
+					} else {
+						this.el.css("left", this.scroll * 100 + "%");
+						this.scroll -= delta * SPEED_MULT;
+						if (this.scroll <= 0) {
+							this.scroll = 0;
+							this.pause = time;
+						}
+					}
+				}
+			}
+		}]);
+	
+		return Benson;
+	})();
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Space = undefined;
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _noise = __webpack_require__(7);
+	
+	var noise = _interopRequireWildcard(_noise);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var SIZE = 100;
+	var DEPTH = 100;
+	var COUNT = 500;
+	var MAX_SPEED = 2.7;
+	var MIN_SPEED = 0.1;
+	
+	var Space = exports.Space = (function () {
+		function Space(scene, main) {
+			_classCallCheck(this, Space);
+	
+			this.power = 0;
+			this.landing = false;
+			this.main = main;
+			this.scene = scene;
+			this.obj = new _three2.default.Object3D();
+			this.speed = MIN_SPEED;
+			for (var i = 0; i < COUNT; i++) {
+				var mesh = new _three2.default.Mesh(new _three2.default.CubeGeometry(1, 1, 1), new _three2.default.MeshBasicMaterial({ color: 0xffffff }));
+				Space.positionStar(mesh, 1000);
+				this.obj.add(mesh);
+			}
+			this.scene.add(this.obj);
+	
+			for (var i = 0; i < 1000; i++) {
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
+	
+				try {
+					for (var _iterator = this.obj.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var mesh = _step.value;
+	
+						mesh.position.z += MAX_SPEED;
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
+					}
+				}
+			}
+			var _iteratorNormalCompletion2 = true;
+			var _didIteratorError2 = false;
+			var _iteratorError2 = undefined;
+	
+			try {
+				for (var _iterator2 = this.obj.children[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var mesh = _step2.value;
+	
+					if (mesh.position.z >= 0) {
+						Space.positionStar(mesh);
+					}
+				}
+			} catch (err) {
+				_didIteratorError2 = true;
+				_iteratorError2 = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion2 && _iterator2.return) {
+						_iterator2.return();
+					}
+				} finally {
+					if (_didIteratorError2) {
+						throw _iteratorError2;
+					}
+				}
+			}
+	
+			var ac = new AudioContext();
+			this.noise = new noise.Noise(ac);
+			this.noise.setEnabled(true);
+			this.noise.setMode("pink");
+			this.noise.start();
+		}
+	
+		_createClass(Space, [{
+			key: 'getSpeed',
+			value: function getSpeed() {
+				return this.speed / MAX_SPEED * 50000 | 0;
+			}
+		}, {
+			key: 'update',
+			value: function update() {
+				var time = Date.now();
+				var delta = (time - this.prevTime) / 1000;
+				this.prevTime = time;
+	
+				if (this.power > 0) {
+					if (this.speed < MAX_SPEED) {
+						this.speed *= 1.01;
+					} else {
+						this.speed = MAX_SPEED;
+						this.power = 0;
+					}
+				} else if (this.power < 0) {
+					if (this.speed > MIN_SPEED) {
+						this.speed *= .98;
+					} else {
+						this.speed = MIN_SPEED;
+						this.power = 0;
+						this.startLanding();
+					}
+				}
+	
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
+	
+				try {
+					for (var _iterator3 = this.obj.children[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var mesh = _step3.value;
+	
+						mesh.position.z += this.speed;
+						if (mesh.position.z >= 0) {
+							Space.positionStar(mesh);
+						}
+					}
+				} catch (err) {
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
+						}
+					} finally {
+						if (_didIteratorError3) {
+							throw _iteratorError3;
+						}
+					}
+				}
+	
+				if (this.landing) {
+					this.targ.position.z += delta * 2;
+					//console.log("delta=" + delta + " z=" + this.targ.position.z);
+					var s = 1 - this.targ.position.z / -DEPTH;
+					this.targ.scale.set(s, s, s);
+					if (this.targ.position.z > -DEPTH * .67) {
+						this.landing = false;
+						this.speed = 0;
+						this.power = 0;
+						this.scene.remove(this.obj);
+						this.scene.remove(this.targ);
+						this.main.startGame();
+					}
+				}
+	
+				if (this.power != 0) {
+					this.noise.start();
+				} else {
+					this.noise.stop();
+				}
+				this.noise.setLevel(this.power > 0 ? .5 * this.power : -this.power);
+			}
+		}, {
+			key: 'startLanding',
+			value: function startLanding() {
+				this.landing = true;
+				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(DEPTH * 2), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.doubleSided, depthTest: false, depthWrite: false }));
+				this.targ.position.z = -DEPTH;
+				this.scene.add(this.targ);
+			}
+		}], [{
+			key: 'positionStar',
+			value: function positionStar(mesh) {
+				var rad = Math.random() * Math.PI * 2;
+				// don't put any stars in the middle
+				var d = Math.random() * (SIZE * .9) + SIZE * .1;
+				var x = d * Math.cos(rad);
+				var y = d * Math.sin(rad);
+				mesh.position.set(x, y, -(DEPTH * .5 + Math.random() * DEPTH * .5));
+				var s = 1 - mesh.position.z / -DEPTH;
+				mesh.scale.set(s, s, s);
+			}
+		}]);
+	
+		return Space;
 	})();
 
 /***/ }

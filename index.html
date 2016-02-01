@@ -2,12 +2,18 @@
 <head>
     <title>Merc</title>
 	<style>
+		@font-face {
+			 font-family: "C64 Pro Mono Local";
+			 src: url("/images/C64_Pro_Mono-STYLE.woff") format("woff");
+		}
+
 		* {
-			padding: 0; margin: 0;
-			font-family: monospace, sans-serif;
-			font-size: 14px;
-			/*font-weight: bold;*/
-			text-transform: uppercase;
+			/*font: normal 24pt/32px "C64 Pro Mono Local", verdana, helvetica, sans-serif;*/
+			font-family: "C64 Pro Mono Local", verdana, helvetica, sans-serif;
+			letter-spacing: 0px;
+			padding: 0;
+			margin: 0;
+			/*text-transform: uppercase;*/
 		}
 
 		#ui {
@@ -19,17 +25,37 @@
 			z-index: 100;
 		}
 
+		#ui .title {
+			position: relative;
+		}
+
+		#ui .title .text {
+			font-family: monospace, sans-serif;
+			text-transform: uppercase;
+			position: absolute;
+			z-index: 1000;
+			right: 10px;
+			/*top: -14px;*/
+			font-weight: bold;
+			font-size: 10px;
+			color: #ccc;
+			text-shadow: 1px 1px #000;
+		}
+
 		.uibox {
 			border: 10px inset #888;
 			color: white;
 			padding: 2px;
+			position: relative;
 		}
 
 		.uibox label {
-			position: relative;
+			font-family: monospace, sans-serif;
+			text-transform: uppercase;
+			position: absolute;
 			z-index: 1000;
-			left: -10px;
-			top: -14px;
+			left: -8px;
+			top: -12px;
 			font-weight: bold;
 			font-size: 10px;
 			color: #888;
@@ -40,7 +66,7 @@
 			overflow: hidden;
 			margin: 0;
 			padding: 0;
-			margin-top: -14px;
+			/*margin-top: -4px;*/
 		}
 
 		.uibox .value canvas {
@@ -69,6 +95,16 @@
 
 		#message {
 			background: darkred;
+			position: relative;
+			overflow: hidden;
+			/*padding-bottom: 5px;*/
+		}
+
+		#message .value {
+			overflow: hidden;
+			white-space: nowrap;
+			position: absolute;
+			line-height: 1;
 		}
 
 		table {
@@ -104,11 +140,27 @@
 		.line_container {
 			position: relative;
 		}
+
+		#help {
+			display: none;
+			width: 40%;
+			height: 40%;
+			position: absolute;
+			top: 30%;
+			left: 30%;
+			z-index: 1000;
+			border: 10px inset #888;
+			background: #888;
+			color: #ddd;
+			text-shadow: 1px 1px #000;
+			padding: 10px;
+		}
 	</style>
 </head>
 <body>
 	<script src="dist/merc.js"></script>
 	<div id="ui">
+		<div class="title"><div class="text">Benson 5000: H for help</div></div>
 	<table>
 		<tr>
 			<td rowspan="2"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
@@ -118,9 +170,26 @@
 			<td rowspan="2"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
 		</tr>
 		<tr>
-			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value">Welcome.</div></div></td>
+			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
 		</tr>
 	</table>
+	</div>
+	<div id="help">
+		<p>MERC keyboard help<br><br></p>
+		<p>
+			Movement: WASD keys<br>
+			Enter/exit craft: SPACE<br>
+			Craft power: 1-0<br>
+			Stop craft: ~<br>
+			Elevator: E<br>
+			Pickup object: P<br>
+			Click for mouse lock.<br>
+			<br>
+		</p>
+		<p>
+			Press H again to hide<br>
+			this panel.
+		</p>
 	</div>
 </body>
 </html>
