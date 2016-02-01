@@ -172,6 +172,7 @@
 		}, {
 			key: 'startGame',
 			value: function startGame() {
+				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, START_Z);
 				//movement.DEFAULT_Z);
@@ -36518,11 +36519,6 @@
 	
 			this.player = player;
 			this.land = new _three2.default.Object3D();
-			var mat = new _three2.default.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: _three2.default.FrontSide });
-			this.plane = new _three2.default.Mesh(new _three2.default.PlaneGeometry(200000, 200000), mat);
-			this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
-			this.land.add(this.plane);
-	
 			this.sectors = {};
 			this.minSector = { x: 0, y: 0 };
 			this.maxSector = { x: 0, y: 0 };
@@ -36633,9 +36629,7 @@
 			}
 		}, {
 			key: "update",
-			value: function update() {
-				this.plane.position.set(this.player.position.x, this.player.position.y, 0);
-			}
+			value: function update() {}
 		}, {
 			key: "addStructure",
 			value: function addStructure(model, sectorX, sectorY) {
@@ -46094,7 +46088,8 @@
 	var ROOM_COLLISION_ENABLED = true;
 	var LANDING_TIME = 30000;
 	var LANDING_ALT = 50000;
-	var LANDING_LAST_PERCENT = .3;
+	var LANDING_LAST_PERCENT = .5;
+	var LANDING_BASE_PERCENT = .2;
 	
 	var Movement = exports.Movement = (function () {
 		function Movement(main) {
@@ -46788,11 +46783,14 @@
 			value: function updateLanding(time, delta) {
 				if (this.landing > time) {
 					var p = (this.landing - time) / LANDING_TIME;
-					this.player.position.z = p * p * LANDING_ALT + DEFAULT_Z;
+					this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
 					this.player.rotation.z += delta * 0.05;
-					if (p < LANDING_LAST_PERCENT) {
-						this.pitch.rotation.x = (1 - p / LANDING_LAST_PERCENT) * (Math.PI / 2);
+					if (p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
+						this.pitch.rotation.x = (1 - (p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT)) * (Math.PI / 2);
 						this.noise.setLevel(1);
+					} else if (p < LANDING_BASE_PERCENT) {
+						this.noise.setLevel(1);
+						this.pitch.rotation.x = Math.PI / 2;
 					}
 				} else {
 					this.player.position.z = DEFAULT_Z;
@@ -48669,7 +48667,8 @@
 			depthWrite: false,
 			side: _three2.default.BackSide
 		}),
-		    mesh = new _three2.default.Mesh(new _three2.default.BoxGeometry(far_dist, far_dist, far_dist), material);
+		    mesh = new _three2.default.Mesh(new _three2.default.BoxGeometry(far_dist, far_dist, far_dist / 2), material);
+		mesh.position.z = far_dist / 4;
 		scene.add(mesh);
 	};
 

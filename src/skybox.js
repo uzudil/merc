@@ -23,7 +23,8 @@ export class Skybox {
 			depthWrite: false,
 			side: THREE.BackSide
 		} ),
-		mesh = new THREE.Mesh( new THREE.BoxGeometry( far_dist, far_dist, far_dist ), material );
+		mesh = new THREE.Mesh( new THREE.BoxGeometry( far_dist, far_dist, far_dist/2 ), material );
+		mesh.position.z = far_dist/4;
 		scene.add( mesh );
 	}
 }

@@ -35,11 +35,6 @@ export class GameMap {
 	constructor(scene, models, player) {
 		this.player = player;
 		this.land = new THREE.Object3D();
-		var mat = new THREE.MeshBasicMaterial({ color: GRASS_COLOR, wireframe: false, side: THREE.FrontSide });
-		this.plane = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), mat);
-		this.plane.position.set(10 * SECTOR_SIZE, 10 * SECTOR_SIZE, 0);
-		this.land.add(this.plane);
-
 		this.sectors = {};
 		this.minSector = {x: 0, y: 0};
 		this.maxSector = {x: 0, y: 0};
@@ -132,7 +127,6 @@ export class GameMap {
 	}
 
 	update() {
-		this.plane.position.set(this.player.position.x, this.player.position.y, 0);
 	}
 
 	addStructure(model, sectorX, sectorY) {

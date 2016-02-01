@@ -75,6 +75,7 @@ class Merc {
 	}
 
 	startGame() {
+		this.renderer.setClearColor(game_map.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 		this.movement.player.position.set(
 			game_map.SECTOR_SIZE * START_X,
