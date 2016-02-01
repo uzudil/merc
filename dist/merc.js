@@ -49039,7 +49039,7 @@
 	
 				if (this.landing) {
 					this.targ.position.z += delta * 2;
-					console.log("delta=" + delta + " z=" + this.targ.position.z);
+					//console.log("delta=" + delta + " z=" + this.targ.position.z);
 					var s = 1 - this.targ.position.z / -DEPTH;
 					this.targ.scale.set(s, s, s);
 					if (this.targ.position.z > -DEPTH * .67) {
