@@ -37,7 +37,7 @@ class Merc {
 
 		this.space = null;
 		this.movement = null;
-		//this.startGame();
+		// this.startGame();
 		this.startIntro();
 
 		this.animate();

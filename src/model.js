@@ -7,11 +7,12 @@ import * as util from 'util';
 	Then, export with vertex colors on (no materials needed.)
  */
 const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator",
-	"keya", "keyb", "keyc", "keyd" ];
+	"keya", "keyb", "keyc", "keyd", "ship" ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false },
-	"plane": { speed: 20000, flies: true }
+	"plane": { speed: 20000, flies: true },
+	"ship": { speed: 5000000, flies: true }
 };
 
 const SCALE = {
@@ -21,6 +22,7 @@ const SCALE = {
 	"keyb": 10,
 	"keyc": 10,
 	"keyd": 10,
+	"ship": 20,
 };
 
 const DESCRIPTIONS = {

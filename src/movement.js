@@ -647,7 +647,7 @@ export class Movement {
 			this.main.game_map.addModelAt(
 				this.player.position.x + 100,
 				this.player.position.y + 100,
-				this.main.models.models["plane"],
+				this.main.models.models["ship"],
 				this.player.rotation.z);
 
 			this.main.benson.addMessage("Welcome to Targ.");
