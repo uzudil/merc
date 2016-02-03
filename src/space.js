@@ -64,7 +64,7 @@ export class Space {
 
 		if(this.power > 0) {
 			if (this.speed < MAX_SPEED) {
-				this.speed *= 1.01;
+				this.speed *= 1.025;
 			} else {
 				this.speed = MAX_SPEED;
 				this.power = 0;
