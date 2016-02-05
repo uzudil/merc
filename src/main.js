@@ -37,7 +37,7 @@ class Merc {
 
 		this.space = null;
 		this.movement = null;
-		// this.startGame();
+		 //this.startGame();
 		this.startIntro();
 
 		this.animate();
@@ -99,9 +99,12 @@ class Merc {
 	setupUI() {
 		let h = this.height;
 		var height = (h * 0.333)|0;
+		let w = h * ASPECT_RATIO;
 		$("#ui").css({
-			width: h * ASPECT_RATIO + "px",
+			width: w + "px",
 			height: height + "px",
+			left: "50%",
+			"margin-left": -w/2 + "px"
 		});
 		$(".uibox .value,#message").css("font-size", Math.round(h/200*7) + "px");
 		$(".uibox").css("min-height", Math.round(h/200*7) + "px");

@@ -130,7 +130,7 @@
 	
 				this.space = null;
 				this.movement = null;
-				// this.startGame();
+				//this.startGame();
 				this.startIntro();
 	
 				this.animate();
@@ -194,9 +194,12 @@
 			value: function setupUI() {
 				var h = this.height;
 				var height = h * 0.333 | 0;
+				var w = h * ASPECT_RATIO;
 				(0, _jquery2.default)("#ui").css({
-					width: h * ASPECT_RATIO + "px",
-					height: height + "px"
+					width: w + "px",
+					height: height + "px",
+					left: "50%",
+					"margin-left": -w / 2 + "px"
 				});
 				(0, _jquery2.default)(".uibox .value,#message").css("font-size", Math.round(h / 200 * 7) + "px");
 				(0, _jquery2.default)(".uibox").css("min-height", Math.round(h / 200 * 7) + "px");
@@ -46751,10 +46754,8 @@
 	
 			this.main = main;
 	
-			var ac = new AudioContext();
-			this.noise = new noise.Noise(ac);
+			this.noise = new noise.Noise();
 			this.noise.setEnabled(SOUND_ENABLED);
-			this.noise.setMode("walk");
 	
 			this.prevTime = Date.now();
 			this.direction = new _three2.default.Vector3(0, 1, 0);
@@ -46952,8 +46953,8 @@
 						this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
 						this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 	
-						this.noise.setMode("lift");
 						this.liftDirection = 1;
+						this.noise.stop("door");
 						console.log("heading up");
 					}
 				} else if (!this.level) {
@@ -46965,7 +46966,6 @@
 	
 						this.level = compounds.getLevel(this.sectorX, this.sectorY);
 						if (this.level) {
-							this.noise.setMode("lift");
 							this.liftDirection = -1;
 							// create room
 							//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
@@ -46987,8 +46987,8 @@
 		}, {
 			key: 'exitVehicle',
 			value: function exitVehicle() {
-				this.noise.stop();
-				this.noise.setMode("walk");
+				this.noise.stop("car");
+				this.noise.stop("jet");
 				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.vehicle.model, this.player.rotation.z);
 				this.vehicle = null;
 				this.stop();
@@ -47004,17 +47004,13 @@
 					for (var _iterator = this.intersections[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 						var o = _step.value;
 	
+						this.noise.stop("walk");
 						if (o.model instanceof models.Vehicle) {
 							this.player.rotation.z = o.rotation.z;
 							this.vehicle = o;
 							this.vehicle.parent.remove(this.vehicle);
 							this.main.benson.addMessage(o.model.description);
 							this.stop();
-							if (this.vehicle.model.flies) {
-								this.noise.setMode("jet");
-							} else {
-								this.noise.setMode("car");
-							}
 							break;
 						}
 					}
@@ -47152,20 +47148,18 @@
 				var room_z = ROOM_DEPTH;
 				var pz = this.player.position.z / room_z;
 				var liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
-				this.noise.setLevel(liftSpeed / 150);
+				this.noise.setLevel("lift", liftSpeed / 150);
 				this.player.position.z += this.liftDirection * delta * liftSpeed;
 				if (this.liftDirection < 0 && this.player.position.z <= room_z) {
 					this.player.position.z = room_z;
 					this.liftDirection = 0;
-					this.noise.stop();
-					this.noise.setMode("walk");
+					this.noise.stop("lift");
 				} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 					this.player.position.z = DEFAULT_Z;
 					this.liftDirection = 0;
 					this.level.destroy();
 					this.level = null;
-					this.noise.stop();
-					this.noise.setMode("walk");
+					this.noise.stop("lift");
 				}
 			}
 		}, {
@@ -47260,8 +47254,6 @@
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
 				door["moving"] = "up";
 				this.doorsUp.push(door);
-				this.noise.setMode("door");
-				this.noise.start();
 			}
 		}, {
 			key: 'updateDoors',
@@ -47275,15 +47267,13 @@
 						var dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
 						if (_this2.worldPos.z < dz) {
 							door.position.z += delta * 50;
-							_this2.noise.setLevel((room_package.DOOR_HEIGHT - Math.abs(dz - _this2.worldPos.z)) / room_package.DOOR_HEIGHT);
+							_this2.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - _this2.worldPos.z)) / room_package.DOOR_HEIGHT);
 						} else {
 							door.moving = "down";
 							_this2.doorsUp.splice(_i, 1);
-							_this2.noise.setMode("walk");
+							_this2.noise.stop("door");
 							_i--;
 							setTimeout(function () {
-								_this2.noise.setMode("door");
-								_this2.noise.start();
 								_this2.doorsDown.push(door);
 							}, 1500);
 						}
@@ -47301,12 +47291,12 @@
 							// todo: check for player...
 							_door.position.z -= delta * 50;
 							if (_door.position.z < _door.original_z) _door.position.z = _door.original_z;
-							this.noise.setLevel((_door.position.z - _door.original_z) / room_package.DOOR_HEIGHT);
+							this.noise.setLevel("door", (_door.position.z - _door.original_z) / room_package.DOOR_HEIGHT);
 						} else {
 							_door.position.z = _door.original_z;
 							_door.moving = null;
 							this.doorsDown.splice(_i2, 1);
-							this.noise.setMode("walk");
+							this.noise.stop("door");
 							_i2--;
 						}
 					}
@@ -47419,15 +47409,24 @@
 				// adjust noise
 				if (this.landing != 0) return;
 	
-				if (this.getSpeed() > 0 || this.liftDirection != 0) {
-					this.noise.start();
-				} else {
-					this.noise.stop();
-				}
 				if (this.liftDirection != 0 || this.doorsUp.length > 0) {
 					// pass: set in updateLift, etc
 				} else {
-						this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
+						var mode = "walk";
+						if (this.vehicle) {
+							this.noise.stop("walk");
+							if (this.vehicle.model.flies) {
+								mode = "jet";
+							} else {
+								mode = "car";
+							}
+						} else {
+							this.noise.stop("car");
+							this.noise.stop("jet");
+						}
+	
+						var lvl = this.getSpeed() / this.getMaxSpeed();
+						if (lvl == 0) this.noise.stop(mode);else this.noise.setLevel(mode, lvl);
 					}
 			}
 		}, {
@@ -47439,9 +47438,9 @@
 					this.player.rotation.z += delta * 0.05;
 					if (p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
 						this.pitch.rotation.x = (1 - (p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT)) * (Math.PI / 2);
-						this.noise.setLevel(1);
+						this.noise.setLevel("pink", 1);
 					} else if (p < LANDING_BASE_PERCENT) {
-						this.noise.setLevel(1);
+						this.noise.setLevel("pink", 1);
 						this.pitch.rotation.x = Math.PI / 2;
 					}
 				} else {
@@ -47449,8 +47448,7 @@
 					//this.player.rotation.z = 0;
 					this.pitch.rotation.x = Math.PI / 2;
 					this.landing = false;
-					this.noise.stop();
-					this.noise.setMode("walk");
+					this.noise.stop("pink");
 					this.power = 0;
 	
 					// add ship behind player
@@ -47491,9 +47489,7 @@
 			value: function startLanding() {
 				this.landing = Date.now() + LANDING_TIME;
 				this.pitch.rotation.x = 0;
-				this.noise.setMode("pink");
-				this.noise.start();
-				this.noise.setLevel(0);
+				this.noise.setLevel("pink", 0);
 			}
 		}], [{
 			key: 'makeCrossHair',
@@ -47733,161 +47729,159 @@
 	 */
 	
 	var Noise = exports.Noise = function () {
-		function Noise(audioContext) {
+		function Noise() {
 			_classCallCheck(this, Noise);
 	
-			this.audioContext = audioContext;
-			this.enabled = true;
-			this.started = false;
-			this.initNoises();
-	
-			this.setMode("jet");
+			this.noises = {
+				jet: new JetNoise(),
+				car: new CarNoise(),
+				pink: new PinkNoise(),
+				walk: new WalkNoise(),
+				lift: new LiftNoise(),
+				door: new DoorNoise(),
+				benson: new BensonNoise()
+			};
 		}
 	
 		_createClass(Noise, [{
 			key: "setEnabled",
 			value: function setEnabled(enabled) {
-				this.enabled = enabled;
-				if (this.component && !this.enabled) this.stop();
-			}
-		}, {
-			key: "start",
-			value: function start() {
-				if (this.component && this.enabled && !this.started) {
-					this.component.start(this.audioContext);
-					this.started = true;
-				}
+				//this.enabled = enabled;
+				//if(this.component && !this.enabled) this.stop();
 			}
 		}, {
 			key: "stop",
-			value: function stop() {
-				if (this.component && this.started) {
-					this.component.stop();
-					this.started = false;
-				}
+			value: function stop(name) {
+				this.noises[name].stop();
 			}
 		}, {
 			key: "setLevel",
-			value: function setLevel(level) {
-				this.component.setLevel(level);
-			}
-		}, {
-			key: "setMode",
-			value: function setMode(mode) {
-				this.stop();
-				this.mode = mode;
-				this.component = this.noises[this.mode];
-				//console.log("Setting mode to " + this.mode + " comp=", this.component);
-			}
-		}, {
-			key: "initNoises",
-			value: function initNoises() {
-				this.noises = {
-					jet: new JetNoise(this),
-					car: new CarNoise(this),
-					pink: new PinkNoise(this),
-					walk: new WalkNoise(this),
-					lift: new LiftNoise(this),
-					door: new DoorNoise(this)
-				};
-			}
-		}, {
-			key: "createNoiseBuffer",
-			value: function createNoiseBuffer() {
-				var amps = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
-				var offset = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
-	
-				var noiseBuffer = this.audioContext.createBuffer(2, 0.5 * this.audioContext.sampleRate, this.audioContext.sampleRate);
-				var left = noiseBuffer.getChannelData(0);
-				var right = noiseBuffer.getChannelData(1);
-				for (var i = 0; i < noiseBuffer.length; i++) {
-					left[i] = Math.random() * (amps * 2) - amps + offset;
-					right[i] = Math.random() * (amps * 2) - amps + offset;
-				}
-				return noiseBuffer;
-			}
-		}, {
-			key: "createGapNoiseBuffer",
-			value: function createGapNoiseBuffer() {
-				var on_time = arguments.length <= 0 || arguments[0] === undefined ? 100 : arguments[0];
-				var off_time = arguments.length <= 1 || arguments[1] === undefined ? 100 : arguments[1];
-				var amps = arguments.length <= 2 || arguments[2] === undefined ? 1 : arguments[2];
-				var offset = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
-	
-				var noiseBuffer = this.audioContext.createBuffer(2, 0.5 * this.audioContext.sampleRate, this.audioContext.sampleRate);
-				var left = noiseBuffer.getChannelData(0);
-				var right = noiseBuffer.getChannelData(1);
-				var on = true;
-				for (var i = 0; i < noiseBuffer.length; i++) {
-					if (on) {
-						left[i] = Math.random() * (amps * 2) - amps + offset;
-						right[i] = Math.random() * (amps * 2) - amps + offset;
-						if (i % on_time == 0) {
-							on = false;
-						}
-					} else {
-						left[i] = right[i] = 0;
-						if (i % off_time == 0) {
-							on = true;
-						}
-					}
-				}
-				return noiseBuffer;
+			value: function setLevel(name, level) {
+				this.noises[name].setLevel(level);
 			}
 		}]);
 	
 		return Noise;
 	}();
 	
+	var globalContext = new AudioContext();
+	
+	function createNoiseBuffer(audioContext) {
+		var amps = arguments.length <= 1 || arguments[1] === undefined ? 1 : arguments[1];
+		var offset = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+	
+		var noiseBuffer = audioContext.createBuffer(2, 0.5 * audioContext.sampleRate, audioContext.sampleRate);
+		var left = noiseBuffer.getChannelData(0);
+		var right = noiseBuffer.getChannelData(1);
+		for (var i = 0; i < noiseBuffer.length; i++) {
+			left[i] = Math.random() * (amps * 2) - amps + offset;
+			right[i] = Math.random() * (amps * 2) - amps + offset;
+		}
+		return noiseBuffer;
+	}
+	
+	function createGapNoiseBuffer(audioContext) {
+		var on_time = arguments.length <= 1 || arguments[1] === undefined ? 100 : arguments[1];
+		var off_time = arguments.length <= 2 || arguments[2] === undefined ? 100 : arguments[2];
+		var amps = arguments.length <= 3 || arguments[3] === undefined ? 1 : arguments[3];
+		var offset = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+	
+		var noiseBuffer = audioContext.createBuffer(2, 0.5 * audioContext.sampleRate, audioContext.sampleRate);
+		var left = noiseBuffer.getChannelData(0);
+		var right = noiseBuffer.getChannelData(1);
+		var on = true;
+		for (var i = 0; i < noiseBuffer.length; i++) {
+			if (on) {
+				left[i] = Math.random() * (amps * 2) - amps + offset;
+				right[i] = Math.random() * (amps * 2) - amps + offset;
+				if (i % on_time == 0) {
+					on = false;
+				}
+			} else {
+				left[i] = right[i] = 0;
+				if (i % off_time == 0) {
+					on = true;
+				}
+			}
+		}
+		return noiseBuffer;
+	}
+	
+	function createPinkNoiseBuffer(audioContext) {
+		var amps = arguments.length <= 1 || arguments[1] === undefined ? 1 : arguments[1];
+		var offset = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+	
+		var noiseBuffer = audioContext.createBuffer(5, 0.5 * audioContext.sampleRate, audioContext.sampleRate);
+		var left = noiseBuffer.getChannelData(0);
+		var right = noiseBuffer.getChannelData(1);
+		var p1 = pinkNoiseStep();
+		var p2 = pinkNoiseStep();
+		for (var i = 0; i < noiseBuffer.length; i++) {
+			p1(left, i);
+			p2(right, i);
+		}
+		return noiseBuffer;
+	}
+	
+	function pinkNoiseStep() {
+		var b0, b1, b2, b3, b4, b5, b6;
+		b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+		return function (output, index) {
+			var white = Math.random() * 2 - 1;
+			b0 = 0.99886 * b0 + white * 0.0555179;
+			b1 = 0.99332 * b1 + white * 0.0750759;
+			b2 = 0.96900 * b2 + white * 0.1538520;
+			b3 = 0.86650 * b3 + white * 0.3104856;
+			b4 = 0.55000 * b4 + white * 0.5329522;
+			b5 = -0.7616 * b5 - white * 0.0168980;
+			output[index] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+			output[index] *= 0.11; // (roughly) compensate for gain
+			b6 = white * 0.115926;
+		};
+	}
+	
 	var PinkNoise = function () {
-		function PinkNoise(noise) {
+		function PinkNoise() {
 			_classCallCheck(this, PinkNoise);
 	
-			var bufferSize = 4096;
-			var pinkNoise = function () {
-				var b0, b1, b2, b3, b4, b5, b6;
-				b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
-				var node = noise.audioContext.createScriptProcessor(bufferSize, 1, 1);
-				node.onaudioprocess = function (e) {
-					var output = e.outputBuffer.getChannelData(0);
-					for (var i = 0; i < bufferSize; i++) {
-						var white = Math.random() * 2 - 1;
-						b0 = 0.99886 * b0 + white * 0.0555179;
-						b1 = 0.99332 * b1 + white * 0.0750759;
-						b2 = 0.96900 * b2 + white * 0.1538520;
-						b3 = 0.86650 * b3 + white * 0.3104856;
-						b4 = 0.55000 * b4 + white * 0.5329522;
-						b5 = -0.7616 * b5 - white * 0.0168980;
-						output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-						output[i] *= 0.11; // (roughly) compensate for gain
-						b6 = white * 0.115926;
-					}
-				};
-				return node;
-			}();
+			this.started = false;
+			this.audioContext = globalContext;
 	
-			this.gain = noise.audioContext.createGain();
-			this.filter = noise.audioContext.createBiquadFilter();
+			this.distortion = this.audioContext.createBufferSource();
+			this.distortion.buffer = createPinkNoiseBuffer(this.audioContext);
+			this.distortion.start(0);
+			this.distortion.loop = true;
+	
+			this.gain = this.audioContext.createGain();
+			this.filter = this.audioContext.createBiquadFilter();
 			this.gain.gain.value = 10;
 			this.filter.frequency.value = 440.0;
 	
-			pinkNoise.connect(this.filter);
+			this.distortion.connect(this.filter);
 			this.filter.connect(this.gain);
+			//this.gain.connect(this.audioContext.destination);
 		}
 	
 		_createClass(PinkNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.gain.connect(context.destination);
+				if (!this.started) {
+					this.gain.connect(this.audioContext.destination);
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.gain.disconnect();
+				if (this.started) {
+					this.gain.disconnect();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				this.filter.frequency.value = 100.0 + 150.0 * level;
 				this.gain.gain.value = 3 + level * 9;
 			}
@@ -47897,18 +47891,21 @@
 	}();
 	
 	var JetNoise = function () {
-		function JetNoise(noise) {
+		function JetNoise() {
 			_classCallCheck(this, JetNoise);
 	
-			this.distortion = noise.audioContext.createBufferSource();
-			this.distortion.buffer = noise.createNoiseBuffer();
+			this.started = false;
+			this.audioContext = globalContext;
+			this.distortion = this.audioContext.createBufferSource();
+			this.distortion.buffer = createNoiseBuffer(this.audioContext);
 			this.distortion.loop = true;
 			this.distortion.start(0);
 	
-			this.filter = noise.audioContext.createBiquadFilter();
+			this.filter = this.audioContext.createBiquadFilter();
 			this.filter.frequency.value = 440.0;
 	
-			this.gain = noise.audioContext.createGain();
+			this.gain = this.audioContext.createGain();
+	
 			this.gain.gain.value = 0.1;
 	
 			this.distortion.connect(this.filter);
@@ -47918,16 +47915,23 @@
 		_createClass(JetNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.gain.connect(context.destination);
+				if (!this.started) {
+					this.gain.connect(this.audioContext.destination);
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.gain.disconnect();
+				if (this.started) {
+					this.gain.disconnect();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				var x = Math.sin(0.5 * Math.PI * level);
 				this.filter.frequency.value = x * 400.0 + 600.0;
 				this.distortion.playbackRate.value = x * 0.01 + 0.025;
@@ -47956,6 +47960,7 @@
 	
 			/* VCA */
 			this.vca = context.createGain();
+	
 			this.vca.gain.value = this.volume;
 	
 			/* connections */
@@ -47984,21 +47989,22 @@
 	}();
 	
 	var Distortion = function () {
-		function Distortion(noise, volume, frequency, gapNoise) {
+		function Distortion(context, volume, frequency, gapNoise) {
 			_classCallCheck(this, Distortion);
 	
 			this.volume = volume;
-			this.context = noise.audioContext;
+			this.context = context;
 			this.frequency = frequency || 440.0;
-			this.distortion = noise.audioContext.createBufferSource();
-			this.distortion.buffer = gapNoise ? noise.createGapNoiseBuffer() : noise.createNoiseBuffer();
+			this.distortion = context.createBufferSource();
+			this.distortion.buffer = gapNoise ? createGapNoiseBuffer(context) : createNoiseBuffer(context);
 			this.distortion.loop = true;
 			this.distortion.start(0);
 	
-			this.filter = noise.audioContext.createBiquadFilter();
+			this.filter = context.createBiquadFilter();
 			this.filter.frequency.value = this.frequency;
 	
-			this.gain = noise.audioContext.createGain();
+			this.gain = context.createGain();
+	
 			this.gain.gain.value = this.volume;
 	
 			this.distortion.connect(this.filter);
@@ -48027,31 +48033,40 @@
 	}();
 	
 	var LiftNoise = function () {
-		function LiftNoise(noise) {
+		function LiftNoise() {
 			_classCallCheck(this, LiftNoise);
 	
-			this.voice1 = new Voice(noise.audioContext, 0.2, 400);
-			this.voice2 = new Voice(noise.audioContext, 0.2, 500);
-			this.distortion = new Distortion(noise, 0.5, 440);
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 400);
+			this.voice2 = new Voice(this.audioContext, 0.2, 500);
+			this.distortion = new Distortion(this.audioContext, 0.5, 440);
 		}
 	
 		_createClass(LiftNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.voice1.start();
-				this.voice2.start();
-				this.distortion.start();
+				if (!this.started) {
+					this.voice1.start();
+					this.voice2.start();
+					this.distortion.start();
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.voice1.stop();
-				this.voice2.stop();
-				this.distortion.stop();
+				if (this.started) {
+					this.voice1.stop();
+					this.voice2.stop();
+					this.distortion.stop();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				this.voice1.setLevel(level);
 				this.voice2.setLevel(level);
 				this.distortion.setLevel(level);
@@ -48062,28 +48077,37 @@
 	}();
 	
 	var DoorNoise = function () {
-		function DoorNoise(noise) {
+		function DoorNoise() {
 			_classCallCheck(this, DoorNoise);
 	
-			this.voice1 = new Voice(noise.audioContext, 0.2, 700);
-			this.distortion = new Distortion(noise, 0.5, 500);
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 700);
+			this.distortion = new Distortion(this.audioContext, 0.5, 500);
 		}
 	
 		_createClass(DoorNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.voice1.start();
-				this.distortion.start();
+				if (!this.started) {
+					this.voice1.start();
+					this.distortion.start();
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.voice1.stop();
-				this.distortion.stop();
+				if (this.started) {
+					this.voice1.stop();
+					this.distortion.stop();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				this.voice1.setLevel(level);
 				this.distortion.setLevel(level);
 			}
@@ -48092,32 +48116,85 @@
 		return DoorNoise;
 	}();
 	
+	var BensonNoise = function () {
+		function BensonNoise() {
+			_classCallCheck(this, BensonNoise);
+	
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 440);
+			this.voice2 = new Voice(this.audioContext, 0.2, 500);
+			this.voice3 = new Voice(this.audioContext, 0.2, 550);
+		}
+	
+		_createClass(BensonNoise, [{
+			key: "start",
+			value: function start(context) {
+				if (!this.started) {
+					this.voice1.start();
+					this.voice2.start();
+					this.voice3.start();
+					this.started = true;
+				}
+			}
+		}, {
+			key: "stop",
+			value: function stop() {
+				if (this.started) {
+					this.voice1.stop();
+					this.voice2.stop();
+					this.voice3.stop();
+					this.started = false;
+				}
+			}
+		}, {
+			key: "setLevel",
+			value: function setLevel(level) {
+				this.start();
+				this.voice1.setLevel(level);
+				this.voice2.setLevel(level);
+				this.voice3.setLevel(level);
+			}
+		}]);
+	
+		return BensonNoise;
+	}();
+	
 	var CarNoise = function () {
-		function CarNoise(noise) {
+		function CarNoise() {
 			_classCallCheck(this, CarNoise);
 	
-			this.voice1 = new Voice(noise.audioContext, 0.2, 300);
-			this.voice2 = new Voice(noise.audioContext, 0.2, 400);
-			this.distortion = new Distortion(noise, 2, 400, true);
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 300);
+			this.voice2 = new Voice(this.audioContext, 0.2, 400);
+			this.distortion = new Distortion(this.audioContext, 2, 400, true);
 		}
 	
 		_createClass(CarNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.voice1.start();
-				this.voice2.start();
-				this.distortion.start();
+				if (!this.started) {
+					this.voice1.start();
+					this.voice2.start();
+					this.distortion.start();
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.voice1.stop();
-				this.voice2.stop();
-				this.distortion.stop();
+				if (this.started) {
+					this.voice1.stop();
+					this.voice2.stop();
+					this.distortion.stop();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				this.voice1.setLevel(level);
 				this.voice2.setLevel(level);
 				this.distortion.setLevel(level);
@@ -48128,18 +48205,21 @@
 	}();
 	
 	var WalkNoise = function () {
-		function WalkNoise(noise) {
+		function WalkNoise() {
 			_classCallCheck(this, WalkNoise);
 	
-			this.source = noise.audioContext.createBufferSource();
-			this.source.buffer = noise.createGapNoiseBuffer(100, 750);
+			this.started = false;
+			this.audioContext = globalContext;
+			this.source = this.audioContext.createBufferSource();
+			this.source.buffer = createGapNoiseBuffer(this.audioContext, 100, 750);
 			this.source.loop = true;
 			this.source.start();
 	
-			this.filter = noise.audioContext.createBiquadFilter();
+			this.filter = this.audioContext.createBiquadFilter();
 			this.filter.frequency.value = 800.0;
 	
-			this.gain = noise.audioContext.createGain();
+			this.gain = this.audioContext.createGain();
+	
 			this.gain.gain.value = 3;
 	
 			this.source.connect(this.filter);
@@ -48149,16 +48229,23 @@
 		_createClass(WalkNoise, [{
 			key: "start",
 			value: function start(context) {
-				this.gain.connect(context.destination);
+				if (!this.started) {
+					this.gain.connect(this.audioContext.destination);
+					this.started = true;
+				}
 			}
 		}, {
 			key: "stop",
 			value: function stop() {
-				this.gain.disconnect();
+				if (this.started) {
+					this.gain.disconnect();
+					this.started = false;
+				}
 			}
 		}, {
 			key: "setLevel",
 			value: function setLevel(level) {
+				this.start();
 				var x = Math.sin(0.5 * Math.PI * level);
 				this.filter.frequency.value = 100;
 				this.source.playbackRate.value = 0.05;
@@ -49443,7 +49530,7 @@
 /* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -49456,11 +49543,17 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
+	var _noise = __webpack_require__(8);
+	
+	var noise = _interopRequireWildcard(_noise);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var SPEED_MULT = 1;
+	var SPEED_MULT = 1.2;
 	var PAUSE_DELAY = 1500;
 	
 	var Benson = exports.Benson = function () {
@@ -49474,10 +49567,11 @@
 			this.prevTime = Date.now();
 			this.pause = null;
 			this.out = false;
+			this.noise = new noise.Noise();
 		}
 	
 		_createClass(Benson, [{
-			key: "addMessage",
+			key: 'addMessage',
 			value: function addMessage(message, onComplete) {
 				this.messages.push([message, onComplete]);
 				if (this.messages.length == 1) {
@@ -49485,7 +49579,7 @@
 				}
 			}
 		}, {
-			key: "update",
+			key: 'update',
 			value: function update() {
 				var time = Date.now();
 				var delta = (time - this.prevTime) / 1000;
@@ -49512,6 +49606,15 @@
 					} else {
 						this.el.css("left", this.scroll * 100 + "%");
 						this.scroll -= delta * SPEED_MULT;
+						if (this.scroll > .9) {
+							this.noise.setLevel("benson", 1);
+						} else if (this.scroll > .8) {
+							this.noise.setLevel("benson", .5);
+						} else if (this.scroll > .7) {
+							this.noise.setLevel("benson", 1);
+						} else {
+							this.noise.stop("benson");
+						}
 						if (this.scroll <= 0) {
 							this.scroll = 0;
 							this.pause = time;
@@ -49627,11 +49730,7 @@
 				}
 			}
 	
-			var ac = new AudioContext();
-			this.noise = new noise.Noise(ac);
-			this.noise.setEnabled(true);
-			this.noise.setMode("pink");
-			this.noise.start();
+			this.noise = new noise.Noise();
 		}
 	
 		_createClass(Space, [{
@@ -49706,18 +49805,17 @@
 					}
 				}
 	
-				if (this.power != 0) {
-					this.noise.start();
+				if (this.power == 0) {
+					this.noise.stop("pink");
 				} else {
-					this.noise.stop();
+					this.noise.setLevel("pink", this.power > 0 ? .5 * this.power : -this.power);
 				}
-				this.noise.setLevel(this.power > 0 ? .5 * this.power : -this.power);
 			}
 		}, {
 			key: 'startLanding',
 			value: function startLanding() {
 				this.landing = true;
-				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(DEPTH * 2), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.doubleSided, depthTest: false, depthWrite: false }));
+				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(DEPTH * 2), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.DoubleSide, depthTest: false, depthWrite: false }));
 				this.targ.position.z = -DEPTH;
 				this.scene.add(this.targ);
 			}

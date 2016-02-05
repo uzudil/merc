@@ -28,10 +28,8 @@ export class Movement {
 	constructor(main) {
 		this.main = main;
 
-		var ac = new AudioContext();
-		this.noise = new noise.Noise(ac);
+		this.noise = new noise.Noise();
 		this.noise.setEnabled(SOUND_ENABLED);
-		this.noise.setMode("walk");
 
 		this.prevTime = Date.now();
 		this.direction = new THREE.Vector3(0, 1, 0);
@@ -222,8 +220,8 @@ export class Movement {
 				this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
 				this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 
-				this.noise.setMode("lift");
 				this.liftDirection = 1;
+				this.noise.stop("door");
 				console.log("heading up");
 			}
 		} else if(!this.level) {
@@ -235,7 +233,6 @@ export class Movement {
 
 				this.level = compounds.getLevel(this.sectorX, this.sectorY);
 				if (this.level) {
-					this.noise.setMode("lift");
 					this.liftDirection = -1;
 					// create room
 					//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
@@ -253,8 +250,8 @@ export class Movement {
 	}
 
 	exitVehicle() {
-		this.noise.stop();
-		this.noise.setMode("walk");
+		this.noise.stop("car");
+		this.noise.stop("jet");
 		this.main.game_map.addModelAt(
 			this.player.position.x,
 			this.player.position.y,
@@ -266,17 +263,13 @@ export class Movement {
 
 	enterVehicle() {
 		for(let o of this.intersections) {
+			this.noise.stop("walk");
 			if(o.model instanceof models.Vehicle) {
 				this.player.rotation.z = o.rotation.z;
 				this.vehicle = o;
 				this.vehicle.parent.remove(this.vehicle);
 				this.main.benson.addMessage(o.model.description);
 				this.stop();
-				if (this.vehicle.model.flies) {
-					this.noise.setMode("jet");
-				} else {
-					this.noise.setMode("car");
-				}
 				break;
 			}
 		}
@@ -386,20 +379,18 @@ export class Movement {
 		let room_z = ROOM_DEPTH;
 		let pz = this.player.position.z / room_z;
 		let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
-		this.noise.setLevel(liftSpeed / 150);
+		this.noise.setLevel("lift", liftSpeed / 150);
 		this.player.position.z += this.liftDirection * delta * liftSpeed;
 		if (this.liftDirection < 0 && this.player.position.z <= room_z) {
 			this.player.position.z = room_z;
 			this.liftDirection = 0;
-			this.noise.stop();
-			this.noise.setMode("walk");
+			this.noise.stop("lift");
 		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 			this.player.position.z = DEFAULT_Z;
 			this.liftDirection = 0;
 			this.level.destroy();
 			this.level = null;
-			this.noise.stop();
-			this.noise.setMode("walk");
+			this.noise.stop("lift");
 		}
 	}
 
@@ -487,8 +478,6 @@ export class Movement {
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
 		door["moving"] = "up";
 		this.doorsUp.push(door);
-		this.noise.setMode("door");
-		this.noise.start();
 	}
 
 	updateDoors(dx, delta) {
@@ -499,15 +488,13 @@ export class Movement {
 				let dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
 				if(this.worldPos.z < dz) {
 					door.position.z += delta * 50;
-					this.noise.setLevel((room_package.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room_package.DOOR_HEIGHT);
+					this.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room_package.DOOR_HEIGHT);
 				} else {
 					door.moving = "down";
 					this.doorsUp.splice(i, 1);
-					this.noise.setMode("walk");
+					this.noise.stop("door");
 					i--;
 					setTimeout(()=>{
-						this.noise.setMode("door");
-						this.noise.start();
 						this.doorsDown.push(door);
 					}, 1500);
 				}
@@ -520,12 +507,12 @@ export class Movement {
 					// todo: check for player...
 					door.position.z -= delta * 50;
 					if(door.position.z < door.original_z) door.position.z = door.original_z;
-					this.noise.setLevel((door.position.z - door.original_z) / room_package.DOOR_HEIGHT);
+					this.noise.setLevel("door", (door.position.z - door.original_z) / room_package.DOOR_HEIGHT);
 				} else {
 					door.position.z = door.original_z;
 					door.moving = null;
 					this.doorsDown.splice(i, 1);
-					this.noise.setMode("walk");
+					this.noise.stop("door");
 					i--;
 				}
 			}
@@ -610,15 +597,25 @@ export class Movement {
 		// adjust noise
 		if(this.landing != 0) return;
 
-		if(this.getSpeed() > 0 || this.liftDirection != 0) {
-			this.noise.start();
-		} else {
-			this.noise.stop();
-		}
 		if(this.liftDirection != 0 || this.doorsUp.length > 0) {
 			// pass: set in updateLift, etc
 		} else {
-			this.noise.setLevel(this.getSpeed() / this.getMaxSpeed());
+			let mode = "walk";
+			if(this.vehicle) {
+				this.noise.stop("walk");
+				if (this.vehicle.model.flies) {
+					mode = "jet";
+				} else {
+					mode = "car";
+				}
+			} else {
+				this.noise.stop("car");
+				this.noise.stop("jet");
+			}
+
+			let lvl = this.getSpeed() / this.getMaxSpeed();
+			if(lvl == 0) this.noise.stop(mode);
+			else this.noise.setLevel(mode, lvl);
 		}
 	}
 
@@ -629,9 +626,9 @@ export class Movement {
 			this.player.rotation.z += delta * 0.05;
 			if(p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
 				this.pitch.rotation.x = (1 - ((p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT))) * (Math.PI/2);
-				this.noise.setLevel(1);
+				this.noise.setLevel("pink", 1);
 			} else if(p < LANDING_BASE_PERCENT) {
-				this.noise.setLevel(1);
+				this.noise.setLevel("pink", 1);
 				this.pitch.rotation.x = Math.PI/2;
 			}
 		} else {
@@ -639,8 +636,7 @@ export class Movement {
 			//this.player.rotation.z = 0;
 			this.pitch.rotation.x = Math.PI/2;
 			this.landing = false;
-			this.noise.stop();
-			this.noise.setMode("walk");
+			this.noise.stop("pink");
 			this.power = 0;
 
 			// add ship behind player
@@ -683,8 +679,6 @@ export class Movement {
 	startLanding() {
 		this.landing = Date.now() + LANDING_TIME;
 		this.pitch.rotation.x = 0;
-		this.noise.setMode("pink");
-		this.noise.start();
-		this.noise.setLevel(0);
+		this.noise.setLevel("pink", 0);
 	}
 }

@@ -1,6 +1,7 @@
 import $ from 'jquery'
+import * as noise from 'noise'
 
-const SPEED_MULT = 1;
+const SPEED_MULT = 1.2;
 const PAUSE_DELAY = 1500;
 
 export class Benson {
@@ -12,6 +13,7 @@ export class Benson {
 		this.prevTime = Date.now();
 		this.pause = null;
 		this.out = false;
+		this.noise = new noise.Noise();
 	}
 
 	addMessage(message, onComplete) {
@@ -47,6 +49,15 @@ export class Benson {
 			} else {
 				this.el.css("left", this.scroll * 100 + "%");
 				this.scroll -= delta * SPEED_MULT;
+				if(this.scroll > .9) {
+					this.noise.setLevel("benson", 1);
+				} else if(this.scroll > .8) {
+					this.noise.setLevel("benson", .5);
+				} else if(this.scroll > .7) {
+					this.noise.setLevel("benson", 1);
+				} else {
+					this.noise.stop("benson");
+				}
 				if (this.scroll <= 0) {
 					this.scroll = 0;
 					this.pause = time;

@@ -35,11 +35,7 @@ export class Space {
 			}
 		}
 
-		var ac = new AudioContext();
-		this.noise = new noise.Noise(ac);
-		this.noise.setEnabled(true);
-		this.noise.setMode("pink");
-		this.noise.start();
+		this.noise = new noise.Noise();
 	}
 
 	static positionStar(mesh) {
@@ -101,18 +97,17 @@ export class Space {
 			}
 		}
 
-		if(this.power != 0) {
-			this.noise.start();
+		if(this.power == 0) {
+			this.noise.stop("pink");
 		} else {
-			this.noise.stop();
+			this.noise.setLevel("pink", this.power > 0 ? .5 * this.power : -this.power);
 		}
-		this.noise.setLevel(this.power > 0 ? .5 * this.power : -this.power);
 	}
 
 	startLanding() {
 		this.landing = true;
 		this.targ = new THREE.Mesh(new THREE.SphereGeometry(DEPTH * 2),
-			new THREE.MeshBasicMaterial({color: "rgb(39,79,6)", side: THREE.doubleSided, depthTest: false, depthWrite: false}));
+			new THREE.MeshBasicMaterial({color: "rgb(39,79,6)", side: THREE.DoubleSide, depthTest: false, depthWrite: false}));
 		this.targ.position.z = -DEPTH;
 		this.scene.add(this.targ);
 	}
