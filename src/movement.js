@@ -10,26 +10,25 @@ import * as noise from 'noise'
 import * as room_package from 'room'
 import * as compounds from 'compounds'
 import * as game_map from 'game_map'
+import * as events from 'events'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
 const STALL_SPEED = 5000;
 const DEBUG = false;
-const SOUND_ENABLED = true;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
 const ROOM_COLLISION_ENABLED = true;
 const LANDING_TIME = 30000;
-const LANDING_ALT = 50000;
-const LANDING_LAST_PERCENT = .5;
-const LANDING_BASE_PERCENT = .2;
+const LANDING_ALT = 90000;
+const LANDING_LAST_PERCENT = .25;
+const LANDING_BASE_PERCENT = .1;
 
 export class Movement {
 	constructor(main) {
 		this.main = main;
 
 		this.noise = new noise.Noise();
-		this.noise.setEnabled(SOUND_ENABLED);
 
 		this.prevTime = Date.now();
 		this.direction = new THREE.Vector3(0, 1, 0);
@@ -85,6 +84,8 @@ export class Movement {
 
 		this.landing = 0;
 
+		this.events = new events.Events(this);
+
 		$(document).mousemove((event) => {
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
@@ -128,6 +129,7 @@ export class Movement {
 				case 56: this.power = 0.8; break;
 				case 57: this.power = 0.9; break;
 				case 48: this.power = 1.0; break;
+				case 81: noise.Noise.toggleSound(); break;
 				case 32:
 					if(this.vehicle) {
 						if(this.player.position.z <= DEFAULT_Z) {
@@ -228,9 +230,6 @@ export class Movement {
 			let elevator = this.getElevator();
 			if(elevator) {
 				// down
-				this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
-				this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
-
 				this.level = compounds.getLevel(this.sectorX, this.sectorY);
 				if (this.level) {
 					this.liftDirection = -1;
@@ -247,6 +246,10 @@ export class Movement {
 	getElevator() {
 		let objects = this.intersections.filter((o)=>o.model.name == "elevator");
 		return objects.length > 0 ? objects[0] : null;
+	}
+
+	usingElevator() {
+		return this.liftDirection != 0;
 	}
 
 	exitVehicle() {
@@ -623,7 +626,7 @@ export class Movement {
 		if(this.landing > time) {
 			let p = ((this.landing - time)/LANDING_TIME);
 			this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
-			this.player.rotation.z += delta * 0.05;
+			if(p > .5) this.player.rotation.z = Math.PI - p * Math.PI;
 			if(p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
 				this.pitch.rotation.x = (1 - ((p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT))) * (Math.PI/2);
 				this.noise.setLevel("pink", 1);
@@ -647,8 +650,11 @@ export class Movement {
 				this.player.rotation.z);
 
 			this.main.benson.addMessage("Welcome to Targ.");
-			this.main.benson.addMessage("Please proceed to 9-2,");
-			this.main.benson.addMessage("for your assignment.");
+			this.main.benson.addMessage("Please take the jet");
+			this.main.benson.addMessage("and proceed to 9-2.");
+			this.main.benson.addMessage("[SPACE] to use the jet.");
+			this.main.benson.addMessage("[1]-[0] for power.");
+			this.main.benson.addMessage("[SPACE] to get out again.");
 		}
 	}
 
@@ -656,6 +662,11 @@ export class Movement {
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 		this.prevTime = time;
+
+		if(!this.level) {
+			this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
+			this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
+		}
 
 		if(this.landing) {
 			this.updateLanding(time, delta);
@@ -674,6 +685,7 @@ export class Movement {
 		}
 
 		this.checkNoise();
+		this.events.update(this.sectorX, this.sectorY);
 	}
 
 	startLanding() {

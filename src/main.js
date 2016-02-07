@@ -12,8 +12,8 @@ import * as space from 'space'
 const LIMIT_FPS = 15; // set to 0 for no limit
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
-const START_X = 9;
-const START_Y = 3;
+const START_X = 0x33;
+const START_Y = 0x66;
 const START_Z = 50000;
 
 class Merc {
@@ -37,8 +37,9 @@ class Merc {
 
 		this.space = null;
 		this.movement = null;
-		 //this.startGame();
-		this.startIntro();
+		 this.startGame();
+		 //this.startGame(true);
+		//this.startIntro();
 
 		this.animate();
 	}
@@ -74,15 +75,15 @@ class Merc {
 		}, 5000);
 	}
 
-	startGame() {
+	startGame(skipLanding=false) {
 		this.renderer.setClearColor(game_map.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 		this.movement.player.position.set(
-			game_map.SECTOR_SIZE * START_X,
+			game_map.SECTOR_SIZE * START_X + game_map.SECTOR_SIZE/2,
 			game_map.SECTOR_SIZE * START_Y,
-			START_Z);
+			skipLanding ? movement.DEFAULT_Z : START_Z);
 			//movement.DEFAULT_Z);
-		this.movement.startLanding();
+		if(!skipLanding) this.movement.startLanding();
 
 		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
@@ -159,6 +160,8 @@ class Merc {
 			} else {
 				x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
 				y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+				x = Math.min(Math.max(x, 0), 0xff);
+				y = Math.min(Math.max(y, 0), 0xff);
 			}
 			var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
 			$("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));

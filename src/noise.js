@@ -3,6 +3,8 @@ import * as util from 'util'
 /**
  * credit: https://github.com/zacharydenton/noise.js
  */
+export var SOUND_ENABLED = true;
+
 export class Noise {
 	constructor() {
 		this.noises = {
@@ -16,9 +18,8 @@ export class Noise {
 		};
 	}
 
-	setEnabled(enabled) {
-		//this.enabled = enabled;
-		//if(this.component && !this.enabled) this.stop();
+	static toggleSound() {
+		SOUND_ENABLED = !SOUND_ENABLED;
 	}
 
 	stop(name) {
@@ -26,7 +27,7 @@ export class Noise {
 	}
 
 	setLevel(name, level) {
-		this.noises[name].setLevel(level);
+		if(SOUND_ENABLED) this.noises[name].setLevel(level);
 	}
 }
 

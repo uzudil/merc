@@ -97,8 +97,8 @@
 	var LIMIT_FPS = 15; // set to 0 for no limit
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
-	var START_X = 9;
-	var START_Y = 3;
+	var START_X = 0x33;
+	var START_Y = 0x66;
 	var START_Z = 50000;
 	
 	var Merc = function () {
@@ -130,8 +130,9 @@
 	
 				this.space = null;
 				this.movement = null;
-				//this.startGame();
-				this.startIntro();
+				this.startGame();
+				//this.startGame(true);
+				//this.startIntro();
 	
 				this.animate();
 			}
@@ -172,11 +173,13 @@
 		}, {
 			key: 'startGame',
 			value: function startGame() {
+				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
+	
 				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
-				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X, game_map.SECTOR_SIZE * START_Y, START_Z);
+				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * START_Y, skipLanding ? movement.DEFAULT_Z : START_Z);
 				//movement.DEFAULT_Z);
-				this.movement.startLanding();
+				if (!skipLanding) this.movement.startLanding();
 	
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
@@ -257,6 +260,8 @@
 					} else {
 						x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
 						y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+						x = Math.min(Math.max(x, 0), 0xff);
+						y = Math.min(Math.max(y, 0), 0xff);
 					}
 					var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
 					(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
@@ -36500,9 +36505,7 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
-	
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	'use strict';
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -36515,13 +36518,19 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
+	var _util = __webpack_require__(5);
+	
+	var util = _interopRequireWildcard(_util);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var SECTOR_SIZE = exports.SECTOR_SIZE = 1024.0;
+	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
 	
 	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
 	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,161,253)");
@@ -36533,19 +36542,25 @@
 	var ROAD_Z = 1;
 	
 	var key = function key(sectorX, sectorY) {
-		return sectorX + "." + sectorY;
+		return sectorX + '.' + sectorY;
 	};
 	
 	var MAP_POSITIONS = {
-		opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
-		asha: [[10, 10], [12, 10], [14, 10]],
-		car: [[10, 12], [9, 3]],
-		plane: [[10, 14], [9, 2]],
-		tower: [[9, 1], [11, -19], [11, -18]],
-		elevator: [[9, 2]]
+		car: [[9, 3]],
+		plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
+		elevator: [[9, 2]],
+	
+		opera: [],
+		asha: [],
+		tower: [],
+		port: [[0x32, 0x66]]
 	};
 	
-	var ROAD_POSITIONS = [[11, 0, 0, 15], [0, 0, 15, 0], [0, 11, 15, 0], [0, 0, 0, 15], [10, -20, 0, 25], [10, 4, 5, 0]];
+	var ROAD_POSITIONS = [
+	// borders
+	[0, 0, 255, 0], [0, 0, 0, 255], [255, 0, 0, 255], [0, 255, 255, 0],
+	// other roads
+	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x44, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player) {
@@ -36557,23 +36572,25 @@
 			this.minSector = { x: 0, y: 0 };
 			this.maxSector = { x: 0, y: 0 };
 	
+			// limit calcs
+			this.lastSector = new _three2.default.Vector3();
+			this.heading = new _three2.default.Vector3();
+			this.point = new _three2.default.Vector3();
+	
 			// add models
 			this.structures = [];
 			for (var name in models.models) {
 				var m = models.models[name];
-				if (MAP_POSITIONS[name]) {
+				if (MAP_POSITIONS[name] && MAP_POSITIONS[name].length > 0) {
 					var _iteratorNormalCompletion = true;
 					var _didIteratorError = false;
 					var _iteratorError = undefined;
 	
 					try {
 						for (var _iterator = MAP_POSITIONS[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-							var _step$value = _slicedToArray(_step.value, 2);
+							var pos = _step.value;
 	
-							var sx = _step$value[0];
-							var sy = _step$value[1];
-	
-							this.addStructure(m, sx, sy);
+							this.addStructure(m, pos);
 						}
 					} catch (err) {
 						_didIteratorError = true;
@@ -36624,7 +36641,7 @@
 		}
 	
 		_createClass(GameMap, [{
-			key: "addRoad",
+			key: 'addRoad',
 			value: function addRoad(sectorX, sectorY, w, h) {
 				if (w != 0 && h != 0) throw "Roads can only go in one direction.";
 	
@@ -36638,42 +36655,44 @@
 				}
 			}
 		}, {
-			key: "drawRoads",
+			key: 'drawRoads',
 			value: function drawRoads() {
+				var geo = new _three2.default.Geometry();
 				for (var x = this.minSector.x; x < this.maxSector.x; x++) {
 					for (var y = this.minSector.y; y < this.maxSector.y; y++) {
 						var road = this.getSector(x, y).road;
-						var mesh = null;
 						if (road[0] == 1 && road[1] == 1) {
-							mesh = GameMap.createCrossRoad();
+							GameMap.createCrossRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
 						} else if (road[0] == 1) {
-							mesh = GameMap.createRoad();
+							GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
 						} else if (road[1] == 1) {
-							mesh = GameMap.createRoad();
-							mesh.rotation.z = Math.PI / 2;
-						}
-	
-						if (mesh) {
-							mesh.position.set(x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
-							mesh.updateMatrix();
-							this.land.add(mesh);
+							GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1, Math.PI / 2);
 						}
 					}
 				}
+	
+				// add as a single geo
+				var roadMesh = new _three2.default.LineSegments(geo, ROAD_MAT);
+				//roadMesh.frustumCulled = false;
+				//roadMesh.position.set(0, 0, 1);
+				this.land.add(roadMesh);
 			}
 		}, {
-			key: "update",
+			key: 'update',
 			value: function update() {}
 		}, {
-			key: "addStructure",
-			value: function addStructure(model, sectorX, sectorY) {
+			key: 'addStructure',
+			value: function addStructure(model, pos) {
 				var bb = model.getBoundingBox();
-				var dx = (SECTOR_SIZE - bb.size().x) / 2;
-				var dy = (SECTOR_SIZE - bb.size().y) / 2;
-				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, 0);
+				var sectorX = pos[0];
+				var sectorY = pos[1];
+				var dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
+				var dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+				var zrot = pos.length > 4 ? pos[4] : 0;
+				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
 			}
 		}, {
-			key: "addModelAt",
+			key: 'addModelAt',
 			value: function addModelAt(x, y, model, zRot) {
 				var sx = x / SECTOR_SIZE | 0;
 				var sy = y / SECTOR_SIZE | 0;
@@ -36690,7 +36709,7 @@
 				this.getSector(sx, sy).add(object);
 			}
 		}, {
-			key: "getSector",
+			key: 'getSector',
 			value: function getSector(sectorX, sectorY) {
 				var k = key(sectorX, sectorY);
 				if (this.sectors[k] == null) {
@@ -36707,36 +36726,41 @@
 				return this.sectors[k];
 			}
 		}], [{
-			key: "createRoad",
-			value: function createRoad() {
-				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
-				return new _three2.default.LineSegments(geometry, ROAD_MAT);
+			key: 'createRoad',
+			value: function createRoad(geometry, x, y, z) {
+				var zrot = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+	
+				if (zrot == 0) {
+					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+				} else {
+					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
+					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
+				}
 			}
 		}, {
-			key: "createCrossRoad",
-			value: function createCrossRoad() {
-				var geometry = new _three2.default.Geometry();
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * -0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 4, SECTOR_SIZE * 0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE / 2, SECTOR_SIZE * 0.25, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 2, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE / 4, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 4, ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE / 2, ROAD_Z));
-				return new _three2.default.LineSegments(geometry, ROAD_MAT);
+			key: 'createCrossRoad',
+			value: function createCrossRoad(geometry, x, y, z) {
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 2, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 4, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 4, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 2, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 2, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 4, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 4, z + ROAD_Z));
+				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 2, z + ROAD_Z));
 			}
 		}]);
 	
@@ -46727,6 +46751,10 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
+	var _events = __webpack_require__(16);
+	
+	var events = _interopRequireWildcard(_events);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -46737,14 +46765,13 @@
 	var DEFAULT_Z = exports.DEFAULT_Z = 20;
 	var STALL_SPEED = 5000;
 	var DEBUG = false;
-	var SOUND_ENABLED = true;
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
 	var ROOM_COLLISION_ENABLED = true;
 	var LANDING_TIME = 30000;
-	var LANDING_ALT = 50000;
-	var LANDING_LAST_PERCENT = .5;
-	var LANDING_BASE_PERCENT = .2;
+	var LANDING_ALT = 90000;
+	var LANDING_LAST_PERCENT = .25;
+	var LANDING_BASE_PERCENT = .1;
 	
 	var Movement = exports.Movement = function () {
 		function Movement(main) {
@@ -46755,7 +46782,6 @@
 			this.main = main;
 	
 			this.noise = new noise.Noise();
-			this.noise.setEnabled(SOUND_ENABLED);
 	
 			this.prevTime = Date.now();
 			this.direction = new _three2.default.Vector3(0, 1, 0);
@@ -46810,6 +46836,8 @@
 			this.movementY = 0.0;
 	
 			this.landing = 0;
+	
+			this.events = new events.Events(this);
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
 				_this.movementX = event.originalEvent.movementX;
@@ -46873,6 +46901,8 @@
 						_this.power = 0.9;break;
 					case 48:
 						_this.power = 1.0;break;
+					case 81:
+						noise.Noise.toggleSound();break;
 					case 32:
 						if (_this.vehicle) {
 							if (_this.player.position.z <= DEFAULT_Z) {
@@ -46961,9 +46991,6 @@
 					var elevator = this.getElevator();
 					if (elevator) {
 						// down
-						this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
-						this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
-	
 						this.level = compounds.getLevel(this.sectorX, this.sectorY);
 						if (this.level) {
 							this.liftDirection = -1;
@@ -46983,6 +47010,11 @@
 					return o.model.name == "elevator";
 				});
 				return objects.length > 0 ? objects[0] : null;
+			}
+		}, {
+			key: 'usingElevator',
+			value: function usingElevator() {
+				return this.liftDirection != 0;
 			}
 		}, {
 			key: 'exitVehicle',
@@ -47435,7 +47467,7 @@
 				if (this.landing > time) {
 					var p = (this.landing - time) / LANDING_TIME;
 					this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
-					this.player.rotation.z += delta * 0.05;
+					if (p > .5) this.player.rotation.z = Math.PI - p * Math.PI;
 					if (p < LANDING_LAST_PERCENT && p >= LANDING_BASE_PERCENT) {
 						this.pitch.rotation.x = (1 - (p - LANDING_BASE_PERCENT) / (LANDING_LAST_PERCENT - LANDING_BASE_PERCENT)) * (Math.PI / 2);
 						this.noise.setLevel("pink", 1);
@@ -47455,8 +47487,11 @@
 					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, this.main.models.models["ship"], this.player.rotation.z);
 	
 					this.main.benson.addMessage("Welcome to Targ.");
-					this.main.benson.addMessage("Please proceed to 9-2,");
-					this.main.benson.addMessage("for your assignment.");
+					this.main.benson.addMessage("Please take the jet");
+					this.main.benson.addMessage("and proceed to 9-2.");
+					this.main.benson.addMessage("[SPACE] to use the jet.");
+					this.main.benson.addMessage("[1]-[0] for power.");
+					this.main.benson.addMessage("[SPACE] to get out again.");
 				}
 			}
 		}, {
@@ -47465,6 +47500,11 @@
 				var time = Date.now();
 				var delta = (time - this.prevTime) / 1000;
 				this.prevTime = time;
+	
+				if (!this.level) {
+					this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
+					this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
+				}
 	
 				if (this.landing) {
 					this.updateLanding(time, delta);
@@ -47483,6 +47523,7 @@
 				}
 	
 				this.checkNoise();
+				this.events.update(this.sectorX, this.sectorY);
 			}
 		}, {
 			key: 'startLanding',
@@ -47547,7 +47588,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false },
@@ -47714,7 +47755,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.Noise = undefined;
+	exports.Noise = exports.SOUND_ENABLED = undefined;
 	
 	var _util = __webpack_require__(5);
 	
@@ -47727,6 +47768,7 @@
 	/**
 	 * credit: https://github.com/zacharydenton/noise.js
 	 */
+	var SOUND_ENABLED = exports.SOUND_ENABLED = true;
 	
 	var Noise = exports.Noise = function () {
 		function Noise() {
@@ -47744,12 +47786,6 @@
 		}
 	
 		_createClass(Noise, [{
-			key: "setEnabled",
-			value: function setEnabled(enabled) {
-				//this.enabled = enabled;
-				//if(this.component && !this.enabled) this.stop();
-			}
-		}, {
 			key: "stop",
 			value: function stop(name) {
 				this.noises[name].stop();
@@ -47757,7 +47793,12 @@
 		}, {
 			key: "setLevel",
 			value: function setLevel(name, level) {
-				this.noises[name].setLevel(level);
+				if (SOUND_ENABLED) this.noises[name].setLevel(level);
+			}
+		}], [{
+			key: "toggleSound",
+			value: function toggleSound() {
+				exports.SOUND_ENABLED = SOUND_ENABLED = !SOUND_ENABLED;
 			}
 		}]);
 	
@@ -49834,6 +49875,59 @@
 		}]);
 	
 		return Space;
+	}();
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Events = exports.Events = function () {
+		function Events(movement) {
+			var _this = this;
+	
+			_classCallCheck(this, Events);
+	
+			this.movement = movement;
+			this.state = {};
+			this.EVENTS = {
+				"9,2": function _() {
+					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
+						_this.state["lift-9-2"] = true;
+						_this.movement.main.benson.addMessage("Take the lift down.");
+						_this.movement.main.benson.addMessage("This complex houses all");
+						_this.movement.main.benson.addMessage("that we know about the");
+						_this.movement.main.benson.addMessage("current situation.");
+						_this.movement.main.benson.addMessage("[E] to use the lift.");
+					}
+					if (!_this.state["in-lift-9-2"] && _this.movement.usingElevator()) {
+						_this.state["in-lift-9-2"] = true;
+						_this.movement.main.benson.addMessage("You're welcome to take");
+						_this.movement.main.benson.addMessage("all you find with you.");
+						_this.movement.main.benson.addMessage("[P] to pick things up.");
+					}
+				}
+			};
+		}
+	
+		_createClass(Events, [{
+			key: "update",
+			value: function update(sectorX, sectorY) {
+				var key = "" + sectorX + "," + sectorY;
+				if (this.EVENTS[key]) this.EVENTS[key]();
+			}
+		}]);
+	
+		return Events;
 	}();
 
 /***/ }

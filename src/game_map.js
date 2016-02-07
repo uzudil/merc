@@ -1,6 +1,7 @@
 import THREE from 'three.js'
+import * as util from 'util'
 
-export const SECTOR_SIZE = 1024.0;
+export const SECTOR_SIZE = 512.0;
 
 export const GRASS_COLOR = new THREE.Color("rgb(39,79,6)");
 export const SKY_COLOR = new THREE.Color("rgb(157,161,253)");
@@ -14,21 +15,32 @@ const ROAD_Z = 1;
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
-	opera: [[12, 12], [14, 12], [1, 1], [1, 2]],
-	asha: [[10, 10], [12, 10], [14, 10]],
-	car: [[10, 12], [9, 3]],
-	plane: [[10, 14], [9, 2]],
-	tower: [[9, 1], [11, -19], [11, -18]],
-	elevator: [[9, 2]]
+	car: [[9, 3]],
+	plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
+	elevator: [[9, 2]],
+
+	opera: [],
+	asha: [],
+	tower: [],
+	port: [[0x32, 0x66]]
 };
 
 const ROAD_POSITIONS = [
+	// borders
+	[0, 0, 255, 0],
+	[0, 0, 0, 255],
+	[255, 0, 0, 255],
+	[0, 255, 255, 0],
+	// other roads
 	[11, 0, 0, 15],
-	[0, 0, 15, 0],
 	[0, 11, 15, 0],
-	[0, 0, 0, 15],
-	[10, -20, 0, 25],
-	[10, 4, 5, 0]
+	[10, 4, 5, 0],
+
+	[0x30, 0x44, 0, 0x24],
+	[0x00, 0x44, 0x44, 0x00],
+	[0x0a, 0x02, 0x00, 67],
+	[0x30, 0x67, 0x04, 0x00],
+
 ];
 
 export class GameMap {
@@ -39,13 +51,18 @@ export class GameMap {
 		this.minSector = {x: 0, y: 0};
 		this.maxSector = {x: 0, y: 0};
 
+		// limit calcs
+		this.lastSector = new THREE.Vector3();
+		this.heading = new THREE.Vector3();
+		this.point = new THREE.Vector3();
+
 		// add models
 		this.structures = [];
 		for(let name in models.models) {
 			var m = models.models[name];
-			if(MAP_POSITIONS[name]) {
-				for(let [sx, sy] of MAP_POSITIONS[name]) {
-					this.addStructure(m, sx, sy);
+			if(MAP_POSITIONS[name] && MAP_POSITIONS[name].length > 0) {
+				for(let pos of MAP_POSITIONS[name]) {
+					this.addStructure(m, pos);
 				}
 			}
 		}
@@ -74,66 +91,71 @@ export class GameMap {
 	}
 
 	drawRoads() {
+		let geo = new THREE.Geometry();
 		for(let x = this.minSector.x; x < this.maxSector.x; x++) {
 			for(let y = this.minSector.y; y < this.maxSector.y; y++) {
 			    var road = this.getSector(x, y).road;
-				var mesh = null;
 				if(road[0] == 1 && road[1] == 1) {
-					mesh = GameMap.createCrossRoad();
+					GameMap.createCrossRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
 				} else if(road[0] == 1) {
-					mesh = GameMap.createRoad();
+					GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
 				} else if(road[1] == 1) {
-					mesh = GameMap.createRoad();
-					mesh.rotation.z = Math.PI/2;
-				}
-
-				if(mesh) {
-					mesh.position.set(x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
-					mesh.updateMatrix();
-					this.land.add(mesh);
+					GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1, Math.PI/2);
 				}
 			}
 		}
+
+		// add as a single geo
+		let roadMesh = new THREE.LineSegments(geo, ROAD_MAT);
+		//roadMesh.frustumCulled = false;
+		//roadMesh.position.set(0, 0, 1);
+		this.land.add(roadMesh);
 	}
 
-	static createRoad() {
-		var geometry = new THREE.Geometry();
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
-		return new THREE.LineSegments(geometry, ROAD_MAT);
+	static createRoad(geometry, x, y, z, zrot=0) {
+		if(zrot == 0) {
+			geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+		} else {
+			geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
+			geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
+		}
 	}
 
-	static createCrossRoad() {
-		var geometry = new THREE.Geometry();
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * -0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE/4, SECTOR_SIZE * 0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/4, SECTOR_SIZE * 0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE/2, SECTOR_SIZE * 0.25, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/4, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(SECTOR_SIZE * 0.25, SECTOR_SIZE/2, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/2, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, -SECTOR_SIZE/4, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/4, ROAD_Z));
-		geometry.vertices.push(new THREE.Vector3(-SECTOR_SIZE * 0.25, SECTOR_SIZE/2, ROAD_Z));
-		return new THREE.LineSegments(geometry, ROAD_MAT);
+	static createCrossRoad(geometry, x, y, z) {
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE/2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE/4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE/4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE/2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE/2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE/4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE/4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE/2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE/2, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE/4, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE/4, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE/2, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE/2, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE/4, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE/4, z + ROAD_Z));
+		geometry.vertices.push(new THREE.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE/2, z + ROAD_Z));
 	}
 
 	update() {
 	}
 
-	addStructure(model, sectorX, sectorY) {
+	addStructure(model, pos) {
 		var bb = model.getBoundingBox();
-		var dx = (SECTOR_SIZE - bb.size().x) / 2;
-		var dy = (SECTOR_SIZE - bb.size().y) / 2;
-		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, 0);
+		let sectorX = pos[0];
+		let sectorY = pos[1];
+		let dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
+		let dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+		let zrot = pos.length > 4 ? pos[4] : 0;
+		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
 	}
 
 	addModelAt(x, y, model, zRot) {
