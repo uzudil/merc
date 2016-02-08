@@ -158,6 +158,7 @@ export class Movement {
 			gameState.sectorY * game_map.SECTOR_SIZE + gameState.y,
 			gameState.z
 		);
+		this.inventory = gameState.inventory;
 		this.vehicle = gameState.vehicle;
 		this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
 		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
@@ -199,9 +200,21 @@ export class Movement {
 		let intersections = this.raycaster.intersectObject(this.level.mesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
 		if(closest && closest.object.model) {
-			this.inventory.push(closest.object.model.name);
-			closest.object.parent.remove(closest.object);
-			this.main.benson.addMessage(closest.object.model.description);
+
+			let handled = false;
+			if(this.level) {
+				let offsetX = this.player.position.x;
+				let offsetY = this.player.position.y;
+
+				let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
+				handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+			}
+
+			if(!handled) {
+				this.inventory.push(closest.object.model.name);
+				closest.object.parent.remove(closest.object);
+				this.main.benson.addMessage(closest.object.model.description);
+			}
 		}
 	}
 
@@ -212,7 +225,7 @@ export class Movement {
 		let offsetY = this.player.position.y;
 		if(this.level) {
 			// up
-			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true, true);
+			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
 			if(room && room.elevator) {
 
 				// Reposition the level, the lift and the player at the elevator platform position.

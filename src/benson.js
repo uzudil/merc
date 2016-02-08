@@ -60,6 +60,7 @@ export class Benson {
 				}
 				if (this.scroll <= 0) {
 					this.scroll = 0;
+					this.el.css("left", "0");
 					this.pause = time;
 				}
 			}
