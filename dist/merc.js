@@ -56,11 +56,11 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _jquery = __webpack_require__(4);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -68,7 +68,7 @@
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(12);
+	var _skybox = __webpack_require__(13);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
@@ -76,15 +76,15 @@
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(13);
+	var _compass = __webpack_require__(14);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(14);
+	var _benson = __webpack_require__(15);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(15);
+	var _space = __webpack_require__(16);
 	
 	var space = _interopRequireWildcard(_space);
 	
@@ -189,7 +189,8 @@
 				//this.movement.loadGame({
 				//	sectorX: 9, sectorY: 2,
 				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	vehicle: null
+				//	vehicle: null,
+				//	inventory: ["keya", "keyb"]
 				//});
 			}
 		}, {
@@ -36518,7 +36519,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -36551,8 +36552,8 @@
 		elevator: [[9, 2]],
 	
 		opera: [],
-		asha: [],
-		tower: [],
+		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
+		tower: [[0x41, 0x45], [0x44, 0x45]],
 		port: [[0x32, 0x66]]
 	};
 	
@@ -36769,6 +36770,105 @@
 
 /***/ },
 /* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.bind = bind;
+	exports.rad2angle = rad2angle;
+	exports.angle2rad = angle2rad;
+	exports.shadeGeo = shadeGeo;
+	exports.getOppositeDir = getOppositeDir;
+	exports.findAnOverlap = findAnOverlap;
+	exports.toHex = toHex;
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function bind(callerObj, method) {
+		return function () {
+			return method.apply(callerObj, arguments);
+		};
+	}
+	
+	function rad2angle(rad) {
+		return rad / Math.PI * 180.0;
+	}
+	
+	function angle2rad(angle) {
+		return angle / 180.0 * Math.PI;
+	}
+	
+	// to use this, use a material with vertexColors: THREE.FaceColors
+	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
+	function shadeGeo(geo, light, color) {
+		if (!light) light = LIGHT;
+		for (var i = 0; i < geo.faces.length; i++) {
+			var f = geo.faces[i];
+			if (color) f.color = color.clone();else {
+				// use the first vertex colors, if given
+				if (f.vertexColors && f.vertexColors[0]) {
+					f.color.copy(f.vertexColors[0]);
+				}
+			}
+			var a = 0.75 + f.normal.dot(light) * 0.25;
+			f.color.multiplyScalar(a);
+			// do not use vertex colors
+			f.vertexColors = [];
+		}
+	}
+	
+	function getOppositeDir(dir) {
+		switch (dir) {
+			case "n":
+				return "s";
+			case "s":
+				return "n";
+			case "e":
+				return "w";
+			case "w":
+				return "e";
+			default:
+				throw "Unknown direction: " + dir;
+		}
+	}
+	
+	// find an overlapping point between segments: [point1, width1] and [point2, width2]
+	function findAnOverlap(p1, w1, p2, w2) {
+		// swap if needed
+		if (p1 > p2) {
+			var _ref = [p2, p1];
+			p1 = _ref[0];
+			p2 = _ref[1];
+			var _ref2 = [w2, w1];
+			w1 = _ref2[0];
+			w2 = _ref2[1];
+		}
+		var r = 0;
+		if (p2 < p1 + w1) {
+			r = p2 + Math.random() * Math.min(w2, w1 - (p2 - p1)) | 0;
+		}
+		//console.log("overlap of A:", p1, ",", w1, " B:", p2, ",", w2 + " Res:", r);
+		return r;
+	}
+	
+	function toHex(num, digits) {
+		var s = num.toString(16);
+		if (digits) {
+			s = "000000000000000000" + s;
+			s = s.substr(s.length - digits);
+		}
+		return s;
+	}
+
+/***/ },
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -46605,105 +46705,6 @@
 
 
 /***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports.bind = bind;
-	exports.rad2angle = rad2angle;
-	exports.angle2rad = angle2rad;
-	exports.shadeGeo = shadeGeo;
-	exports.getOppositeDir = getOppositeDir;
-	exports.findAnOverlap = findAnOverlap;
-	exports.toHex = toHex;
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function bind(callerObj, method) {
-		return function () {
-			return method.apply(callerObj, arguments);
-		};
-	}
-	
-	function rad2angle(rad) {
-		return rad / Math.PI * 180.0;
-	}
-	
-	function angle2rad(angle) {
-		return angle / 180.0 * Math.PI;
-	}
-	
-	// to use this, use a material with vertexColors: THREE.FaceColors
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	function shadeGeo(geo, light, color) {
-		if (!light) light = LIGHT;
-		for (var i = 0; i < geo.faces.length; i++) {
-			var f = geo.faces[i];
-			if (color) f.color = color.clone();else {
-				// use the first vertex colors, if given
-				if (f.vertexColors && f.vertexColors[0]) {
-					f.color.copy(f.vertexColors[0]);
-				}
-			}
-			var a = 0.75 + f.normal.dot(light) * 0.25;
-			f.color.multiplyScalar(a);
-			// do not use vertex colors
-			f.vertexColors = [];
-		}
-	}
-	
-	function getOppositeDir(dir) {
-		switch (dir) {
-			case "n":
-				return "s";
-			case "s":
-				return "n";
-			case "e":
-				return "w";
-			case "w":
-				return "e";
-			default:
-				throw "Unknown direction: " + dir;
-		}
-	}
-	
-	// find an overlapping point between segments: [point1, width1] and [point2, width2]
-	function findAnOverlap(p1, w1, p2, w2) {
-		// swap if needed
-		if (p1 > p2) {
-			var _ref = [p2, p1];
-			p1 = _ref[0];
-			p2 = _ref[1];
-			var _ref2 = [w2, w1];
-			w1 = _ref2[0];
-			w2 = _ref2[1];
-		}
-		var r = 0;
-		if (p2 < p1 + w1) {
-			r = p2 + Math.random() * Math.min(w2, w1 - (p2 - p1)) | 0;
-		}
-		//console.log("overlap of A:", p1, ",", w1, " B:", p2, ",", w2 + " Res:", r);
-		return r;
-	}
-	
-	function toHex(num, digits) {
-		var s = num.toString(16);
-		if (digits) {
-			s = "000000000000000000" + s;
-			s = s.substr(s.length - digits);
-		}
-		return s;
-	}
-
-/***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -46723,7 +46724,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jquery = __webpack_require__(4);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -46731,7 +46732,7 @@
 	
 	var models = _interopRequireWildcard(_model);
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -46751,7 +46752,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(16);
+	var _events = __webpack_require__(12);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -46932,6 +46933,7 @@
 			key: 'loadGame',
 			value: function loadGame(gameState) {
 				this.player.position.set(gameState.sectorX * game_map.SECTOR_SIZE + gameState.x, gameState.sectorY * game_map.SECTOR_SIZE + gameState.y, gameState.z);
+				this.inventory = gameState.inventory;
 				this.vehicle = gameState.vehicle;
 				this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
 				this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
@@ -46959,9 +46961,21 @@
 				var intersections = this.raycaster.intersectObject(this.level.mesh, true);
 				var closest = intersections.length > 0 ? intersections[0] : null;
 				if (closest && closest.object.model) {
-					this.inventory.push(closest.object.model.name);
-					closest.object.parent.remove(closest.object);
-					this.main.benson.addMessage(closest.object.model.description);
+	
+					var handled = false;
+					if (this.level) {
+						var offsetX = this.player.position.x;
+						var offsetY = this.player.position.y;
+	
+						var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
+						handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+					}
+	
+					if (!handled) {
+						this.inventory.push(closest.object.model.name);
+						closest.object.parent.remove(closest.object);
+						this.main.benson.addMessage(closest.object.model.description);
+					}
 				}
 			}
 		}, {
@@ -46973,7 +46987,7 @@
 				var offsetY = this.player.position.y;
 				if (this.level) {
 					// up
-					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true, true);
+					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
 					if (room && room.elevator) {
 	
 						// Reposition the level, the lift and the player at the elevator platform position.
@@ -47570,7 +47584,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -47588,7 +47602,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false },
@@ -47603,7 +47617,8 @@
 		"keyb": 10,
 		"keyc": 10,
 		"keyd": 10,
-		"ship": 20
+		"ship": 20,
+		"pres": 15
 	};
 	
 	var DESCRIPTIONS = {
@@ -47757,7 +47772,7 @@
 	});
 	exports.Noise = exports.SOUND_ENABLED = undefined;
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -48318,7 +48333,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _util = __webpack_require__(5);
+	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -49404,7 +49419,7 @@
 	
 	// edit these via: http://localhost:8000/compound_editor/rooms.html
 	var LEVELS = exports.LEVELS = {
-		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }] }
+		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {
@@ -49413,6 +49428,108 @@
 
 /***/ },
 /* 12 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Events = exports.Events = function () {
+		function Events(movement) {
+			var _this = this;
+	
+			_classCallCheck(this, Events);
+	
+			this.movement = movement;
+			this.state = {};
+			this.EVENTS = {
+				"9,2": function _() {
+					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
+						_this.state["lift-9-2"] = true;
+						_this.movement.main.benson.addMessage("Take the lift down.");
+						_this.movement.main.benson.addMessage("This complex houses all");
+						_this.movement.main.benson.addMessage("that we know about the");
+						_this.movement.main.benson.addMessage("current situation.");
+						_this.movement.main.benson.addMessage("[E] to use the lift.");
+					}
+					if (!_this.state["in-lift-9-2"] && _this.movement.usingElevator()) {
+						_this.state["in-lift-9-2"] = true;
+						_this.movement.main.benson.addMessage("You're welcome to take");
+						_this.movement.main.benson.addMessage("all you find with you.");
+						_this.movement.main.benson.addMessage("[P] to pick things up.");
+					}
+				}
+			};
+			this.PICKUP_EVENTS = {
+				"9,2,CCCCFF": function CCCCFF() {
+					_this.movement.main.benson.addMessage("The xeno device Allitus");
+					_this.movement.main.benson.addMessage("was discovered a year ago.");
+					_this.movement.main.benson.addMessage("At first we didn't");
+					_this.movement.main.benson.addMessage("understand its purpose.");
+					_this.movement.main.benson.addMessage("It was thought to be a");
+					_this.movement.main.benson.addMessage("power generator.");
+					_this.movement.main.benson.addMessage("Our scientists worked");
+					_this.movement.main.benson.addMessage("hard to fire it up.");
+					_this.movement.main.benson.addMessage("Some months ago they");
+					_this.movement.main.benson.addMessage("succeeded.");
+					_this.movement.main.benson.addMessage("However,");
+					_this.movement.main.benson.addMessage("We now know it to be");
+					_this.movement.main.benson.addMessage("a machine of war.");
+					_this.movement.main.benson.addMessage("Your task is to");
+					_this.movement.main.benson.addMessage("terminate Allitus.");
+					_this.movement.main.benson.addMessage("Next, meet with our");
+					_this.movement.main.benson.addMessage("defense counsil at");
+					_this.movement.main.benson.addMessage("coordinates c8-f0.");
+				},
+				"9,2,CCCCCC": function CCCCCC() {
+					_this.movement.main.benson.addMessage("Since your last visit,");
+					_this.movement.main.benson.addMessage("Alien ruins have been");
+					_this.movement.main.benson.addMessage("discovered on Targ.");
+					_this.movement.main.benson.addMessage("An underground complex");
+					_this.movement.main.benson.addMessage("and cave system is");
+					_this.movement.main.benson.addMessage("located at d9-42.");
+				},
+				"9,2,FFCC88": function FFCC88() {
+					_this.movement.main.benson.addMessage("We have requisitioned");
+					_this.movement.main.benson.addMessage("a Lightcar for your");
+					_this.movement.main.benson.addMessage("travels. It has now");
+					_this.movement.main.benson.addMessage("been encoded");
+					_this.movement.main.benson.addMessage("for your use.");
+					_this.state["lightcar-keys"] = true;
+				}
+			};
+		}
+	
+		_createClass(Events, [{
+			key: "update",
+			value: function update(sectorX, sectorY) {
+				var key = "" + sectorX + "," + sectorY;
+				if (this.EVENTS[key]) this.EVENTS[key]();
+			}
+		}, {
+			key: "pickup",
+			value: function pickup(modelName, sectorX, sectorY, roomColor) {
+				var key = "" + sectorX + "," + sectorY + "," + roomColor;
+				console.log("key=" + key);
+				if (this.PICKUP_EVENTS[key]) {
+					this.PICKUP_EVENTS[key]();
+					return true;
+				}
+				return false;
+			}
+		}]);
+	
+		return Events;
+	}();
+
+/***/ },
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49455,7 +49572,7 @@
 	};
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49467,7 +49584,7 @@
 	});
 	exports.Horizon = exports.Compass = undefined;
 	
-	var _jquery = __webpack_require__(4);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -49568,7 +49685,7 @@
 	}();
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49580,7 +49697,7 @@
 	});
 	exports.Benson = undefined;
 	
-	var _jquery = __webpack_require__(4);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -49658,6 +49775,7 @@
 						}
 						if (this.scroll <= 0) {
 							this.scroll = 0;
+							this.el.css("left", "0");
 							this.pause = time;
 						}
 					}
@@ -49669,7 +49787,7 @@
 	}();
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49875,59 +49993,6 @@
 		}]);
 	
 		return Space;
-	}();
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var Events = exports.Events = function () {
-		function Events(movement) {
-			var _this = this;
-	
-			_classCallCheck(this, Events);
-	
-			this.movement = movement;
-			this.state = {};
-			this.EVENTS = {
-				"9,2": function _() {
-					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
-						_this.state["lift-9-2"] = true;
-						_this.movement.main.benson.addMessage("Take the lift down.");
-						_this.movement.main.benson.addMessage("This complex houses all");
-						_this.movement.main.benson.addMessage("that we know about the");
-						_this.movement.main.benson.addMessage("current situation.");
-						_this.movement.main.benson.addMessage("[E] to use the lift.");
-					}
-					if (!_this.state["in-lift-9-2"] && _this.movement.usingElevator()) {
-						_this.state["in-lift-9-2"] = true;
-						_this.movement.main.benson.addMessage("You're welcome to take");
-						_this.movement.main.benson.addMessage("all you find with you.");
-						_this.movement.main.benson.addMessage("[P] to pick things up.");
-					}
-				}
-			};
-		}
-	
-		_createClass(Events, [{
-			key: "update",
-			value: function update(sectorX, sectorY) {
-				var key = "" + sectorX + "," + sectorY;
-				if (this.EVENTS[key]) this.EVENTS[key]();
-			}
-		}]);
-	
-		return Events;
 	}();
 
 /***/ }
