@@ -15,9 +15,10 @@ const ROAD_Z = 1;
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
-	car: [[9, 3]],
+	car: [[0xc9, 0xc3]],
 	plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
 	elevator: [[9, 2]],
+	light: [[9, 3]],
 
 	opera: [],
 	asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],

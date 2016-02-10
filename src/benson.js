@@ -17,6 +17,9 @@ export class Benson {
 	}
 
 	addMessage(message, onComplete) {
+		// skip dupes
+		if(this.messages.length > 0 && this.messages[0][0] == message) return;
+
 		this.messages.push([message, onComplete]);
 		if(this.messages.length == 1) {
 			this.el.empty().append(this.messages[0][0]);

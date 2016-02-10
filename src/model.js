@@ -7,16 +7,22 @@ import * as util from 'util';
 	Then, export with vertex colors on (no materials needed.)
  */
 const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator",
-	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres" ];
+	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light" ];
 
 const VEHICLES = {
-	"car": { speed: 4000, flies: false },
-	"plane": { speed: 20000, flies: true },
-	"ship": { speed: 5000000, flies: true }
+	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
+	"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
+	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink" },
+	"light": { speed: 50000, flies: false, exp: true, noise: "car",
+		onEnter: (movement)=> {
+			return movement.events.state["lightcar-keys"];
+		}
+	}
 };
 
 const SCALE = {
 	"car": 20,
+	"light": 10,
 	"plane": 20,
 	"keya": 10,
 	"keyb": 10,
@@ -32,7 +38,9 @@ const DESCRIPTIONS = {
 	"keyc": "Gate key",
 	"keyd": "X key",
 	"car": "Tando groundcar",
-	"plane": "Harris skipjet"
+	"plane": "Harris skipjet",
+	"ship": "Templar class cruiser",
+	"light": "Pulsar lightcar"
 }
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
@@ -51,7 +59,7 @@ export class Models {
 		for(let name of MODELS) {
 			let model;
 			if(name in VEHICLES) {
-				model = new Vehicle(name, VEHICLES[name].speed, VEHICLES[name].flies);
+				model = new Vehicle(name, VEHICLES[name]);
 			} else {
 				model = new Model(name);
 			}
@@ -106,9 +114,16 @@ export class Model {
 }
 
 export class Vehicle extends Model {
-	constructor(name, speed, flies) {
+	constructor(name, vehicle) {
 		super(name);
-		this.speed = speed;
-		this.flies = flies;
+		this.speed = vehicle.speed;
+		this.flies = vehicle.flies;
+		this.exp = vehicle.exp;
+		this.noise = vehicle.noise;
+		this.vehicle = vehicle;
+	}
+
+	enterCheck(movement) {
+		return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
 	}
 }

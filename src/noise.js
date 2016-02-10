@@ -16,6 +16,9 @@ export class Noise {
 			door: new DoorNoise(),
 			benson: new BensonNoise()
 		};
+		this.sounds = {
+			denied: new DeniedSound()
+		}
 	}
 
 	static toggleSound() {
@@ -28,6 +31,10 @@ export class Noise {
 
 	setLevel(name, level) {
 		if(SOUND_ENABLED) this.noises[name].setLevel(level);
+	}
+
+	play(name) {
+		this.sounds[name].play();
 	}
 }
 
@@ -93,6 +100,35 @@ function pinkNoiseStep() {
 		output[index] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
 		output[index] *= 0.11; // (roughly) compensate for gain
 		b6 = white * 0.115926;
+	}
+}
+
+class DeniedSound {
+	constructor() {
+		this.playing = false;
+	}
+
+	play() {
+		if(this.playing) return;
+		this.playing = true;
+
+		let voice1 = new Voice(globalContext, 0.2, 300);
+		let voice2 = new Voice(globalContext, 0.2, 340);
+		voice1.start();
+		voice2.start();
+		setTimeout(() => {
+			voice1.stop();
+			voice2.stop();
+			voice1 = new Voice(globalContext, 0.2, 220);
+			voice2 = new Voice(globalContext, 0.2, 260);
+			voice1.start();
+			voice2.start();
+			setTimeout(() => {
+				voice1.stop();
+				voice2.stop();
+				this.playing = false;
+			}, 100);
+		}, 150);
 	}
 }
 

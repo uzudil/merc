@@ -29,6 +29,7 @@ export class Movement {
 		this.main = main;
 
 		this.noise = new noise.Noise();
+		this.lastNoise = null;
 
 		this.prevTime = Date.now();
 		this.direction = new THREE.Vector3(0, 1, 0);
@@ -128,7 +129,13 @@ export class Movement {
 				case 55: this.power = 0.7; break;
 				case 56: this.power = 0.8; break;
 				case 57: this.power = 0.9; break;
-				case 48: this.power = 1.0; break;
+				case 48: {
+					this.power = 1.0;
+					if(this.vehicle && this.vehicle.model.name == "light") {
+						this.main.benson.addMessage("Yee-haw!");
+					}
+					break;
+				}
 				case 81: noise.Noise.toggleSound(); break;
 				case 32:
 					if(this.vehicle) {
@@ -281,11 +288,15 @@ export class Movement {
 		for(let o of this.intersections) {
 			this.noise.stop("walk");
 			if(o.model instanceof models.Vehicle) {
-				this.player.rotation.z = o.rotation.z;
-				this.vehicle = o;
-				this.vehicle.parent.remove(this.vehicle);
-				this.main.benson.addMessage(o.model.description);
-				this.stop();
+				if(o.model.enterCheck(this)) {
+					this.player.rotation.z = o.rotation.z;
+					this.vehicle = o;
+					this.vehicle.parent.remove(this.vehicle);
+					this.main.benson.addMessage(o.model.description);
+					this.stop();
+				} else {
+					this.noise.play("denied");
+				}
 				break;
 			}
 		}
@@ -376,7 +387,11 @@ export class Movement {
 		if(this.landing) {
 			return (this.player.position.z/(LANDING_ALT + DEFAULT_Z)) * 100000;
 		} else if(this.vehicle) {
-			return this.power * this.getMaxSpeed();
+			if(this.vehicle.model.exp) {
+				return this.power * this.power * this.getMaxSpeed();
+			} else {
+				return this.power * this.getMaxSpeed();
+			}
 		} else {
 			if(this.fw || this.bw || this.left || this.right) {
 				return this.getMaxSpeed();
@@ -489,6 +504,7 @@ export class Movement {
 	openDoor(door) {
 		if(door.door.key != "" && this.inventory.filter((o)=>door.door.key == o).length == 0) {
 			// key needed
+			this.noise.play("denied");
 			return;
 		}
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
@@ -538,6 +554,8 @@ export class Movement {
 	updateWalkingInRoom(dx, delta) {
 
 		this.updateDoors(dx, delta);
+
+		if(!(this.fw || this.bw || this.left || this.right)) return;
 
 		// find the world pos of player
 		this.player.getWorldPosition(this.worldPos);
@@ -616,19 +634,9 @@ export class Movement {
 		if(this.liftDirection != 0 || this.doorsUp.length > 0) {
 			// pass: set in updateLift, etc
 		} else {
-			let mode = "walk";
-			if(this.vehicle) {
-				this.noise.stop("walk");
-				if (this.vehicle.model.flies) {
-					mode = "jet";
-				} else {
-					mode = "car";
-				}
-			} else {
-				this.noise.stop("car");
-				this.noise.stop("jet");
-			}
-
+			let mode = this.vehicle ? this.vehicle.model.noise : "walk";
+			if(this.lastNoise) this.noise.stop(this.lastNoise);
+			this.lastNoise = this.mode;
 			let lvl = this.getSpeed() / this.getMaxSpeed();
 			if(lvl == 0) this.noise.stop(mode);
 			else this.noise.setLevel(mode, lvl);
