@@ -47616,7 +47616,12 @@
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
 		"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
-		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink" },
+		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
+			onEnter: function onEnter(movement) {
+				// todo: this should return true when game is completed
+				return false;
+			}
+		},
 		"light": { speed: 50000, flies: false, exp: true, noise: "car",
 			onEnter: function onEnter(movement) {
 				return movement.events.state["lightcar-keys"];
