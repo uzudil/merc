@@ -12,7 +12,12 @@ const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator",
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
 	"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
-	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink" },
+	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
+		onEnter: (movement)=> {
+			// todo: this should return true when game is completed
+			return false;
+		}
+	},
 	"light": { speed: 50000, flies: false, exp: true, noise: "car",
 		onEnter: (movement)=> {
 			return movement.events.state["lightcar-keys"];
