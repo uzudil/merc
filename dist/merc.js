@@ -36547,11 +36547,13 @@
 	};
 	
 	var MAP_POSITIONS = {
-		car: [[9, 3]],
+		car: [[0xc9, 0xc3]],
 		plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
-		elevator: [[9, 2]],
+		elevator: [[9, 2], [0xd9, 0x42]],
+		light: [[9, 3]],
 	
-		opera: [],
+		ruins: [[0xda, 0x42]],
+		opera: [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
 		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
 		tower: [[0x41, 0x45], [0x44, 0x45]],
 		port: [[0x32, 0x66]]
@@ -36559,9 +36561,10 @@
 	
 	var ROAD_POSITIONS = [
 	// borders
-	[0, 0, 255, 0], [0, 0, 0, 255], [255, 0, 0, 255], [0, 255, 255, 0],
+	[0x00, 0x00, 0x100, 0x00], [0x00, 0x00, 0x00, 0x100], [0xff, 0x00, 0x00, 0x100], [0x00, 0xff, 0x100, 0x00],
+	
 	// other roads
-	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x44, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00]];
+	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x45, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player) {
@@ -36659,8 +36662,8 @@
 			key: 'drawRoads',
 			value: function drawRoads() {
 				var geo = new _three2.default.Geometry();
-				for (var x = this.minSector.x; x < this.maxSector.x; x++) {
-					for (var y = this.minSector.y; y < this.maxSector.y; y++) {
+				for (var x = this.minSector.x; x <= this.maxSector.x; x++) {
+					for (var y = this.minSector.y; y <= this.maxSector.y; y++) {
 						var road = this.getSector(x, y).road;
 						if (road[0] == 1 && road[1] == 1) {
 							GameMap.createCrossRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
@@ -36674,7 +36677,7 @@
 	
 				// add as a single geo
 				var roadMesh = new _three2.default.LineSegments(geo, ROAD_MAT);
-				//roadMesh.frustumCulled = false;
+				roadMesh.frustumCulled = false;
 				//roadMesh.position.set(0, 0, 1);
 				this.land.add(roadMesh);
 			}
@@ -46783,6 +46786,7 @@
 			this.main = main;
 	
 			this.noise = new noise.Noise();
+			this.lastNoise = null;
 	
 			this.prevTime = Date.now();
 			this.direction = new _three2.default.Vector3(0, 1, 0);
@@ -46901,7 +46905,13 @@
 					case 57:
 						_this.power = 0.9;break;
 					case 48:
-						_this.power = 1.0;break;
+						{
+							_this.power = 1.0;
+							if (_this.vehicle && _this.vehicle.model.name == "light") {
+								_this.main.benson.addMessage("Yee-haw!");
+							}
+							break;
+						}
 					case 81:
 						noise.Noise.toggleSound();break;
 					case 32:
@@ -47052,11 +47062,15 @@
 	
 						this.noise.stop("walk");
 						if (o.model instanceof models.Vehicle) {
-							this.player.rotation.z = o.rotation.z;
-							this.vehicle = o;
-							this.vehicle.parent.remove(this.vehicle);
-							this.main.benson.addMessage(o.model.description);
-							this.stop();
+							if (o.model.enterCheck(this)) {
+								this.player.rotation.z = o.rotation.z;
+								this.vehicle = o;
+								this.vehicle.parent.remove(this.vehicle);
+								this.main.benson.addMessage(o.model.description);
+								this.stop();
+							} else {
+								this.noise.play("denied");
+							}
 							break;
 						}
 					}
@@ -47173,7 +47187,11 @@
 				if (this.landing) {
 					return this.player.position.z / (LANDING_ALT + DEFAULT_Z) * 100000;
 				} else if (this.vehicle) {
-					return this.power * this.getMaxSpeed();
+					if (this.vehicle.model.exp) {
+						return this.power * this.power * this.getMaxSpeed();
+					} else {
+						return this.power * this.getMaxSpeed();
+					}
 				} else {
 					if (this.fw || this.bw || this.left || this.right) {
 						return this.getMaxSpeed();
@@ -47295,6 +47313,7 @@
 					return door.door.key == o;
 				}).length == 0) {
 					// key needed
+					this.noise.play("denied");
 					return;
 				}
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
@@ -47353,6 +47372,8 @@
 			value: function updateWalkingInRoom(dx, delta) {
 	
 				this.updateDoors(dx, delta);
+	
+				if (!(this.fw || this.bw || this.left || this.right)) return;
 	
 				// find the world pos of player
 				this.player.getWorldPosition(this.worldPos);
@@ -47458,19 +47479,9 @@
 				if (this.liftDirection != 0 || this.doorsUp.length > 0) {
 					// pass: set in updateLift, etc
 				} else {
-						var mode = "walk";
-						if (this.vehicle) {
-							this.noise.stop("walk");
-							if (this.vehicle.model.flies) {
-								mode = "jet";
-							} else {
-								mode = "car";
-							}
-						} else {
-							this.noise.stop("car");
-							this.noise.stop("jet");
-						}
-	
+						var mode = this.vehicle ? this.vehicle.model.noise : "walk";
+						if (this.lastNoise) this.noise.stop(this.lastNoise);
+						this.lastNoise = this.mode;
 						var lvl = this.getSpeed() / this.getMaxSpeed();
 						if (lvl == 0) this.noise.stop(mode);else this.noise.setLevel(mode, lvl);
 					}
@@ -47602,16 +47613,27 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins"];
 	
 	var VEHICLES = {
-		"car": { speed: 4000, flies: false },
-		"plane": { speed: 20000, flies: true },
-		"ship": { speed: 5000000, flies: true }
+		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
+		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
+			onEnter: function onEnter(movement) {
+				// todo: this should return true when game is completed
+				return false;
+			}
+		},
+		"light": { speed: 50000, flies: false, exp: true, noise: "car",
+			onEnter: function onEnter(movement) {
+				return movement.events.state["lightcar-keys"];
+			}
+		}
 	};
 	
 	var SCALE = {
 		"car": 20,
+		"light": 10,
 		"plane": 20,
 		"keya": 10,
 		"keyb": 10,
@@ -47627,7 +47649,9 @@
 		"keyc": "Gate key",
 		"keyd": "X key",
 		"car": "Tando groundcar",
-		"plane": "Harris skipjet"
+		"plane": "Harris skipjet",
+		"ship": "Templar class cruiser",
+		"light": "Pulsar lightcar"
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
@@ -47657,7 +47681,7 @@
 	
 					var model = undefined;
 					if (name in VEHICLES) {
-						model = new Vehicle(name, VEHICLES[name].speed, VEHICLES[name].flies);
+						model = new Vehicle(name, VEHICLES[name]);
 					} else {
 						model = new Model(name);
 					}
@@ -47746,15 +47770,25 @@
 	var Vehicle = exports.Vehicle = function (_Model) {
 		_inherits(Vehicle, _Model);
 	
-		function Vehicle(name, speed, flies) {
+		function Vehicle(name, vehicle) {
 			_classCallCheck(this, Vehicle);
 	
 			var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(Vehicle).call(this, name));
 	
-			_this3.speed = speed;
-			_this3.flies = flies;
+			_this3.speed = vehicle.speed;
+			_this3.flies = vehicle.flies;
+			_this3.exp = vehicle.exp;
+			_this3.noise = vehicle.noise;
+			_this3.vehicle = vehicle;
 			return _this3;
 		}
+	
+		_createClass(Vehicle, [{
+			key: 'enterCheck',
+			value: function enterCheck(movement) {
+				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
+			}
+		}]);
 	
 		return Vehicle;
 	}(Model);
@@ -47798,6 +47832,9 @@
 				door: new DoorNoise(),
 				benson: new BensonNoise()
 			};
+			this.sounds = {
+				denied: new DeniedSound()
+			};
 		}
 	
 		_createClass(Noise, [{
@@ -47809,6 +47846,11 @@
 			key: "setLevel",
 			value: function setLevel(name, level) {
 				if (SOUND_ENABLED) this.noises[name].setLevel(level);
+			}
+		}, {
+			key: "play",
+			value: function play(name) {
+				this.sounds[name].play();
 			}
 		}], [{
 			key: "toggleSound",
@@ -47895,6 +47937,44 @@
 			b6 = white * 0.115926;
 		};
 	}
+	
+	var DeniedSound = function () {
+		function DeniedSound() {
+			_classCallCheck(this, DeniedSound);
+	
+			this.playing = false;
+		}
+	
+		_createClass(DeniedSound, [{
+			key: "play",
+			value: function play() {
+				var _this = this;
+	
+				if (this.playing) return;
+				this.playing = true;
+	
+				var voice1 = new Voice(globalContext, 0.2, 300);
+				var voice2 = new Voice(globalContext, 0.2, 340);
+				voice1.start();
+				voice2.start();
+				setTimeout(function () {
+					voice1.stop();
+					voice2.stop();
+					voice1 = new Voice(globalContext, 0.2, 220);
+					voice2 = new Voice(globalContext, 0.2, 260);
+					voice1.start();
+					voice2.start();
+					setTimeout(function () {
+						voice1.stop();
+						voice2.stop();
+						_this.playing = false;
+					}, 100);
+				}, 150);
+			}
+		}]);
+	
+		return DeniedSound;
+	}();
 	
 	var PinkNoise = function () {
 		function PinkNoise() {
@@ -49731,6 +49811,9 @@
 		_createClass(Benson, [{
 			key: 'addMessage',
 			value: function addMessage(message, onComplete) {
+				// skip dupes
+				if (this.messages.length > 0 && this.messages[0][0] == message) return;
+	
 				this.messages.push([message, onComplete]);
 				if (this.messages.length == 1) {
 					this.el.empty().append(this.messages[0][0]);
