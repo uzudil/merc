@@ -36549,10 +36549,11 @@
 	var MAP_POSITIONS = {
 		car: [[0xc9, 0xc3]],
 		plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
-		elevator: [[9, 2]],
+		elevator: [[9, 2], [0xd9, 0x42]],
 		light: [[9, 3]],
 	
-		opera: [],
+		ruins: [[0xda, 0x42]],
+		opera: [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
 		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
 		tower: [[0x41, 0x45], [0x44, 0x45]],
 		port: [[0x32, 0x66]]
@@ -36560,9 +36561,10 @@
 	
 	var ROAD_POSITIONS = [
 	// borders
-	[0, 0, 255, 0], [0, 0, 0, 255], [255, 0, 0, 255], [0, 255, 255, 0],
+	[0x00, 0x00, 0x100, 0x00], [0x00, 0x00, 0x00, 0x100], [0xff, 0x00, 0x00, 0x100], [0x00, 0xff, 0x100, 0x00],
+	
 	// other roads
-	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x44, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00]];
+	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x45, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player) {
@@ -36660,8 +36662,8 @@
 			key: 'drawRoads',
 			value: function drawRoads() {
 				var geo = new _three2.default.Geometry();
-				for (var x = this.minSector.x; x < this.maxSector.x; x++) {
-					for (var y = this.minSector.y; y < this.maxSector.y; y++) {
+				for (var x = this.minSector.x; x <= this.maxSector.x; x++) {
+					for (var y = this.minSector.y; y <= this.maxSector.y; y++) {
 						var road = this.getSector(x, y).road;
 						if (road[0] == 1 && road[1] == 1) {
 							GameMap.createCrossRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
@@ -36675,7 +36677,7 @@
 	
 				// add as a single geo
 				var roadMesh = new _three2.default.LineSegments(geo, ROAD_MAT);
-				//roadMesh.frustumCulled = false;
+				roadMesh.frustumCulled = false;
 				//roadMesh.position.set(0, 0, 1);
 				this.land.add(roadMesh);
 			}
@@ -47611,7 +47613,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },

@@ -6,8 +6,11 @@ import * as util from 'util';
 	To use colors, use the "vertex paint" feature of blender.
 	Then, export with vertex colors on (no materials needed.)
  */
-const MODELS = [ "opera", "asha", "car", "plane", "tower", "elevator",
-	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light" ];
+const MODELS = [
+	"opera", "asha", "car", "plane", "tower", "elevator",
+	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
+	"ruins"
+];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
