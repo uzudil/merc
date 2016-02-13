@@ -204,7 +204,7 @@ export class Movement {
 
 		// find the closest intersection
 		this.raycaster.set(this.worldPos, this.worldDir);
-		let intersections = this.raycaster.intersectObject(this.level.mesh, true);
+		let intersections = this.raycaster.intersectObject(this.level.targetMesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
 		if(closest && closest.object.model) {
 
@@ -507,6 +507,7 @@ export class Movement {
 			this.noise.play("denied");
 			return;
 		}
+		this.level.makeCave(door.door);
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
 		door["moving"] = "up";
 		this.doorsUp.push(door);
@@ -565,7 +566,7 @@ export class Movement {
 
 		// find the closest intersection
 		this.raycaster.set(this.worldPos, this.worldDir);
-		let intersections = this.raycaster.intersectObject(this.level.mesh, true);
+		let intersections = this.raycaster.intersectObject(this.level.targetMesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
 
 		let blocked = false;
@@ -597,7 +598,7 @@ export class Movement {
 
 				// cast a ray this way too to make sure there isn't a corner we're running into
 				this.raycaster.set(this.worldPos, this.worldDir);
-				intersections = this.raycaster.intersectObject(this.level.mesh, true);
+				intersections = this.raycaster.intersectObject(this.level.targetMesh, true);
 				if (intersections.length > 0 &&
 					(intersections[0].face.normal.x != closest.face.normal.x ||
 					intersections[0].face.normal.y != closest.face.normal.y)) {

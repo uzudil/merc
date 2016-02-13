@@ -63,6 +63,11 @@
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 }
+
+.room.cave {
+	border: 3px solid #000;
+}
+
 .door {
 	position: absolute;
 	background: #444;

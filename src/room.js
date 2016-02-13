@@ -12,6 +12,9 @@ const DOOR_THICKNESS = WALL_THICKNESS * .25;
 
 const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
 
+const WALL_SEGMENTS = 3; // making this bigger takes forever to compute
+const CAVE_RAND_FACTOR = 1.25;
+
 export class Door {
 	constructor(x, y, dir, roomAName, roomBName, color, key) {
 		this.x = x;
@@ -24,6 +27,8 @@ export class Door {
 
 		this.roomA = null;
 		this.roomB = null;
+
+		this.shell_mesh = null;
 
 		this.dx = 0;
 		this.dy = 0;
@@ -52,13 +57,15 @@ export class Door {
 
 var roomCount = 0;
 export class Room {
-	constructor(x, y, w, h, color) {
+	constructor(x, y, w, h, color, cave) {
 		this.name = roomCount;
 		this.x = x;
 		this.y = y;
 		this.w = w;
 		this.h = h;
 		this.color = new THREE.Color(color);
+		this.cave = cave;
+		this.caveMesh = null;
 		this.elevator = roomCount == 0;
 		roomCount++;
 	}
@@ -68,7 +75,7 @@ export class Level {
 
 	constructor(data) {
 		roomCount = 0;
-		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, true));
+		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, r.cave));
 		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key));
 		this.objects = data.objects;
 
@@ -99,8 +106,8 @@ export class Level {
 
 	getRoomAtPos(point, externalPoint=false, debug=false) {
 		if(externalPoint) {
-			point.x -= this.offsetX - this.w * ROOM_SIZE/2;
-			point.y -= this.offsetY - this.h * ROOM_SIZE/2;
+			point.x -= this.offsetX;
+			point.y -= this.offsetY;
 		}
 		if(debug) console.log("point=", point);
 		for(let room of this.rooms) {
@@ -116,9 +123,12 @@ export class Level {
 		return null;
 	}
 
-	create(scene, x, y, liftX, liftY, models) {
+	create(scene, x, y, liftX, liftY, models, progressUpdate=null) {
 		this.liftX = liftX;
 		this.liftY = liftY;
+
+		let t, t2;
+		t = Date.now();
 
 		var level_geometry = new THREE.CubeGeometry( this.w * ROOM_SIZE + WALL_THICKNESS * 2, this.h * ROOM_SIZE + WALL_THICKNESS * 2, ROOM_SIZE );
 		level_geometry.computeVertexNormals();
@@ -127,19 +137,25 @@ export class Level {
 		level_mesh.position.set((this.w * ROOM_SIZE)/2 + WALL_THICKNESS, (this.h * ROOM_SIZE)/2 + WALL_THICKNESS, 0);
 		var level_bsp = new csg.ThreeBSP( level_mesh );
 
+		t2 = Date.now(); console.log("1. " + (t2 - t)); t = t2;
+
 		// cut out the rooms
 		for(let room of this.rooms) {
+			let inner_geometry = new THREE.CubeGeometry(
+				room.w * ROOM_SIZE - WALL_THICKNESS,
+				room.h * ROOM_SIZE - WALL_THICKNESS,
+				ROOM_SIZE - WALL_THICKNESS);
+			let inner_mesh = new THREE.Mesh(inner_geometry);
+
 			let rx = (room.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
 			let ry = (room.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
-			//console.log("rendering room: " + name + " at " + room.x + "," + room.y + " size=" + room.w + "," + room.h + " pos=" + rx + "," + ry);
-
-			let inner_geometry = new THREE.CubeGeometry( room.w * ROOM_SIZE - WALL_THICKNESS, room.h * ROOM_SIZE - WALL_THICKNESS, ROOM_SIZE - WALL_THICKNESS );
-			let inner_mesh = new THREE.Mesh( inner_geometry );
 			inner_mesh.position.set(rx, ry, 0);
+
 			let inner_bsp = new csg.ThreeBSP( inner_mesh );
 
 			level_bsp = level_bsp.subtract( inner_bsp );
 		}
+		t2 = Date.now(); console.log("2. " + (t2 - t)); t = t2;
 
 		// door cutouts
 		for(let door of this.doors) {
@@ -177,20 +193,33 @@ export class Level {
 			}
 
 			shell_mesh.position.set(dx, dy, dz);
+			door.shell_mesh = shell_mesh.clone();;
+
 			let shell_bsp = new csg.ThreeBSP(shell_mesh);
 			level_bsp = level_bsp.subtract(shell_bsp);
 		}
+		t2 = Date.now(); console.log("3. " + (t2 - t)); t = t2;
 
 		this.mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, vertexColors: THREE.FaceColors });
-		this.mesh = level_bsp.toMesh( this.mat );
-		this.mesh["name"] = "room_wall";
-		this.mesh["type"] = "wall";
-		this.geo = this.mesh.geometry;
+		// this is the mesh targeted by the raycasters
+		this.targetMesh = level_bsp.toMesh( this.mat );
+		this.targetMesh["name"] = "room_wall";
+		this.targetMesh["type"] = "wall";
+		this.geo = this.targetMesh.geometry;
 		this.geo.computeVertexNormals();
+
+		// the uber-mesh that contains everything
+		this.mesh = new THREE.Object3D();
+		this.mesh.add(this.targetMesh);
+
+		// add the cave meshes
+		this.caveMeshObj = new THREE.Object3D();
+		this.mesh.add(this.caveMeshObj);
+
+		this.caveMeshes = [];
 
 		// actual doors
 		for(let door of this.doors) {
-
 			let dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
@@ -205,8 +234,9 @@ export class Level {
 			door_mesh["type"] = "door";
 			door_mesh["door"] = door;
 
-			this.mesh.add(door_mesh);
+			this.targetMesh.add(door_mesh);
 		}
+		t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
 
 		// objects
 		for(let object of this.objects) {
@@ -216,16 +246,18 @@ export class Level {
 			let dy = (object.y + .5) * ROOM_SIZE + WALL_THICKNESS - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
 			mesh.position.set(dx, dy, dz);
-			this.mesh.add(mesh);
+			this.targetMesh.add(mesh);
 		}
+		t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
 
 		this.scene = scene;
 		this.makeElevator(x, y);
+		t2 = Date.now(); console.log("7. " + (t2 - t)); t = t2;
 
 		// center in start room
 		let start = this.rooms[0];
-		this.offsetX = x + (this.w/2 - start.x - start.w/2) * ROOM_SIZE;
-		this.offsetY = y + (this.h/2 - start.y - start.h/2) * ROOM_SIZE;
+		this.offsetX = x + (- start.x - start.w/2) * ROOM_SIZE;
+		this.offsetY = y + (- start.y - start.h/2) * ROOM_SIZE;
 		this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
 
 		// color the rooms
@@ -240,8 +272,84 @@ export class Level {
 			}
 		}
 		util.shadeGeo(this.geo, LIGHT);
+		t2 = Date.now(); console.log("8. " + (t2 - t)); t = t2;
+
+		this.makeCaveRoom(start);
 
 		scene.add( this.mesh );
+	}
+
+	cutoutCaveDoor(door, room) {
+		let t = Date.now();
+		let shell_bsp = new csg.ThreeBSP(door.shell_mesh);
+		let bsp = new csg.ThreeBSP(room.caveMesh);
+		bsp = bsp.subtract(shell_bsp);
+		room.caveMesh = bsp.toMesh(this.mat);
+		for (let face of room.caveMesh.geometry.faces) {
+			face.color = room.color.clone();
+		}
+		console.log("cutoutCaveDoor time=" + (Date.now() - t) + " room=" + room.name + " door=" + door.x + "," + door.y);
+	}
+
+	// it's too expensive to pre-render caves, so do it on room entry.
+	makeCave(door) {
+		this.makeCaveRoom(door.roomA);
+		this.makeCaveRoom(door.roomB);
+	}
+
+	makeCaveRoom(room) {
+		if(!room.cave || room.caveMesh) {
+			return;
+		}
+
+		let rx = (room.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
+		let ry = (room.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
+		let w = room.w * ROOM_SIZE - WALL_THICKNESS - CAVE_RAND_FACTOR * 2;
+		let h = room.h * ROOM_SIZE - WALL_THICKNESS - CAVE_RAND_FACTOR * 2;
+		let d = ROOM_SIZE - WALL_THICKNESS;
+		let geo = new THREE.BoxGeometry(
+			w, h, d,
+			room.w * WALL_SEGMENTS,
+			room.h * WALL_SEGMENTS,
+			WALL_SEGMENTS
+		);
+		for (let v of geo.vertices) {
+			v.x += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
+			v.y += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
+			v.z += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
+		}
+		let mesh = new THREE.Mesh(geo);
+		mesh.position.set(rx, ry, 0);
+		let bsp = new csg.ThreeBSP(mesh);
+
+		geo = new THREE.BoxGeometry(w + CAVE_RAND_FACTOR * 3, h + CAVE_RAND_FACTOR * 3, d);
+		mesh = new THREE.Mesh(geo);
+		mesh.position.set(rx, ry, CAVE_RAND_FACTOR / 2);
+		bsp = new csg.ThreeBSP(mesh).subtract(bsp);
+
+		mesh = bsp.toMesh(this.mat);
+		room.caveMesh = mesh;
+
+		// cutout doors
+		for(let door of this.doors) {
+			if(door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
+			if(door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
+		}
+
+		let dx = (room.x + room.w/2) * ROOM_SIZE + WALL_THICKNESS;
+		let dy = (room.y + room.h/2) * ROOM_SIZE + WALL_THICKNESS;
+		let dz = 0;
+		room.caveMesh.position.set(dx, dy, dz);
+		room.caveMesh.updateMatrix();
+
+		for(let face of room.caveMesh.geometry.faces) {
+			face.color = room.color.clone();
+		}
+		room.caveMesh.geometry.computeVertexNormals();
+		room.caveMesh.geometry.computeFaceNormals();
+		util.shadeGeo(room.caveMesh.geometry, LIGHT);
+		this.caveMeshObj.add(room.caveMesh);
+		this.caveMeshes.push(room.caveMesh);
 	}
 
 	makeElevator(x, y) {
@@ -287,6 +395,10 @@ export class Level {
 		this.scene.remove(this.mesh);
 		this.geo.dispose();
 		this.mat.dispose();
+
+		for(let m of this.caveMeshes) {
+			m.geometry.dispose();
+		}
 
 	}
 }

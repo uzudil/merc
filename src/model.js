@@ -38,6 +38,7 @@ const SCALE = {
 	"keyd": 10,
 	"ship": 20,
 	"pres": 15,
+	"elevator": 30
 };
 
 const DESCRIPTIONS = {

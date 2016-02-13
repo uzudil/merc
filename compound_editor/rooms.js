@@ -107,6 +107,14 @@ function Editor() {
 				this.render();
 			}
 		}));
+		$("#cave").click(bind(this, function(event) {
+			var index = this.getRoomIndex();
+			if(index > -1) {
+				this.rooms[index].cave = $("#cave").is(":checked");
+				this.roomsChanged = true;
+				this.render();
+			}
+		}));
 	};
 
 	Editor.prototype.getDoorIndex = function() {
@@ -171,7 +179,8 @@ function Editor() {
 				y: sy,
 				w: w,
 				h: h,
-				color: this.roomColor
+				color: this.roomColor,
+				cave: $("#cave").is(":checked")
 			});
 			this.sx = this.sy = -1;
 			this.roomsChanged = true;
@@ -183,7 +192,7 @@ function Editor() {
 			$(".room", this.viewport).remove();
 			for (var i = 0; i < this.rooms.length; i++) {
 				var room = this.rooms[i];
-				this.viewport.append("<div class='room'></div>");
+				this.viewport.append("<div class='room" + (room.cave ? ' cave' : '') + "'></div>");
 				$(".room", this.viewport).last().css({
 					left: (room.x * this.size) + "px",
 					top: (room.y * this.size) + "px",

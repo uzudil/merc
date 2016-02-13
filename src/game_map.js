@@ -15,16 +15,15 @@ const ROAD_Z = 1;
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 const MAP_POSITIONS = {
-	car: [[0xc9, 0xc3]],
-	plane: [[0x32, 0x66, 0.25, 0.15, Math.PI]],
-	elevator: [[9, 2], [0xd9, 0x42]],
-	light: [[9, 3]],
-
-	ruins: [[0xda, 0x42]],
-	opera: [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
-	asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
-	tower: [[0x41, 0x45], [0x44, 0x45]],
-	port: [[0x32, 0x66]]
+	car:      [[0xc9, 0xc3]],
+	plane:    [[0x32, 0x66, 0.25, 0.15, Math.PI]],
+	elevator: [[0x09, 0x02], [0xd9, 0x42]],
+	light:    [[0x09, 0x03]],
+	ruins:    [[0xda, 0x42]],
+	opera:    [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
+	asha:     [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
+	tower:    [[0x41, 0x45], [0x44, 0x45]],
+	port:     [[0x32, 0x66]]
 };
 
 const ROAD_POSITIONS = [
@@ -159,8 +158,8 @@ export class GameMap {
 		var bb = model.getBoundingBox();
 		let sectorX = pos[0];
 		let sectorY = pos[1];
-		let dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
-		let dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+		let dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE) / 2;
+		let dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE) / 2;
 		let zrot = pos.length > 4 ? pos[4] : 0;
 		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
 	}
