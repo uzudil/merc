@@ -12,7 +12,7 @@ const DOOR_THICKNESS = WALL_THICKNESS * .25;
 
 const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
 
-const WALL_SEGMENTS = 3; // making this bigger takes forever to compute
+const WALL_SEGMENTS = 2; // making this bigger takes forever to compute
 const CAVE_RAND_FACTOR = 1.25;
 
 export class Door {
