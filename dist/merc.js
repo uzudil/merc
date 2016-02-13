@@ -36689,8 +36689,8 @@
 				var bb = model.getBoundingBox();
 				var sectorX = pos[0];
 				var sectorY = pos[1];
-				var dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : SECTOR_SIZE / 2;
-				var dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : SECTOR_SIZE / 2;
+				var dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
+				var dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 				var zrot = pos.length > 4 ? pos[4] : 0;
 				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
 			}
