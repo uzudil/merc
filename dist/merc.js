@@ -36527,8 +36527,6 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
@@ -36555,7 +36553,8 @@
 		opera: [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
 		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
 		tower: [[0x41, 0x45], [0x44, 0x45]],
-		port: [[0x32, 0x66]]
+		port: [[0x32, 0x66]],
+		tower2: [[0x88, 0x89], [0x8a, 0x87, 0, 0, Math.PI], [0x8c, 0x89]]
 	};
 	
 	var ROAD_POSITIONS = [
@@ -36563,7 +36562,7 @@
 	[0x00, 0x00, 0x100, 0x00], [0x00, 0x00, 0x00, 0x100], [0xff, 0x00, 0x00, 0x100], [0x00, 0xff, 0x100, 0x00],
 	
 	// other roads
-	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x45, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12]];
+	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x55, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12], [0x54, 0x44, 0x00, 0x45], [0x54, 0x88, 0x44, 0x00]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player) {
@@ -36613,76 +36612,112 @@
 			}
 	
 			// roads
-			var _iteratorNormalCompletion2 = true;
-			var _didIteratorError2 = false;
-			var _iteratorError2 = undefined;
-	
-			try {
-				for (var _iterator2 = ROAD_POSITIONS[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var road = _step2.value;
-	
-					this.addRoad.apply(this, _toConsumableArray(road));
-				}
-			} catch (err) {
-				_didIteratorError2 = true;
-				_iteratorError2 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion2 && _iterator2.return) {
-						_iterator2.return();
-					}
-				} finally {
-					if (_didIteratorError2) {
-						throw _iteratorError2;
-					}
-				}
-			}
-	
 			this.drawRoads();
 	
 			scene.add(this.land);
 		}
 	
 		_createClass(GameMap, [{
-			key: 'addRoad',
-			value: function addRoad(sectorX, sectorY, w, h) {
-				if (w != 0 && h != 0) throw "Roads can only go in one direction.";
-	
-				for (var x = sectorX; x < sectorX + w; x++) {
-					var sector = this.getSector(x, sectorY);
-					sector.road[0] = 1;
-				}
-				for (var y = sectorY; y < sectorY + h; y++) {
-					var sector = this.getSector(sectorX, y);
-					sector.road[1] = 1;
-				}
-			}
+			key: 'update',
+			value: function update() {}
 		}, {
 			key: 'drawRoads',
 			value: function drawRoads() {
-				var geo = new _three2.default.Geometry();
-				for (var x = this.minSector.x; x <= this.maxSector.x; x++) {
-					for (var y = this.minSector.y; y <= this.maxSector.y; y++) {
-						var road = this.getSector(x, y).road;
-						if (road[0] == 1 && road[1] == 1) {
-							GameMap.createCrossRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
-						} else if (road[0] == 1) {
-							GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1);
-						} else if (road[1] == 1) {
-							GameMap.createRoad(geo, x * SECTOR_SIZE, y * SECTOR_SIZE, 1, Math.PI / 2);
+				var roadQ = new _three2.default.Geometry();
+				var roadL = new _three2.default.Geometry();
+				var _iteratorNormalCompletion2 = true;
+				var _didIteratorError2 = false;
+				var _iteratorError2 = undefined;
+	
+				try {
+					for (var _iterator2 = ROAD_POSITIONS[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+						var road = _step2.value;
+	
+						var geo = undefined;
+						var lineGeo = new _three2.default.Geometry();
+						if (road[2] > 0) {
+							geo = new _three2.default.PlaneGeometry(road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
+							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
+							lineGeo.vertices.push(new _three2.default.Vector3(road[2] * SECTOR_SIZE, 0, 0));
+							geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
+							lineGeo.translate(0, 0, -0.1);
+						} else {
+							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
+							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
+							lineGeo.vertices.push(new _three2.default.Vector3(0, road[3] * SECTOR_SIZE, 0));
+							geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
+							lineGeo.translate(0, 0, -0.1);
+						}
+	
+						for (var i = 0; i < geo.faceVertexUvs[0].length; i++) {
+							for (var t = 0; t < geo.faceVertexUvs[0][i].length; t++) {
+								var uv = geo.faceVertexUvs[0][i][t];
+								if (road[2] > 0) {
+									uv.x *= road[2];
+								} else {
+									uv.y *= road[3];
+									var tmp = uv.y;
+									uv.y = uv.x;
+									uv.x = tmp;
+								}
+							}
+						}
+	
+						var mesh = new _three2.default.Mesh(geo);
+						mesh.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+						mesh.updateMatrix();
+						roadQ.merge(geo, mesh.matrix);
+						mesh.frustumCulled = false;
+	
+						var lines = new _three2.default.LineSegments(lineGeo);
+						lines.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+						lines.updateMatrix();
+						roadL.merge(lineGeo, lines.matrix);
+					}
+				} catch (err) {
+					_didIteratorError2 = true;
+					_iteratorError2 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion2 && _iterator2.return) {
+							_iterator2.return();
+						}
+					} finally {
+						if (_didIteratorError2) {
+							throw _iteratorError2;
 						}
 					}
 				}
 	
-				// add as a single geo
-				var roadMesh = new _three2.default.LineSegments(geo, ROAD_MAT);
+				var canvas = document.createElement('canvas');
+				canvas.width = 256;
+				canvas.height = 256;
+				var context = canvas.getContext('2d');
+				context.fillStyle = "#222222";
+				context.fillRect(0, 0, 256, 256);
+				context.fillStyle = "#ffcc00";
+				context.fillRect(32, 118, 64, 20);
+				context.fillRect(160, 118, 64, 20);
+	
+				// canvas contents will be used for a texture
+				var texture = new _three2.default.Texture(canvas);
+				texture.wrapS = _three2.default.RepeatWrapping;
+				texture.wrapT = _three2.default.RepeatWrapping;
+				texture.magFilter = _three2.default.NearestFilter;
+				texture.minFilter = _three2.default.NearestFilter;
+				texture.repeat.set(1, 1);
+				texture.needsUpdate = true;
+	
+				var roadMat = new _three2.default.MeshBasicMaterial({ color: 0xffffff, map: texture });
+				var roadMesh = new _three2.default.Mesh(roadQ, roadMat);
 				roadMesh.frustumCulled = false;
-				//roadMesh.position.set(0, 0, 1);
 				this.land.add(roadMesh);
+	
+				var roadLineMat = new _three2.default.LineBasicMaterial({ color: 0x222222, linewidth: 1 });
+				var roadLines = new _three2.default.LineSegments(roadL, roadLineMat);
+				roadLines.frustumCulled = false;
+				this.land.add(roadLines);
 			}
-		}, {
-			key: 'update',
-			value: function update() {}
 		}, {
 			key: 'addStructure',
 			value: function addStructure(model, pos) {
@@ -36727,43 +36762,6 @@
 					if (sectorY >= this.maxSector.y) this.maxSector.y = sectorY;
 				}
 				return this.sectors[k];
-			}
-		}], [{
-			key: 'createRoad',
-			value: function createRoad(geometry, x, y, z) {
-				var zrot = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
-	
-				if (zrot == 0) {
-					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-				} else {
-					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + -SECTOR_SIZE * 0.5, z + ROAD_Z));
-					geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.5, z + ROAD_Z));
-				}
-			}
-		}, {
-			key: 'createCrossRoad',
-			value: function createCrossRoad(geometry, x, y, z) {
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * -0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 4, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE / 2, y + SECTOR_SIZE * 0.25, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 2, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 4, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 4, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 2, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 2, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + -SECTOR_SIZE / 4, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 4, z + ROAD_Z));
-				geometry.vertices.push(new _three2.default.Vector3(x + -SECTOR_SIZE * 0.25, y + SECTOR_SIZE / 2, z + ROAD_Z));
 			}
 		}]);
 	
@@ -47613,7 +47611,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
@@ -47641,7 +47639,8 @@
 		"keyd": 10,
 		"ship": 20,
 		"pres": 15,
-		"elevator": 30
+		"elevator": 30,
+		"tower2": 80
 	};
 	
 	var DESCRIPTIONS = {
@@ -48440,7 +48439,7 @@
 	
 	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
 	
-	var WALL_SEGMENTS = 3; // making this bigger takes forever to compute
+	var WALL_SEGMENTS = 2; // making this bigger takes forever to compute
 	var CAVE_RAND_FACTOR = 1.25;
 	
 	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color, key) {
