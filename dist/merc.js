@@ -183,7 +183,7 @@
 	
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
-				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player);
+				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
 				// hack: start in a room
 				//this.movement.loadGame({
@@ -36554,7 +36554,8 @@
 		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
 		tower: [[0x41, 0x45], [0x44, 0x45]],
 		port: [[0x32, 0x66]],
-		tower2: [[0x88, 0x89], [0x8a, 0x87, 0, 0, Math.PI], [0x8c, 0x89]]
+		tower2: [[0x88, 0x89], [0x8a, 0x87, 0, 0, Math.PI], [0x8c, 0x89], [0xcc, 0xce], [0xce, 0xcc]],
+		bldg: [[0xcc, 0xcc, 0, 0, Math.PI / 4]]
 	};
 	
 	var ROAD_POSITIONS = [
@@ -36565,7 +36566,7 @@
 	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x55, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12], [0x54, 0x44, 0x00, 0x45], [0x54, 0x88, 0x44, 0x00]];
 	
 	var GameMap = exports.GameMap = function () {
-		function GameMap(scene, models, player) {
+		function GameMap(scene, models, player, maxAnisotropy) {
 			_classCallCheck(this, GameMap);
 	
 			this.player = player;
@@ -36612,7 +36613,7 @@
 			}
 	
 			// roads
-			this.drawRoads();
+			this.drawRoads(maxAnisotropy);
 	
 			scene.add(this.land);
 		}
@@ -36622,7 +36623,8 @@
 			value: function update() {}
 		}, {
 			key: 'drawRoads',
-			value: function drawRoads() {
+			value: function drawRoads(maxAnisotropy) {
+				// todo: handle overlaps (z-fighting)
 				var roadQ = new _three2.default.Geometry();
 				var roadL = new _three2.default.Geometry();
 				var _iteratorNormalCompletion2 = true;
@@ -36640,13 +36642,11 @@
 							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 							lineGeo.vertices.push(new _three2.default.Vector3(road[2] * SECTOR_SIZE, 0, 0));
 							geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
-							lineGeo.translate(0, 0, -0.1);
 						} else {
 							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
 							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 							lineGeo.vertices.push(new _three2.default.Vector3(0, road[3] * SECTOR_SIZE, 0));
 							geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
-							lineGeo.translate(0, 0, -0.1);
 						}
 	
 						for (var i = 0; i < geo.faceVertexUvs[0].length; i++) {
@@ -36656,9 +36656,10 @@
 									uv.x *= road[2];
 								} else {
 									uv.y *= road[3];
-									var tmp = uv.y;
-									uv.y = uv.x;
-									uv.x = tmp;
+									// 'rotate' texture so stripes point the correct way
+									var _ref = [uv.x, uv.y];
+									uv.y = _ref[0];
+									uv.x = _ref[1];
 								}
 							}
 						}
@@ -36704,8 +36705,9 @@
 				texture.wrapS = _three2.default.RepeatWrapping;
 				texture.wrapT = _three2.default.RepeatWrapping;
 				texture.magFilter = _three2.default.NearestFilter;
-				texture.minFilter = _three2.default.NearestFilter;
+				//texture.minFilter = THREE.NearestFilter;
 				texture.repeat.set(1, 1);
+				texture.anisotropy = maxAnisotropy;
 				texture.needsUpdate = true;
 	
 				var roadMat = new _three2.default.MeshBasicMaterial({ color: 0xffffff, map: texture });
@@ -36715,6 +36717,7 @@
 	
 				var roadLineMat = new _three2.default.LineBasicMaterial({ color: 0x222222, linewidth: 1 });
 				var roadLines = new _three2.default.LineSegments(roadL, roadLineMat);
+				roadLines.position.z = -.5;
 				roadLines.frustumCulled = false;
 				this.land.add(roadLines);
 			}
@@ -47611,7 +47614,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
