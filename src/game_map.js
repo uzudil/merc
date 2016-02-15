@@ -53,7 +53,7 @@ const ROAD_POSITIONS = [
 ];
 
 export class GameMap {
-	constructor(scene, models, player) {
+	constructor(scene, models, player, maxAnisotropy) {
 		this.player = player;
 		this.land = new THREE.Object3D();
 		this.sectors = {};
@@ -77,7 +77,7 @@ export class GameMap {
 		}
 
 		// roads
-		this.drawRoads();
+		this.drawRoads(maxAnisotropy);
 
 		scene.add(this.land);
 	}
@@ -85,7 +85,8 @@ export class GameMap {
 	update() {
 	}
 
-	drawRoads() {
+	drawRoads(maxAnisotropy) {
+		// todo: handle overlaps (z-fighting)
 		let roadQ = new THREE.Geometry();
 		let roadL = new THREE.Geometry();
 		for(let road of ROAD_POSITIONS) {
@@ -96,13 +97,11 @@ export class GameMap {
 				lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 				lineGeo.vertices.push(new THREE.Vector3(road[2] * SECTOR_SIZE, 0, 0));
 				geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
-				lineGeo.translate(0, 0, -0.1);
 			} else {
 				geo = new THREE.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
 				lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 				lineGeo.vertices.push(new THREE.Vector3(0, road[3] * SECTOR_SIZE, 0));
 				geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
-				lineGeo.translate(0, 0, -0.1);
 			}
 
 			for(let i = 0; i < geo.faceVertexUvs[0].length; i++) {
@@ -112,9 +111,8 @@ export class GameMap {
 						uv.x *= road[2];
 					} else {
 						uv.y *= road[3];
-						let tmp = uv.y;
-						uv.y = uv.x;
-						uv.x = tmp;
+						// 'rotate' texture so stripes point the correct way
+						[uv.y, uv.x] = [uv.x, uv.y];
 					}
 				}
 			}
@@ -146,8 +144,9 @@ export class GameMap {
 		texture.wrapS = THREE.RepeatWrapping;
 		texture.wrapT = THREE.RepeatWrapping;
 		texture.magFilter = THREE.NearestFilter;
-		texture.minFilter = THREE.NearestFilter;
+		//texture.minFilter = THREE.NearestFilter;
 		texture.repeat.set( 1, 1 );
+		texture.anisotropy = maxAnisotropy;
 		texture.needsUpdate = true;
 
 		let roadMat = new THREE.MeshBasicMaterial({ color: 0xffffff, map: texture });
@@ -157,6 +156,7 @@ export class GameMap {
 
 		let roadLineMat = new THREE.LineBasicMaterial({color: 0x222222, linewidth: 1});
 		let roadLines = new THREE.LineSegments(roadL, roadLineMat);
+		roadLines.position.z = -.5;
 		roadLines.frustumCulled = false;
 		this.land.add(roadLines);
 	}

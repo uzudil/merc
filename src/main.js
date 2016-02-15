@@ -87,7 +87,7 @@ class Merc {
 
 		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
-		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player);
+		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 
 		// hack: start in a room
 		//this.movement.loadGame({
