@@ -9,7 +9,7 @@ import * as util from 'util';
 const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
-	"ruins", "tower2"
+	"ruins", "tower2", "bldg"
 ];
 
 const VEHICLES = {
