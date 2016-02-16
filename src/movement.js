@@ -91,6 +91,8 @@ export class Movement {
 		this.events = new events.Events(this);
 
 		$(document).mousemove((event) => {
+			if(this.landing != 0) return;
+
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
 
@@ -118,6 +120,10 @@ export class Movement {
 		$(document).keyup(( event ) => {
 			//console.log(event.keyCode);
 			switch( event.keyCode ) {
+				case 27 && this.landing != 0:
+					this.noise.stop("pink");
+					this.landing = Date.now() - LANDING_TIME;
+					break;
 				case 87: this.fw = false; break;
 				case 83: this.bw = false; break;
 				case 65: this.left = false; break;
@@ -694,6 +700,7 @@ export class Movement {
 				this.pitch.rotation.x = Math.PI/2;
 			}
 		} else {
+			console.log("landing ending");
 			this.player.position.z = DEFAULT_Z;
 			//this.player.rotation.z = 0;
 			this.pitch.rotation.x = Math.PI/2;
@@ -749,6 +756,7 @@ export class Movement {
 	}
 
 	startLanding() {
+		console.log("starting landing");
 		this.landing = Date.now() + LANDING_TIME;
 		this.pitch.rotation.x = 0;
 		this.noise.setLevel("pink", 0);

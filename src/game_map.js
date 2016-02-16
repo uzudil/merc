@@ -94,7 +94,7 @@ export class GameMap {
 				let y = road[1];
 				let w = road[2];
 				let h = road[3];
-				console.log("Original=", x, ",", y, "-", w, ",", h);
+				//console.log("Original=", x, ",", y, "-", w, ",", h);
 				let r;
 				for(let [bx, by] of road[4]) {
 					if(w > 0) {
@@ -120,7 +120,7 @@ export class GameMap {
 				//console.log("\tfinal road=", r);
 			}
 		}
-		console.log("roads=", roads);
+		//console.log("roads=", roads);
 
 		// todo: handle overlaps (z-fighting)
 		let roadQ = new THREE.Geometry();

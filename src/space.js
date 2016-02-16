@@ -7,6 +7,13 @@ const COUNT = 500;
 const MAX_SPEED = 2.7;
 const MIN_SPEED = 0.1;
 
+var programStroke = function ( context ) {
+	context.lineWidth = 0.025;
+	context.beginPath();
+	context.arc( 0, 0, 0.5, 0, PI2, true );
+	context.stroke();
+};
+
 export class Space {
 	constructor(scene, main) {
 		this.power = 0;
@@ -15,12 +22,22 @@ export class Space {
 		this.scene = scene;
 		this.obj = new THREE.Object3D();
 		this.speed = MIN_SPEED;
+		let texture = new THREE.TextureLoader().load( "images/particle.png" );
+		//texture.anisotropy = main.renderer.getMaxAnisotropy();
+		var material = new THREE.SpriteMaterial( { map: texture, color: 0xffff88, fog: false } );
 		for(let i = 0; i < COUNT; i++) {
-			let mesh = new THREE.Mesh(
-				new THREE.CubeGeometry(1, 1, 1),
-				new THREE.MeshBasicMaterial({ color: 0xffffff  }));
-			Space.positionStar(mesh, 1000);
-			this.obj.add(mesh);
+
+			//var particle = new THREE.Sprite( new THREE.MeshBasicMaterial({ map: texture }) );
+			var particle = new THREE.Sprite( material );
+			Space.positionStar(particle, 1000);
+			this.obj.add( particle );
+
+
+			//let mesh = new THREE.Mesh(
+			//	new THREE.CubeGeometry(1, 1, 1),
+			//	new THREE.MeshBasicMaterial({ color: 0xffffff  }));
+			//Space.positionStar(mesh, 1000);
+			//this.obj.add(mesh);
 		}
 		this.scene.add(this.obj);
 
@@ -45,12 +62,16 @@ export class Space {
 		let x = d * Math.cos(rad);
 		let y = d * Math.sin(rad);
 		mesh.position.set(x, y, -(DEPTH*.5 + Math.random() * DEPTH*.5));
-		let s = 1 - mesh.position.z / -DEPTH;
+		let s = 1 - mesh.position.z / -DEPTH + 1;
 		mesh.scale.set(s, s, s);
 	}
 
 	getSpeed() {
 		return (this.speed/MAX_SPEED * 50000)|0;
+	}
+
+	abort() {
+		this.endSpace(true);
 	}
 
 	update() {
@@ -88,12 +109,7 @@ export class Space {
 			let s = 1 - this.targ.position.z / -DEPTH;
 			this.targ.scale.set(s, s, s);
 			if(this.targ.position.z > -DEPTH * .67) {
-				this.landing = false;
-				this.speed = 0;
-				this.power = 0;
-				this.scene.remove(this.obj);
-				this.scene.remove(this.targ);
-				this.main.startGame();
+				this.endSpace();
 			}
 		}
 
@@ -102,6 +118,17 @@ export class Space {
 		} else {
 			this.noise.setLevel("pink", this.power > 0 ? .5 * this.power : -this.power);
 		}
+	}
+
+	endSpace(skipLanding) {
+		console.log("space ending");
+		this.landing = false;
+		this.speed = 0;
+		this.power = 0;
+		if(this.obj) this.scene.remove(this.obj);
+		if(this.targ) this.scene.remove(this.targ);
+		this.noise.stop("pink");
+		this.main.startGame(skipLanding);
 	}
 
 	startLanding() {

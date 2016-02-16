@@ -45,24 +45,37 @@ class Merc {
 	}
 
 	startIntro() {
+		let skipping = false;
+		$(document).keyup(( event ) => {
+			if(event.keyCode == 27) {
+				skipping = true;
+				this.space.abort();
+			}
+		});
 		this.space = new space.Space(this.scene, this);
 		window.setTimeout(()=>{
+			if(skipping) return;
 			this.benson.addMessage("Set course to Novagen...");
 			this.benson.addMessage("Engaging Hyperdrive", () => {
+				if(skipping) return;
 				this.space.power = 1;
 				this.benson.addMessage("Enjoy your trip.");
 				window.setTimeout(() => {
+					if(skipping) return;
 					this.benson.addMessage("Message received.");
 					this.benson.addMessage("Sender: Targ city.");
 					this.benson.addMessage("Priority: urgent.", ()=> {
 						window.setTimeout(()=>{
+							if(skipping) return;
 							this.benson.addMessage("Request for assistance.");
 							this.benson.addMessage("Targ city emergency.");
 							this.benson.addMessage("Immediate help requested.", ()=> {
 								setTimeout(()=> {
+									if(skipping) return;
 									this.benson.addMessage("Starting deceleration...", () => {
 										this.space.power = -1;
 										setTimeout(()=> {
+											if(skipping) return;
 											this.benson.addMessage("Landing on Targ");
 										}, 3000);
 									});
@@ -76,6 +89,7 @@ class Merc {
 	}
 
 	startGame(skipLanding=false) {
+		console.log("game starting");
 		this.renderer.setClearColor(game_map.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 		this.movement.player.position.set(

@@ -141,24 +141,37 @@
 			value: function startIntro() {
 				var _this2 = this;
 	
+				var skipping = false;
+				(0, _jquery2.default)(document).keyup(function (event) {
+					if (event.keyCode == 27) {
+						skipping = true;
+						_this2.space.abort();
+					}
+				});
 				this.space = new space.Space(this.scene, this);
 				window.setTimeout(function () {
+					if (skipping) return;
 					_this2.benson.addMessage("Set course to Novagen...");
 					_this2.benson.addMessage("Engaging Hyperdrive", function () {
+						if (skipping) return;
 						_this2.space.power = 1;
 						_this2.benson.addMessage("Enjoy your trip.");
 						window.setTimeout(function () {
+							if (skipping) return;
 							_this2.benson.addMessage("Message received.");
 							_this2.benson.addMessage("Sender: Targ city.");
 							_this2.benson.addMessage("Priority: urgent.", function () {
 								window.setTimeout(function () {
+									if (skipping) return;
 									_this2.benson.addMessage("Request for assistance.");
 									_this2.benson.addMessage("Targ city emergency.");
 									_this2.benson.addMessage("Immediate help requested.", function () {
 										setTimeout(function () {
+											if (skipping) return;
 											_this2.benson.addMessage("Starting deceleration...", function () {
 												_this2.space.power = -1;
 												setTimeout(function () {
+													if (skipping) return;
 													_this2.benson.addMessage("Landing on Targ");
 												}, 3000);
 											});
@@ -175,6 +188,7 @@
 			value: function startGame() {
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
 	
+				console.log("game starting");
 				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * START_Y, skipLanding ? movement.DEFAULT_Z : START_Z);
@@ -36651,7 +36665,7 @@
 							var y = road[1];
 							var w = road[2];
 							var h = road[3];
-							console.log("Original=", x, ",", y, "-", w, ",", h);
+							//console.log("Original=", x, ",", y, "-", w, ",", h);
 							var r = undefined;
 							var _iteratorNormalCompletion4 = true;
 							var _didIteratorError4 = false;
@@ -36702,6 +36716,9 @@
 							//console.log("\tfinal road=", r);
 						}
 					}
+					//console.log("roads=", roads);
+	
+					// todo: handle overlaps (z-fighting)
 				} catch (err) {
 					_didIteratorError2 = true;
 					_iteratorError2 = err;
@@ -36717,9 +36734,6 @@
 					}
 				}
 	
-				console.log("roads=", roads);
-	
-				// todo: handle overlaps (z-fighting)
 				var roadQ = new _three2.default.Geometry();
 				var roadL = new _three2.default.Geometry();
 				var _iteratorNormalCompletion3 = true;
@@ -46943,6 +46957,8 @@
 			this.events = new events.Events(this);
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
+				if (_this.landing != 0) return;
+	
 				_this.movementX = event.originalEvent.movementX;
 				_this.movementY = event.originalEvent.movementY;
 	
@@ -46974,6 +46990,10 @@
 			(0, _jquery2.default)(document).keyup(function (event) {
 				//console.log(event.keyCode);
 				switch (event.keyCode) {
+					case 27 && _this.landing != 0:
+						_this.noise.stop("pink");
+						_this.landing = Date.now() - LANDING_TIME;
+						break;
 					case 87:
 						_this.fw = false;break;
 					case 83:
@@ -47658,6 +47678,7 @@
 						this.pitch.rotation.x = Math.PI / 2;
 					}
 				} else {
+					console.log("landing ending");
 					this.player.position.z = DEFAULT_Z;
 					//this.player.rotation.z = 0;
 					this.pitch.rotation.x = Math.PI / 2;
@@ -47710,6 +47731,7 @@
 		}, {
 			key: 'startLanding',
 			value: function startLanding() {
+				console.log("starting landing");
 				this.landing = Date.now() + LANDING_TIME;
 				this.pitch.rotation.x = 0;
 				this.noise.setLevel("pink", 0);
@@ -50293,6 +50315,13 @@
 	var MAX_SPEED = 2.7;
 	var MIN_SPEED = 0.1;
 	
+	var programStroke = function programStroke(context) {
+		context.lineWidth = 0.025;
+		context.beginPath();
+		context.arc(0, 0, 0.5, 0, PI2, true);
+		context.stroke();
+	};
+	
 	var Space = exports.Space = function () {
 		function Space(scene, main) {
 			_classCallCheck(this, Space);
@@ -50303,10 +50332,21 @@
 			this.scene = scene;
 			this.obj = new _three2.default.Object3D();
 			this.speed = MIN_SPEED;
+			var texture = new _three2.default.TextureLoader().load("images/particle.png");
+			//texture.anisotropy = main.renderer.getMaxAnisotropy();
+			var material = new _three2.default.SpriteMaterial({ map: texture, color: 0xffff88, fog: false });
 			for (var i = 0; i < COUNT; i++) {
-				var mesh = new _three2.default.Mesh(new _three2.default.CubeGeometry(1, 1, 1), new _three2.default.MeshBasicMaterial({ color: 0xffffff }));
-				Space.positionStar(mesh, 1000);
-				this.obj.add(mesh);
+	
+				//var particle = new THREE.Sprite( new THREE.MeshBasicMaterial({ map: texture }) );
+				var particle = new _three2.default.Sprite(material);
+				Space.positionStar(particle, 1000);
+				this.obj.add(particle);
+	
+				//let mesh = new THREE.Mesh(
+				//	new THREE.CubeGeometry(1, 1, 1),
+				//	new THREE.MeshBasicMaterial({ color: 0xffffff  }));
+				//Space.positionStar(mesh, 1000);
+				//this.obj.add(mesh);
 			}
 			this.scene.add(this.obj);
 	
@@ -50372,6 +50412,11 @@
 				return this.speed / MAX_SPEED * 50000 | 0;
 			}
 		}, {
+			key: 'abort',
+			value: function abort() {
+				this.endSpace(true);
+			}
+		}, {
 			key: 'update',
 			value: function update() {
 				var time = Date.now();
@@ -50429,12 +50474,7 @@
 					var s = 1 - this.targ.position.z / -DEPTH;
 					this.targ.scale.set(s, s, s);
 					if (this.targ.position.z > -DEPTH * .67) {
-						this.landing = false;
-						this.speed = 0;
-						this.power = 0;
-						this.scene.remove(this.obj);
-						this.scene.remove(this.targ);
-						this.main.startGame();
+						this.endSpace();
 					}
 				}
 	
@@ -50443,6 +50483,18 @@
 				} else {
 					this.noise.setLevel("pink", this.power > 0 ? .5 * this.power : -this.power);
 				}
+			}
+		}, {
+			key: 'endSpace',
+			value: function endSpace(skipLanding) {
+				console.log("space ending");
+				this.landing = false;
+				this.speed = 0;
+				this.power = 0;
+				if (this.obj) this.scene.remove(this.obj);
+				if (this.targ) this.scene.remove(this.targ);
+				this.noise.stop("pink");
+				this.main.startGame(skipLanding);
 			}
 		}, {
 			key: 'startLanding',
@@ -50461,7 +50513,7 @@
 				var x = d * Math.cos(rad);
 				var y = d * Math.sin(rad);
 				mesh.position.set(x, y, -(DEPTH * .5 + Math.random() * DEPTH * .5));
-				var s = 1 - mesh.position.z / -DEPTH;
+				var s = 1 - mesh.position.z / -DEPTH + 1;
 				mesh.scale.set(s, s, s);
 			}
 		}]);
