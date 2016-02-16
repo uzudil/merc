@@ -9,7 +9,7 @@ import * as util from 'util';
 const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
-	"ruins", "tower2", "bldg"
+	"ruins", "tower2", "bldg", "bridge"
 ];
 
 const VEHICLES = {
@@ -51,7 +51,11 @@ const DESCRIPTIONS = {
 	"plane": "Harris skipjet",
 	"ship": "Templar class cruiser",
 	"light": "Pulsar lightcar"
-}
+};
+
+const LIFTS = {
+	bridge: true
+};
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
 const MATERIAL = new THREE.MeshBasicMaterial({
@@ -89,6 +93,7 @@ export class Models {
 export class Model {
 	constructor(name) {
 		this.name = name;
+		this.lifts = LIFTS[name];
 		this.mesh = null;
 		this.bbox = null;
 		this.description = DESCRIPTIONS[name] || name;

@@ -23,6 +23,7 @@ const LANDING_TIME = 30000;
 const LANDING_ALT = 90000;
 const LANDING_LAST_PERCENT = .25;
 const LANDING_BASE_PERCENT = .1;
+const DOWN = new THREE.Vector3(0, 0, -1);
 
 export class Movement {
 	constructor(main) {
@@ -73,6 +74,8 @@ export class Movement {
 		// room collisions
 		this.raycaster = new THREE.Raycaster();
 		this.raycaster.far = WALL_ACTIVATE_DIST;
+		this.raycasterOutside = new THREE.Raycaster();
+		this.raycasterOutside.far = 200;
 
 		// tmp variables for ray casting
 		this.worldPos = new THREE.Vector3();
@@ -91,7 +94,7 @@ export class Movement {
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
 
-			if(this.player.position.z > DEFAULT_Z) {
+			if(this.isFlying()) {
 				let p = this.getPitch();
 				this.roll.rotation.y += (p >= Math.PI*.5 && p < Math.PI*1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
 			} else {
@@ -139,7 +142,7 @@ export class Movement {
 				case 81: noise.Noise.toggleSound(); break;
 				case 32:
 					if(this.vehicle) {
-						if(this.player.position.z <= DEFAULT_Z) {
+						if(!this.isFlying()) {
 							this.exitVehicle();
 						}
 					} else {
@@ -170,6 +173,7 @@ export class Movement {
 		this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
 		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
+		this.events.state = gameState.state;
 		if(this.player.position.z == ROOM_DEPTH) {
 			this.level = compounds.getLevel(this.sectorX, this.sectorY);
 			if(this.level) {
@@ -278,6 +282,7 @@ export class Movement {
 		this.main.game_map.addModelAt(
 			this.player.position.x,
 			this.player.position.y,
+			this.player.position.z - DEFAULT_Z,
 			this.vehicle.model,
 			this.player.rotation.z);
 		this.vehicle = null;
@@ -321,10 +326,14 @@ export class Movement {
 		}
 	}
 
+	isFlying() {
+		return this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z;
+	}
+
 	getRollSpeed() {
 		if(DEBUG) return this.getTurnSpeed();
 
-		if(this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z) {
+		if(this.isFlying()) {
 			return this.getTurnSpeed();
 		} else {
 			return 0;
@@ -380,7 +389,7 @@ export class Movement {
 	}
 
 	isStalling() {
-		return this.vehicle && this.vehicle.model.flies && this.getSpeed() < STALL_SPEED && this.player.position.z > DEFAULT_Z;
+		return this.isFlying() && this.getSpeed() < STALL_SPEED;
 	}
 
 	getSpeed() {
@@ -426,12 +435,14 @@ export class Movement {
 	}
 
 	updateVehicle(dx) {
-		var in_air_before = this.player.position.z > DEFAULT_Z;
+		if(dx != 0) this.updateOutsideZ();
+
+		var in_air_before = this.isFlying();
 
 		this.direction.set(0, 1, 0);
 
 		// while flying, roll affects heading
-		if (this.player.position.z > DEFAULT_Z) {
+		if (this.isFlying()) {
 			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
 		}
 
@@ -466,7 +477,7 @@ export class Movement {
 	}
 
 	updateWalking(dx, delta) {
-		this.direction.set(0, 1, 0)
+		this.direction.set(0, 1, 0);
 
 		if(this.fw) {
 			this.direction.set(0, 1, 0);
@@ -482,10 +493,36 @@ export class Movement {
 		if(ROOM_COLLISION_ENABLED && this.level) {
 			this.updateWalkingInRoom(dx, delta);
 		} else {
-			this.player.translateOnAxis(this.direction, dx);
+			if(this.fw || this.bw || this.left || this.right) {
+				this.updateOutsideZ();
+				this.player.translateOnAxis(this.direction, dx);
+			}
 		}
 	}
 
+	updateOutsideZ() {
+		// find the world pos of player
+		this.player.getWorldPosition(this.worldPos);
+		this.worldPos.z += 50;
+
+		// cast a ray in this direction
+		this.normalToWorld(this.player, DOWN, this.worldDir);
+
+		// find the closest intersection
+		this.raycasterOutside.set(this.worldPos, this.worldDir);
+		let intersections = this.raycasterOutside.intersectObject(this.main.game_map.land, true);
+		let found = false;
+		for(let closest of intersections) {
+			if (closest && closest.object && closest.object.model && closest.object.model.lifts) {
+				this.player.position.z = closest.point.z + DEFAULT_Z;
+				found = true;
+				break;
+			}
+		}
+		if(!found && !this.isFlying()) {
+			this.player.position.z = DEFAULT_Z;
+		}
+	}
 
 	/**
 	 * Convert a face normal of an object to world coordinates.
@@ -668,6 +705,7 @@ export class Movement {
 			this.main.game_map.addModelAt(
 				this.player.position.x + 100,
 				this.player.position.y + 100,
+				0,
 				this.main.models.models["ship"],
 				this.player.rotation.z);
 

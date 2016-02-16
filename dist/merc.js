@@ -187,10 +187,18 @@
 	
 				// hack: start in a room
 				//this.movement.loadGame({
-				//	sectorX: 0xd9, sectorY: 0x42,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//sectorX: 0xd9, sectorY: 0x42,
+				//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//vehicle: null,
+				//inventory: ["keya", "keyb", "keyc", "keyd"]
+	
+				//	sectorX: 0x09, sectorY: 0x02,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 				//	vehicle: null,
-				//	inventory: ["keya", "keyb", "keyc", "keyd"]
+				//	inventory: ["keya", "keyb", "keyc", "keyd"],
+				//	state: {
+				//		"lightcar-keys": true
+				//	}
 				//});
 			}
 		}, {
@@ -36508,6 +36516,8 @@
 
 	'use strict';
 	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	Object.defineProperty(exports, "__esModule", {
@@ -36558,12 +36568,13 @@
 		bldg: [[0xcc, 0xcc, 0, 0, Math.PI / 4]]
 	};
 	
+	// [x, y, w, h, [bridges]]
 	var ROAD_POSITIONS = [
 	// borders
 	[0x00, 0x00, 0x100, 0x00], [0x00, 0x00, 0x00, 0x100], [0xff, 0x00, 0x00, 0x100], [0x00, 0xff, 0x100, 0x00],
 	
 	// other roads
-	[11, 0, 0, 15], [0, 11, 15, 0], [10, 4, 5, 0], [0x30, 0x44, 0, 0x24], [0x00, 0x44, 0x55, 0x00], [0x0a, 0x02, 0x00, 67], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12], [0x54, 0x44, 0x00, 0x45], [0x54, 0x88, 0x44, 0x00]];
+	[0x0a, 0x02, 0x00, 0x43, [[0x0a, 0x0b]]], [0x00, 0x0b, 0x0f, 0x00], [0x30, 0x24, 0x00, 0x44], [0x00, 0x44, 0x55, 0x00, [[0x30, 0x44]]], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12], [0x54, 0x44, 0x00, 0x45], [0x54, 0x88, 0x44, 0x00]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player, maxAnisotropy) {
@@ -36613,7 +36624,7 @@
 			}
 	
 			// roads
-			this.drawRoads(maxAnisotropy);
+			this.drawRoads(maxAnisotropy, models);
 	
 			scene.add(this.land);
 		}
@@ -36623,10 +36634,8 @@
 			value: function update() {}
 		}, {
 			key: 'drawRoads',
-			value: function drawRoads(maxAnisotropy) {
-				// todo: handle overlaps (z-fighting)
-				var roadQ = new _three2.default.Geometry();
-				var roadL = new _three2.default.Geometry();
+			value: function drawRoads(maxAnisotropy, models) {
+				var roads = [];
 				var _iteratorNormalCompletion2 = true;
 				var _didIteratorError2 = false;
 				var _iteratorError2 = undefined;
@@ -36634,6 +36643,92 @@
 				try {
 					for (var _iterator2 = ROAD_POSITIONS[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
 						var road = _step2.value;
+	
+						if (road.length == 4) {
+							roads.push(road);
+						} else {
+							var x = road[0];
+							var y = road[1];
+							var w = road[2];
+							var h = road[3];
+							console.log("Original=", x, ",", y, "-", w, ",", h);
+							var r = undefined;
+							var _iteratorNormalCompletion4 = true;
+							var _didIteratorError4 = false;
+							var _iteratorError4 = undefined;
+	
+							try {
+								for (var _iterator4 = road[4][Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+									var _step4$value = _slicedToArray(_step4.value, 2);
+	
+									var bx = _step4$value[0];
+									var by = _step4$value[1];
+	
+									if (w > 0) {
+										this.addStructure(models.models["bridge"], [bx, by, 0, -0.01, Math.PI / 2]);
+										r = [x, y, bx - x - 1, 0];
+										w = w - bx + x - 1;
+										x = bx + 1;
+									} else {
+										this.addStructure(models.models["bridge"], [bx, by, -0.01, 0, 0]);
+										r = [x, y, 0, by - y - 1];
+										h = h - by + y - 1;
+										y = by + 1;
+									}
+									roads.push(r);
+									//console.log("\tH bridge at=", bx, ",", by, " road=", r);
+								}
+							} catch (err) {
+								_didIteratorError4 = true;
+								_iteratorError4 = err;
+							} finally {
+								try {
+									if (!_iteratorNormalCompletion4 && _iterator4.return) {
+										_iterator4.return();
+									}
+								} finally {
+									if (_didIteratorError4) {
+										throw _iteratorError4;
+									}
+								}
+							}
+	
+							if (w > 0) {
+								r = [x, y, w - 1, 0];
+							} else {
+								r = [x, y, 0, h - 1];
+							}
+							roads.push(r);
+							//console.log("\tfinal road=", r);
+						}
+					}
+				} catch (err) {
+					_didIteratorError2 = true;
+					_iteratorError2 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion2 && _iterator2.return) {
+							_iterator2.return();
+						}
+					} finally {
+						if (_didIteratorError2) {
+							throw _iteratorError2;
+						}
+					}
+				}
+	
+				console.log("roads=", roads);
+	
+				// todo: handle overlaps (z-fighting)
+				var roadQ = new _three2.default.Geometry();
+				var roadL = new _three2.default.Geometry();
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
+	
+				try {
+					for (var _iterator3 = roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var road = _step3.value;
 	
 						var geo = undefined;
 						var lineGeo = new _three2.default.Geometry();
@@ -36676,16 +36771,16 @@
 						roadL.merge(lineGeo, lines.matrix);
 					}
 				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
@@ -36730,11 +36825,11 @@
 				var dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
 				var dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 				var zrot = pos.length > 4 ? pos[4] : 0;
-				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
+				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, 0, model, zrot);
 			}
 		}, {
 			key: 'addModelAt',
-			value: function addModelAt(x, y, model, zRot) {
+			value: function addModelAt(x, y, z, model, zRot) {
 				var sx = x / SECTOR_SIZE | 0;
 				var sy = y / SECTOR_SIZE | 0;
 				var ox = x % SECTOR_SIZE;
@@ -36743,9 +36838,9 @@
 				var object = model.createObject();
 				this.structures.push(object);
 	
-				object.position.set(0, 0, 0);
+				object.position.set(0, 0, z);
 				object.rotation.z = zRot;
-				object.position.set(ox, oy, 0);
+				object.position.set(ox, oy, z);
 	
 				this.getSector(sx, sy).add(object);
 			}
@@ -46776,6 +46871,7 @@
 	var LANDING_ALT = 90000;
 	var LANDING_LAST_PERCENT = .25;
 	var LANDING_BASE_PERCENT = .1;
+	var DOWN = new _three2.default.Vector3(0, 0, -1);
 	
 	var Movement = exports.Movement = function () {
 		function Movement(main) {
@@ -46830,6 +46926,8 @@
 			// room collisions
 			this.raycaster = new _three2.default.Raycaster();
 			this.raycaster.far = WALL_ACTIVATE_DIST;
+			this.raycasterOutside = new _three2.default.Raycaster();
+			this.raycasterOutside.far = 200;
 	
 			// tmp variables for ray casting
 			this.worldPos = new _three2.default.Vector3();
@@ -46848,7 +46946,7 @@
 				_this.movementX = event.originalEvent.movementX;
 				_this.movementY = event.originalEvent.movementY;
 	
-				if (_this.player.position.z > DEFAULT_Z) {
+				if (_this.isFlying()) {
 					var p = _this.getPitch();
 					_this.roll.rotation.y += (p >= Math.PI * .5 && p < Math.PI * 1.5 ? -1 : 1) * _this.movementX * _this.getRollSpeed();
 				} else {
@@ -46916,7 +47014,7 @@
 						noise.Noise.toggleSound();break;
 					case 32:
 						if (_this.vehicle) {
-							if (_this.player.position.z <= DEFAULT_Z) {
+							if (!_this.isFlying()) {
 								_this.exitVehicle();
 							}
 						} else {
@@ -46948,6 +47046,7 @@
 				this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
 				this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
+				this.events.state = gameState.state;
 				if (this.player.position.z == ROOM_DEPTH) {
 					this.level = compounds.getLevel(this.sectorX, this.sectorY);
 					if (this.level) {
@@ -47045,7 +47144,7 @@
 			value: function exitVehicle() {
 				this.noise.stop("car");
 				this.noise.stop("jet");
-				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.vehicle.model, this.player.rotation.z);
+				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle.model, this.player.rotation.z);
 				this.vehicle = null;
 				this.stop();
 			}
@@ -47111,11 +47210,16 @@
 				}
 			}
 		}, {
+			key: 'isFlying',
+			value: function isFlying() {
+				return this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z;
+			}
+		}, {
 			key: 'getRollSpeed',
 			value: function getRollSpeed() {
 				if (DEBUG) return this.getTurnSpeed();
 	
-				if (this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z) {
+				if (this.isFlying()) {
 					return this.getTurnSpeed();
 				} else {
 					return 0;
@@ -47179,7 +47283,7 @@
 		}, {
 			key: 'isStalling',
 			value: function isStalling() {
-				return this.vehicle && this.vehicle.model.flies && this.getSpeed() < STALL_SPEED && this.player.position.z > DEFAULT_Z;
+				return this.isFlying() && this.getSpeed() < STALL_SPEED;
 			}
 		}, {
 			key: 'getSpeed',
@@ -47229,12 +47333,14 @@
 		}, {
 			key: 'updateVehicle',
 			value: function updateVehicle(dx) {
-				var in_air_before = this.player.position.z > DEFAULT_Z;
+				if (dx != 0) this.updateOutsideZ();
+	
+				var in_air_before = this.isFlying();
 	
 				this.direction.set(0, 1, 0);
 	
 				// while flying, roll affects heading
-				if (this.player.position.z > DEFAULT_Z) {
+				if (this.isFlying()) {
 					this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
 				}
 	
@@ -47286,7 +47392,57 @@
 				if (ROOM_COLLISION_ENABLED && this.level) {
 					this.updateWalkingInRoom(dx, delta);
 				} else {
-					this.player.translateOnAxis(this.direction, dx);
+					if (this.fw || this.bw || this.left || this.right) {
+						this.updateOutsideZ();
+						this.player.translateOnAxis(this.direction, dx);
+					}
+				}
+			}
+		}, {
+			key: 'updateOutsideZ',
+			value: function updateOutsideZ() {
+				// find the world pos of player
+				this.player.getWorldPosition(this.worldPos);
+				this.worldPos.z += 50;
+	
+				// cast a ray in this direction
+				this.normalToWorld(this.player, DOWN, this.worldDir);
+	
+				// find the closest intersection
+				this.raycasterOutside.set(this.worldPos, this.worldDir);
+				var intersections = this.raycasterOutside.intersectObject(this.main.game_map.land, true);
+				var found = false;
+				var _iteratorNormalCompletion2 = true;
+				var _didIteratorError2 = false;
+				var _iteratorError2 = undefined;
+	
+				try {
+					for (var _iterator2 = intersections[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+						var closest = _step2.value;
+	
+						if (closest && closest.object && closest.object.model && closest.object.model.lifts) {
+							this.player.position.z = closest.point.z + DEFAULT_Z;
+							found = true;
+							break;
+						}
+					}
+				} catch (err) {
+					_didIteratorError2 = true;
+					_iteratorError2 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion2 && _iterator2.return) {
+							_iterator2.return();
+						}
+					} finally {
+						if (_didIteratorError2) {
+							throw _iteratorError2;
+						}
+					}
+				}
+	
+				if (!found && !this.isFlying()) {
+					this.player.position.z = DEFAULT_Z;
 				}
 			}
 	
@@ -47443,13 +47599,13 @@
 				this.bbox.max.set(this.player.position.x + SIZE, this.player.position.y + SIZE, this.player.position.z + SIZE);
 	
 				this.intersections.splice(0, this.intersections.length);
-				var _iteratorNormalCompletion2 = true;
-				var _didIteratorError2 = false;
-				var _iteratorError2 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator2 = this.main.game_map.structures[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var o = _step2.value;
+					for (var _iterator3 = this.main.game_map.structures[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var o = _step3.value;
 	
 						this.model_bbox.setFromObject(o);
 						if (this.model_bbox.isIntersectionBox(this.bbox)) {
@@ -47457,16 +47613,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
@@ -47510,7 +47666,7 @@
 					this.power = 0;
 	
 					// add ship behind player
-					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, this.main.models.models["ship"], this.player.rotation.z);
+					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, 0, this.main.models.models["ship"], this.player.rotation.z);
 	
 					this.main.benson.addMessage("Welcome to Targ.");
 					this.main.benson.addMessage("Please take the jet");
@@ -47614,7 +47770,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
@@ -47655,6 +47811,10 @@
 		"plane": "Harris skipjet",
 		"ship": "Templar class cruiser",
 		"light": "Pulsar lightcar"
+	};
+	
+	var LIFTS = {
+		bridge: true
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
@@ -47727,6 +47887,7 @@
 			_classCallCheck(this, Model);
 	
 			this.name = name;
+			this.lifts = LIFTS[name];
 			this.mesh = null;
 			this.bbox = null;
 			this.description = DESCRIPTIONS[name] || name;

@@ -25,9 +25,10 @@ const MAP_POSITIONS = {
 	tower:    [[0x41, 0x45], [0x44, 0x45]],
 	port:     [[0x32, 0x66]],
 	tower2:   [[0x88, 0x89], [0x8a, 0x87, 0, 0, Math.PI], [0x8c, 0x89], [0xcc, 0xce], [0xce, 0xcc]],
-	bldg:     [[0xcc, 0xcc, 0, 0, Math.PI / 4]]
+	bldg:     [[0xcc, 0xcc, 0, 0, Math.PI / 4]],
 };
 
+// [x, y, w, h, [bridges]]
 const ROAD_POSITIONS = [
 	// borders
 	[0x00, 0x00, 0x100, 0x00],
@@ -36,13 +37,10 @@ const ROAD_POSITIONS = [
 	[0x00, 0xff, 0x100, 0x00],
 
 	// other roads
-	[11, 0, 0, 15],
-	[0, 11, 15, 0],
-	[10, 4, 5, 0],
-
-	[0x30, 0x44, 0, 0x24],
-	[0x00, 0x44, 0x55, 0x00],
-	[0x0a, 0x02, 0x00, 67],
+	[0x0a, 0x02, 0x00, 0x43, [[0x0a, 0x0b]]],
+	[0x00, 0x0b, 0x0f, 0x00],
+	[0x30, 0x24, 0x00, 0x44],
+	[0x00, 0x44, 0x55, 0x00, [[0x30, 0x44]]],
 	[0x30, 0x67, 0x04, 0x00],
 	[0xcc, 0x43, 0x10, 0x00],
 	[0xcc, 0x33, 0x00, 0x11],
@@ -78,7 +76,7 @@ export class GameMap {
 		}
 
 		// roads
-		this.drawRoads(maxAnisotropy);
+		this.drawRoads(maxAnisotropy, models);
 
 		scene.add(this.land);
 	}
@@ -86,11 +84,48 @@ export class GameMap {
 	update() {
 	}
 
-	drawRoads(maxAnisotropy) {
+	drawRoads(maxAnisotropy, models) {
+		let roads = [];
+		for(let road of ROAD_POSITIONS) {
+			if(road.length == 4) {
+				roads.push(road);
+			} else {
+				let x = road[0];
+				let y = road[1];
+				let w = road[2];
+				let h = road[3];
+				console.log("Original=", x, ",", y, "-", w, ",", h);
+				let r;
+				for(let [bx, by] of road[4]) {
+					if(w > 0) {
+						this.addStructure(models.models["bridge"], [ bx, by, 0, -0.01, Math.PI/2 ]);
+						r = [x, y, bx - x - 1, 0];
+						w = w - bx + x - 1;
+						x = bx + 1;
+					} else {
+						this.addStructure(models.models["bridge"], [ bx, by, -0.01, 0, 0 ]);
+						r  = [x, y, 0, by - y - 1];
+						h = h - by + y - 1;
+						y = by + 1;
+					}
+					roads.push(r);
+					//console.log("\tH bridge at=", bx, ",", by, " road=", r);
+				}
+				if(w > 0) {
+					r = [x, y, w - 1, 0];
+				} else {
+					r  = [x, y, 0, h - 1];
+				}
+				roads.push(r);
+				//console.log("\tfinal road=", r);
+			}
+		}
+		console.log("roads=", roads);
+
 		// todo: handle overlaps (z-fighting)
 		let roadQ = new THREE.Geometry();
 		let roadL = new THREE.Geometry();
-		for(let road of ROAD_POSITIONS) {
+		for(let road of roads) {
 			let geo;
 			let lineGeo = new THREE.Geometry();
 			if(road[2] > 0) {
@@ -169,10 +204,10 @@ export class GameMap {
 		let dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
 		let dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 		let zrot = pos.length > 4 ? pos[4] : 0;
-		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, model, zrot);
+		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, 0, model, zrot);
 	}
 
-	addModelAt(x, y, model, zRot) {
+	addModelAt(x, y, z, model, zRot) {
 		var sx = (x/SECTOR_SIZE)|0;
 		var sy = (y/SECTOR_SIZE)|0;
 		var ox = x % SECTOR_SIZE;
@@ -181,9 +216,9 @@ export class GameMap {
 		var object = model.createObject();
 		this.structures.push(object);
 
-		object.position.set(0, 0, 0);
+		object.position.set(0, 0, z);
 		object.rotation.z = zRot;
-		object.position.set(ox, oy, 0);
+		object.position.set(ox, oy, z);
 
 		this.getSector(sx, sy).add(object);
 	}
