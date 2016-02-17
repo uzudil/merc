@@ -16,43 +16,37 @@ var programStroke = function ( context ) {
 
 export class Space {
 	constructor(scene, main) {
+		this.prevTime = Date.now();
 		this.power = 0;
+		this.powerStart = null;
+		this.burnTime = 0;
 		this.landing = false;
 		this.main = main;
 		this.scene = scene;
 		this.obj = new THREE.Object3D();
 		this.speed = MIN_SPEED;
-		let texture = new THREE.TextureLoader().load( "images/particle.png" );
-		//texture.anisotropy = main.renderer.getMaxAnisotropy();
-		var material = new THREE.SpriteMaterial( { map: texture, color: 0xffff88, fog: false } );
 		for(let i = 0; i < COUNT; i++) {
-
-			//var particle = new THREE.Sprite( new THREE.MeshBasicMaterial({ map: texture }) );
-			var particle = new THREE.Sprite( material );
-			Space.positionStar(particle, 1000);
-			this.obj.add( particle );
-
-
-			//let mesh = new THREE.Mesh(
-			//	new THREE.CubeGeometry(1, 1, 1),
-			//	new THREE.MeshBasicMaterial({ color: 0xffffff  }));
-			//Space.positionStar(mesh, 1000);
-			//this.obj.add(mesh);
+			let mesh = new THREE.Mesh(
+				new THREE.CubeGeometry(1, 1, 1),
+				new THREE.MeshBasicMaterial({ color: 0xffff88  }));
+			Space.positionStar(mesh);
+			this.obj.add(mesh);
 		}
 		this.scene.add(this.obj);
 
-		for(let i = 0; i < 1000; i++) {
+		for(let i = 0; i < 5000; i++) {
 			for (let mesh of this.obj.children) {
-				mesh.position.z += MAX_SPEED;
-			}
-		}
-		for (let mesh of this.obj.children) {
-			if(mesh.position.z >= 0) {
-				Space.positionStar(mesh);
+				Space.moveStar(mesh, MAX_SPEED);
 			}
 		}
 
 		this.noise = new noise.Noise();
+	}
+
+	burn(dir, time) {
+		this.power = dir;
+		this.powerStart = Date.now();
+		this.burnTime = time;
 	}
 
 	static positionStar(mesh) {
@@ -61,9 +55,8 @@ export class Space {
 		let d = (Math.random() * (SIZE * .9)) + SIZE * .1;
 		let x = d * Math.cos(rad);
 		let y = d * Math.sin(rad);
-		mesh.position.set(x, y, -(DEPTH*.5 + Math.random() * DEPTH*.5));
-		let s = 1 - mesh.position.z / -DEPTH + 1;
-		mesh.scale.set(s, s, s);
+		mesh.position.set(x, y, -(DEPTH*.75 + Math.random() * DEPTH*.25));
+		mesh.scale.set(0.01, 0.01, 0.01);
 	}
 
 	getSpeed() {
@@ -80,15 +73,15 @@ export class Space {
 		this.prevTime = time;
 
 		if(this.power > 0) {
-			if (this.speed < MAX_SPEED) {
-				this.speed *= 1.025;
+			if(time - this.powerStart < this.burnTime) {
+				this.speed = ((time - this.powerStart) / this.burnTime) * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 			} else {
 				this.speed = MAX_SPEED;
 				this.power = 0;
 			}
 		} else if(this.power < 0) {
-			if(this.speed > MIN_SPEED) {
-				this.speed *= .98;
+			if(time - this.powerStart < this.burnTime) {
+				this.speed = (1 - (time - this.powerStart) / this.burnTime) * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 			} else {
 				this.speed = MIN_SPEED;
 				this.power = 0;
@@ -96,19 +89,18 @@ export class Space {
 			}
 		}
 
+		//console.log(15 * delta);
 		for (let mesh of this.obj.children) {
-			mesh.position.z += this.speed;
-			if (mesh.position.z >= 0) {
-				Space.positionStar(mesh);
-			}
+			// delta is 1/FPS, w. max 60 FPS
+			// this was originally written for 15fps...
+			Space.moveStar(mesh, (this.speed * (15 * delta)));
 		}
 
 		if(this.landing) {
-			this.targ.position.z += delta * 2;
-			//console.log("delta=" + delta + " z=" + this.targ.position.z);
-			let s = 1 - this.targ.position.z / -DEPTH;
+			let p = (time - this.landingStart) / 15000;
+			let s = p * 17 + 0.1;
 			this.targ.scale.set(s, s, s);
-			if(this.targ.position.z > -DEPTH * .67) {
+			if(p >= 1) {
 				this.endSpace();
 			}
 		}
@@ -117,6 +109,15 @@ export class Space {
 			this.noise.stop("pink");
 		} else {
 			this.noise.setLevel("pink", this.power > 0 ? .5 * this.power : -this.power);
+		}
+	}
+
+	static moveStar(mesh, dz) {
+		mesh.position.z += dz;
+		let s = (1 - (mesh.position.z / -DEPTH)) * .5;
+		mesh.scale.set(s, s, s);
+		if(mesh.position.z >= 0) {
+			Space.positionStar(mesh);
 		}
 	}
 
@@ -133,9 +134,10 @@ export class Space {
 
 	startLanding() {
 		this.landing = true;
-		this.targ = new THREE.Mesh(new THREE.SphereGeometry(DEPTH * 2),
+		this.landingStart = Date.now();
+		this.targ = new THREE.Mesh(new THREE.SphereGeometry(1),
 			new THREE.MeshBasicMaterial({color: "rgb(39,79,6)", side: THREE.DoubleSide, depthTest: false, depthWrite: false}));
-		this.targ.position.z = -DEPTH;
+		this.targ.position.z = -20;
 		this.scene.add(this.targ);
 	}
 }

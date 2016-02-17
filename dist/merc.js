@@ -94,7 +94,7 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var LIMIT_FPS = 15; // set to 0 for no limit
+	var FPS_LIMITS = [15, 30, 0];
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
 	var START_X = 0x33;
@@ -115,6 +115,7 @@
 		_createClass(Merc, [{
 			key: 'init',
 			value: function init(models) {
+				this.fpsLimitIndex = 0; // -1 is no limit
 				this.models = models;
 				this.camera = new _three2.default.PerspectiveCamera(65, ASPECT_RATIO, 1, FAR_DIST);
 	
@@ -146,6 +147,8 @@
 					if (event.keyCode == 27) {
 						skipping = true;
 						_this2.space.abort();
+					} else if (event.keyCode == 70) {
+						_this2.incrFpsLimit();
 					}
 				});
 				this.space = new space.Space(this.scene, this);
@@ -154,7 +157,8 @@
 					_this2.benson.addMessage("Set course to Novagen...");
 					_this2.benson.addMessage("Engaging Hyperdrive", function () {
 						if (skipping) return;
-						_this2.space.power = 1;
+						//this.space.power = 1;
+						_this2.space.burn(1, 15000);
 						_this2.benson.addMessage("Enjoy your trip.");
 						window.setTimeout(function () {
 							if (skipping) return;
@@ -169,7 +173,8 @@
 										setTimeout(function () {
 											if (skipping) return;
 											_this2.benson.addMessage("Starting deceleration...", function () {
-												_this2.space.power = -1;
+												//this.space.power = -1;
+												_this2.space.burn(-1, 7500);
 												setTimeout(function () {
 													if (skipping) return;
 													_this2.benson.addMessage("Landing on Targ");
@@ -262,6 +267,13 @@
 				});
 			}
 		}, {
+			key: 'incrFpsLimit',
+			value: function incrFpsLimit() {
+				this.fpsLimitIndex++;
+				if (this.fpsLimitIndex >= FPS_LIMITS.length) this.fpsLimitIndex = 0;
+				console.log("FPS LIMIT at: ", FPS_LIMITS[this.fpsLimitIndex]);
+			}
+		}, {
 			key: 'animate',
 			value: function animate() {
 				var _this3 = this;
@@ -296,10 +308,10 @@
 					(0, _jquery2.default)("#speed .value").text("" + this.space.getSpeed());
 				}
 	
-				if (LIMIT_FPS) {
+				if (FPS_LIMITS[this.fpsLimitIndex] != 0) {
 					setTimeout(function () {
 						requestAnimationFrame(util.bind(_this3, _this3.animate));
-					}, 1000 / LIMIT_FPS);
+					}, 1000 / FPS_LIMITS[this.fpsLimitIndex]);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
 				}
@@ -46988,12 +47000,14 @@
 			});
 	
 			(0, _jquery2.default)(document).keyup(function (event) {
-				//console.log(event.keyCode);
+				console.log(event.keyCode);
 				switch (event.keyCode) {
 					case 27 && _this.landing != 0:
 						_this.noise.stop("pink");
 						_this.landing = Date.now() - LANDING_TIME;
 						break;
+					case 70:
+						_this.main.incrFpsLimit();break;
 					case 87:
 						_this.fw = false;break;
 					case 83:
@@ -50326,31 +50340,23 @@
 		function Space(scene, main) {
 			_classCallCheck(this, Space);
 	
+			this.prevTime = Date.now();
 			this.power = 0;
+			this.powerStart = null;
+			this.burnTime = 0;
 			this.landing = false;
 			this.main = main;
 			this.scene = scene;
 			this.obj = new _three2.default.Object3D();
 			this.speed = MIN_SPEED;
-			var texture = new _three2.default.TextureLoader().load("images/particle.png");
-			//texture.anisotropy = main.renderer.getMaxAnisotropy();
-			var material = new _three2.default.SpriteMaterial({ map: texture, color: 0xffff88, fog: false });
 			for (var i = 0; i < COUNT; i++) {
-	
-				//var particle = new THREE.Sprite( new THREE.MeshBasicMaterial({ map: texture }) );
-				var particle = new _three2.default.Sprite(material);
-				Space.positionStar(particle, 1000);
-				this.obj.add(particle);
-	
-				//let mesh = new THREE.Mesh(
-				//	new THREE.CubeGeometry(1, 1, 1),
-				//	new THREE.MeshBasicMaterial({ color: 0xffffff  }));
-				//Space.positionStar(mesh, 1000);
-				//this.obj.add(mesh);
+				var mesh = new _three2.default.Mesh(new _three2.default.CubeGeometry(1, 1, 1), new _three2.default.MeshBasicMaterial({ color: 0xffff88 }));
+				Space.positionStar(mesh);
+				this.obj.add(mesh);
 			}
 			this.scene.add(this.obj);
 	
-			for (var i = 0; i < 1000; i++) {
+			for (var i = 0; i < 5000; i++) {
 				var _iteratorNormalCompletion = true;
 				var _didIteratorError = false;
 				var _iteratorError = undefined;
@@ -50359,7 +50365,7 @@
 					for (var _iterator = this.obj.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 						var mesh = _step.value;
 	
-						mesh.position.z += MAX_SPEED;
+						Space.moveStar(mesh, MAX_SPEED);
 					}
 				} catch (err) {
 					_didIteratorError = true;
@@ -50376,37 +50382,18 @@
 					}
 				}
 			}
-			var _iteratorNormalCompletion2 = true;
-			var _didIteratorError2 = false;
-			var _iteratorError2 = undefined;
-	
-			try {
-				for (var _iterator2 = this.obj.children[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var mesh = _step2.value;
-	
-					if (mesh.position.z >= 0) {
-						Space.positionStar(mesh);
-					}
-				}
-			} catch (err) {
-				_didIteratorError2 = true;
-				_iteratorError2 = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion2 && _iterator2.return) {
-						_iterator2.return();
-					}
-				} finally {
-					if (_didIteratorError2) {
-						throw _iteratorError2;
-					}
-				}
-			}
 	
 			this.noise = new noise.Noise();
 		}
 	
 		_createClass(Space, [{
+			key: 'burn',
+			value: function burn(dir, time) {
+				this.power = dir;
+				this.powerStart = Date.now();
+				this.burnTime = time;
+			}
+		}, {
 			key: 'getSpeed',
 			value: function getSpeed() {
 				return this.speed / MAX_SPEED * 50000 | 0;
@@ -50424,15 +50411,15 @@
 				this.prevTime = time;
 	
 				if (this.power > 0) {
-					if (this.speed < MAX_SPEED) {
-						this.speed *= 1.025;
+					if (time - this.powerStart < this.burnTime) {
+						this.speed = (time - this.powerStart) / this.burnTime * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 					} else {
 						this.speed = MAX_SPEED;
 						this.power = 0;
 					}
 				} else if (this.power < 0) {
-					if (this.speed > MIN_SPEED) {
-						this.speed *= .98;
+					if (time - this.powerStart < this.burnTime) {
+						this.speed = (1 - (time - this.powerStart) / this.burnTime) * (MAX_SPEED - MIN_SPEED) + MIN_SPEED;
 					} else {
 						this.speed = MIN_SPEED;
 						this.power = 0;
@@ -50440,40 +50427,39 @@
 					}
 				}
 	
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
+				//console.log(15 * delta);
+				var _iteratorNormalCompletion2 = true;
+				var _didIteratorError2 = false;
+				var _iteratorError2 = undefined;
 	
 				try {
-					for (var _iterator3 = this.obj.children[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var mesh = _step3.value;
+					for (var _iterator2 = this.obj.children[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+						var mesh = _step2.value;
 	
-						mesh.position.z += this.speed;
-						if (mesh.position.z >= 0) {
-							Space.positionStar(mesh);
-						}
+						// delta is 1/FPS, w. max 60 FPS
+						// this was originally written for 15fps...
+						Space.moveStar(mesh, this.speed * (15 * delta));
 					}
 				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
+					_didIteratorError2 = true;
+					_iteratorError2 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
+						if (!_iteratorNormalCompletion2 && _iterator2.return) {
+							_iterator2.return();
 						}
 					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
+						if (_didIteratorError2) {
+							throw _iteratorError2;
 						}
 					}
 				}
 	
 				if (this.landing) {
-					this.targ.position.z += delta * 2;
-					//console.log("delta=" + delta + " z=" + this.targ.position.z);
-					var s = 1 - this.targ.position.z / -DEPTH;
+					var p = (time - this.landingStart) / 15000;
+					var s = p * 17 + 0.1;
 					this.targ.scale.set(s, s, s);
-					if (this.targ.position.z > -DEPTH * .67) {
+					if (p >= 1) {
 						this.endSpace();
 					}
 				}
@@ -50500,8 +50486,9 @@
 			key: 'startLanding',
 			value: function startLanding() {
 				this.landing = true;
-				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(DEPTH * 2), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.DoubleSide, depthTest: false, depthWrite: false }));
-				this.targ.position.z = -DEPTH;
+				this.landingStart = Date.now();
+				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(1), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.DoubleSide, depthTest: false, depthWrite: false }));
+				this.targ.position.z = -20;
 				this.scene.add(this.targ);
 			}
 		}], [{
@@ -50512,9 +50499,18 @@
 				var d = Math.random() * (SIZE * .9) + SIZE * .1;
 				var x = d * Math.cos(rad);
 				var y = d * Math.sin(rad);
-				mesh.position.set(x, y, -(DEPTH * .5 + Math.random() * DEPTH * .5));
-				var s = 1 - mesh.position.z / -DEPTH + 1;
+				mesh.position.set(x, y, -(DEPTH * .75 + Math.random() * DEPTH * .25));
+				mesh.scale.set(0.01, 0.01, 0.01);
+			}
+		}, {
+			key: 'moveStar',
+			value: function moveStar(mesh, dz) {
+				mesh.position.z += dz;
+				var s = (1 - mesh.position.z / -DEPTH) * .5;
 				mesh.scale.set(s, s, s);
+				if (mesh.position.z >= 0) {
+					Space.positionStar(mesh);
+				}
 			}
 		}]);
 	

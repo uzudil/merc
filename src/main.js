@@ -9,7 +9,7 @@ import * as compass from 'compass'
 import * as benson from 'benson'
 import * as space from 'space'
 
-const LIMIT_FPS = 15; // set to 0 for no limit
+const FPS_LIMITS = [ 15, 30, 0 ];
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
 const START_X = 0x33;
@@ -22,6 +22,7 @@ class Merc {
 	}
 
 	init(models) {
+		this.fpsLimitIndex = 0; // -1 is no limit
 		this.models = models;
 		this.camera = new THREE.PerspectiveCamera( 65, ASPECT_RATIO, 1, FAR_DIST );
 
@@ -50,6 +51,8 @@ class Merc {
 			if(event.keyCode == 27) {
 				skipping = true;
 				this.space.abort();
+			} else if(event.keyCode == 70) {
+				this.incrFpsLimit();
 			}
 		});
 		this.space = new space.Space(this.scene, this);
@@ -58,7 +61,8 @@ class Merc {
 			this.benson.addMessage("Set course to Novagen...");
 			this.benson.addMessage("Engaging Hyperdrive", () => {
 				if(skipping) return;
-				this.space.power = 1;
+				//this.space.power = 1;
+				this.space.burn(1, 15000);
 				this.benson.addMessage("Enjoy your trip.");
 				window.setTimeout(() => {
 					if(skipping) return;
@@ -73,7 +77,8 @@ class Merc {
 								setTimeout(()=> {
 									if(skipping) return;
 									this.benson.addMessage("Starting deceleration...", () => {
-										this.space.power = -1;
+										//this.space.power = -1;
+										this.space.burn(-1, 7500);
 										setTimeout(()=> {
 											if(skipping) return;
 											this.benson.addMessage("Landing on Targ");
@@ -165,6 +170,12 @@ class Merc {
 		});
 	}
 
+	incrFpsLimit() {
+		this.fpsLimitIndex++;
+		if(this.fpsLimitIndex >= FPS_LIMITS.length) this.fpsLimitIndex = 0;
+		console.log("FPS LIMIT at: ", FPS_LIMITS[this.fpsLimitIndex]);
+	}
+
 	animate() {
 		this.benson.update();
 		if(this.movement) {
@@ -196,10 +207,10 @@ class Merc {
 			$("#speed .value").text("" + this.space.getSpeed());
 		}
 
-		if(LIMIT_FPS) {
+		if(FPS_LIMITS[this.fpsLimitIndex] != 0) {
 			setTimeout(()=> {
 				requestAnimationFrame(util.bind(this, this.animate));
-			}, 1000/LIMIT_FPS);
+			}, 1000/FPS_LIMITS[this.fpsLimitIndex]);
 		} else {
 			requestAnimationFrame(util.bind(this, this.animate));
 		}

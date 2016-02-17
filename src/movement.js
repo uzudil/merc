@@ -118,12 +118,13 @@ export class Movement {
 		});
 
 		$(document).keyup(( event ) => {
-			//console.log(event.keyCode);
+			console.log(event.keyCode);
 			switch( event.keyCode ) {
 				case 27 && this.landing != 0:
 					this.noise.stop("pink");
 					this.landing = Date.now() - LANDING_TIME;
 					break;
+				case 70: this.main.incrFpsLimit(); break;
 				case 87: this.fw = false; break;
 				case 83: this.bw = false; break;
 				case 65: this.left = false; break;
