@@ -99,14 +99,18 @@ export class Movement {
 			if(this.isFlying()) {
 				let p = this.getPitch();
 				this.roll.rotation.y += (p >= Math.PI*.5 && p < Math.PI*1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
-				// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
-				this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
 			} else {
 				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
 				this.roll.rotation.y = 0;
+			}
+
+			if(this.vehicle) {
+				// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
+				this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
+			} else {
 				this.pitch.rotation.x += this.movementY * this.getTurnSpeed();
-				if(this.pitch.rotation.x < 0) this.pitch.rotation.x = 0;
-				if(this.pitch.rotation.x > Math.PI) this.pitch.rotation.x = Math.PI;
+				if(this.pitch.rotation.x < Math.PI/3) this.pitch.rotation.x = Math.PI/3;
+				if(this.pitch.rotation.x > 2*Math.PI/3) this.pitch.rotation.x = 2*Math.PI/3;
 			}
 		});
 
