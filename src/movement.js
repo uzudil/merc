@@ -99,13 +99,15 @@ export class Movement {
 			if(this.isFlying()) {
 				let p = this.getPitch();
 				this.roll.rotation.y += (p >= Math.PI*.5 && p < Math.PI*1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
+				// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
+				this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
 			} else {
 				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
 				this.roll.rotation.y = 0;
+				this.pitch.rotation.x += this.movementY * this.getTurnSpeed();
+				if(this.pitch.rotation.x < 0) this.pitch.rotation.x = 0;
+				if(this.pitch.rotation.x > Math.PI) this.pitch.rotation.x = Math.PI;
 			}
-
-			// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
-			this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
 		});
 
 		$(document).keydown(( event ) => {
@@ -118,7 +120,7 @@ export class Movement {
 		});
 
 		$(document).keyup(( event ) => {
-			console.log(event.keyCode);
+			//console.log(event.keyCode);
 			switch( event.keyCode ) {
 				case 27 && this.landing != 0:
 					this.noise.stop("pink");
@@ -450,7 +452,8 @@ export class Movement {
 
 		// while flying, roll affects heading
 		if (this.isFlying()) {
-			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075 * (15 * delta) * (this.getSpeed() / this.getMaxSpeed());
+			// slower airspeed = tighter turns
+			this.player.rotation.z -= Math.sin(this.getRoll()) * (15 * delta) * 0.0225 * (this.getMaxSpeed() / this.getSpeed());
 		}
 
 		// the roll affects the pitch's direction
@@ -485,6 +488,8 @@ export class Movement {
 
 	updateWalking(dx, delta) {
 		this.direction.set(0, 1, 0);
+
+		if(this.fw || this.bw || this.left || this.right) this.pitch.rotation.x = Math.PI / 2;
 
 		if(this.fw) {
 			this.direction.set(0, 1, 0);
