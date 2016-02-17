@@ -53,9 +53,8 @@ export class Events {
 			"9,2,FFCC88": ()=> {
 				this.movement.main.benson.addMessage("We have requisitioned");
 				this.movement.main.benson.addMessage("a Lightcar for your");
-				this.movement.main.benson.addMessage("travels. It has now");
-				this.movement.main.benson.addMessage("been encoded");
-				this.movement.main.benson.addMessage("for your use.");
+				this.movement.main.benson.addMessage("travels. It has now been");
+				this.movement.main.benson.addMessage("encoded for your use.");
 				this.state["lightcar-keys"] = true;
 			}
 		}
