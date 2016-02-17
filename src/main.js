@@ -9,7 +9,7 @@ import * as compass from 'compass'
 import * as benson from 'benson'
 import * as space from 'space'
 
-const FPS_LIMITS = [ 15, 30, 0 ];
+const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
 const START_X = 0x33;
@@ -22,7 +22,7 @@ class Merc {
 	}
 
 	init(models) {
-		this.fpsLimitIndex = 0; // -1 is no limit
+		this.fpsLimitIndex = 0;
 		this.models = models;
 		this.camera = new THREE.PerspectiveCamera( 65, ASPECT_RATIO, 1, FAR_DIST );
 

@@ -441,7 +441,7 @@ export class Movement {
 		}
 	}
 
-	updateVehicle(dx) {
+	updateVehicle(dx, delta) {
 		if(dx != 0) this.updateOutsideZ();
 
 		var in_air_before = this.isFlying();
@@ -450,7 +450,7 @@ export class Movement {
 
 		// while flying, roll affects heading
 		if (this.isFlying()) {
-			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
+			this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075 * (15 * delta) * (this.getSpeed() / this.getMaxSpeed());
 		}
 
 		// the roll affects the pitch's direction
@@ -744,7 +744,7 @@ export class Movement {
 			} else {
 				var dx = this.getSpeed() / 20 * delta;
 				if (this.vehicle) {
-					this.updateVehicle(dx);
+					this.updateVehicle(dx, delta);
 				} else {
 					this.updateWalking(dx, delta);
 				}

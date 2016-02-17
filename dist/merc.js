@@ -94,7 +94,7 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var FPS_LIMITS = [15, 30, 0];
+	var FPS_LIMITS = [0, 30, 15];
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
 	var START_X = 0x33;
@@ -115,7 +115,7 @@
 		_createClass(Merc, [{
 			key: 'init',
 			value: function init(models) {
-				this.fpsLimitIndex = 0; // -1 is no limit
+				this.fpsLimitIndex = 0;
 				this.models = models;
 				this.camera = new _three2.default.PerspectiveCamera(65, ASPECT_RATIO, 1, FAR_DIST);
 	
@@ -47366,7 +47366,7 @@
 			}
 		}, {
 			key: 'updateVehicle',
-			value: function updateVehicle(dx) {
+			value: function updateVehicle(dx, delta) {
 				if (dx != 0) this.updateOutsideZ();
 	
 				var in_air_before = this.isFlying();
@@ -47375,7 +47375,7 @@
 	
 				// while flying, roll affects heading
 				if (this.isFlying()) {
-					this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075;
+					this.player.rotation.z -= Math.sin(this.getRoll()) * 0.075 * (15 * delta) * (this.getSpeed() / this.getMaxSpeed());
 				}
 	
 				// the roll affects the pitch's direction
@@ -47731,7 +47731,7 @@
 					} else {
 						var dx = this.getSpeed() / 20 * delta;
 						if (this.vehicle) {
-							this.updateVehicle(dx);
+							this.updateVehicle(dx, delta);
 						} else {
 							this.updateWalking(dx, delta);
 						}
