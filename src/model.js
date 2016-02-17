@@ -14,7 +14,7 @@ const MODELS = [
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
-	"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
+	"plane": { speed: 200000, flies: true, exp: false, noise: "jet" },
 	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
 		onEnter: (movement)=> {
 			// todo: this should return true when game is completed
