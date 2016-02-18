@@ -1,58 +1,12 @@
 import THREE from 'three.js'
 import * as util from 'util'
+import * as world from 'world'
 
 export const SECTOR_SIZE = 512.0;
 
 export const GRASS_COLOR = new THREE.Color("rgb(39,79,6)");
-export const SKY_COLOR = new THREE.Color("rgb(157,161,253)");
-export const STRUCTURE_COLOR = new THREE.Color(0xffffff);
-export const ROAD_COLOR = new THREE.Color("rgb(132,126,133)");
-
-const ROAD_MAT = new THREE.LineBasicMaterial({color: ROAD_COLOR, linewidth: 4});
-
-const ROAD_Z = 1;
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
-
-const MAP_POSITIONS = {
-	car:      [[0xc9, 0xc3]],
-	plane:    [[0x32, 0x66, 0.25, 0.15, Math.PI], [0xc8, 0xf0]],
-	elevator: [[0x09, 0x02], [0xd9, 0x42], [0xc8, 0xf0, 0, 0, Math.PI]],
-	light:    [[0x09, 0x03]],
-	ruins:    [[0xda, 0x42]],
-	opera:    [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
-	asha:     [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
-	tower:    [[0x41, 0x45], [0x44, 0x45], [0xc7, 0xf1]],
-	port:     [[0x32, 0x66]],
-	tower2:   [[0x87, 0x89], [0x89, 0x87, 0, 0, Math.PI], [0x8b, 0x89], [0xcc, 0xce], [0xce, 0xcc]],
-	bldg:     [[0xcc, 0xcc, 0, 0, Math.PI / 4], [0xc8 ,0xf1, 0, 0, -Math.PI/6], [0xc9, 0xf0, 0, 0, -Math.PI/4]],
-};
-
-// [x, y, w, h, [bridges]]
-const ROAD_POSITIONS = [
-	// borders
-	[0x00, 0x00, 0x100, 0x00],
-	[0x00, 0x00, 0x00, 0x100],
-	[0xff, 0x00, 0x00, 0x100],
-	[0x00, 0xff, 0x100, 0x00],
-
-	// other roads
-	[0x0a, 0x02, 0x00, 0x43, [[0x0a, 0x0b]]],
-	[0x00, 0x0b, 0x0f, 0x00],
-	[0x30, 0x24, 0x00, 0x44],
-	[0x00, 0x44, 0x55, 0x00, [[0x30, 0x44]]],
-	[0x30, 0x67, 0x04, 0x00],
-	[0xcc, 0x43, 0x10, 0x00],
-	[0xcc, 0x33, 0x00, 0x11],
-	[0x43, 0x33, 0x8a, 0x00],
-	[0x43, 0x33, 0x00, 0x12],
-	[0x54, 0x44, 0x00, 0x45],
-	[0x54, 0x88, 0x44, 0x00],
-	[0x88, 0xef, 0x77, 0x00, [[0xb8, 0xef]]],
-	[0x88, 0x88, 0x00, 0x77, [[0x88, 0xb8], [0x88, 0xd4]]],
-	[0xcb, 0xb8, 0x00, 0x37]
-
-];
 
 export class GameMap {
 	constructor(scene, models, player, maxAnisotropy) {
@@ -63,7 +17,6 @@ export class GameMap {
 		this.maxSector = {x: 0, y: 0};
 
 		// limit calcs
-		this.lastSector = new THREE.Vector3();
 		this.heading = new THREE.Vector3();
 		this.point = new THREE.Vector3();
 
@@ -71,8 +24,9 @@ export class GameMap {
 		this.structures = [];
 		for(let name in models.models) {
 			var m = models.models[name];
-			if(MAP_POSITIONS[name] && MAP_POSITIONS[name].length > 0) {
-				for(let pos of MAP_POSITIONS[name]) {
+			if(world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
+				for(let pos of world.WORLD.structures[name]) {
+					pos[4] = util.angle2rad(pos[4]);
 					this.addStructure(m, pos);
 				}
 			}
@@ -89,7 +43,7 @@ export class GameMap {
 
 	drawRoads(maxAnisotropy, models) {
 		let roads = [];
-		for(let road of ROAD_POSITIONS) {
+		for(let road of world.WORLD.roads) {
 			if(road.length == 4) {
 				roads.push(road);
 			} else {
@@ -101,12 +55,12 @@ export class GameMap {
 				let r;
 				for(let [bx, by] of road[4]) {
 					if(w > 0) {
-						this.addStructure(models.models["bridge"], [ bx, by, 0, -0.01, Math.PI/2 ]);
+						this.addStructure(models.models["bridge"], [ bx, by, 0.001, -0.01, Math.PI/2 ]);
 						r = [x, y, bx - x - 1, 0];
 						w = w - bx + x - 1;
 						x = bx + 1;
 					} else {
-						this.addStructure(models.models["bridge"], [ bx, by, -0.01, 0, 0 ]);
+						this.addStructure(models.models["bridge"], [ bx, by, -0.01, 0.001, 0 ]);
 						r  = [x, y, 0, by - y - 1];
 						h = h - by + y - 1;
 						y = by + 1;
@@ -204,8 +158,8 @@ export class GameMap {
 		var bb = model.getBoundingBox();
 		let sectorX = pos[0];
 		let sectorY = pos[1];
-		let dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
-		let dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+		let dx = pos.length > 2 && pos[2] != 0 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
+		let dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 		let zrot = pos.length > 4 ? pos[4] : 0;
 		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, 0, model, zrot);
 	}

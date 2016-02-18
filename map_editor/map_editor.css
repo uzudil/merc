@@ -1,0 +1,115 @@
+* {
+	padding: 0; margin: 0;
+}
+
+.clearfix {
+  overflow: auto;
+  zoom: 1;
+}
+
+#visual_container {
+	width: 1024px;
+	height: 512px;
+	margin: 10px;
+	border: 10px solid #444;
+	overflow: scroll;
+	position: fixed;
+	left: 0; top: 0;
+}
+
+#visual {
+	width: 2560px;
+	height: 2560px;
+	background: #ccc;
+	background-size: 10px 10px;
+    background-image: linear-gradient(
+		to right,
+		#aaa 1px,
+		transparent 1px
+	),
+	linear-gradient(
+		to bottom,
+		#aaa 1px,
+		transparent 1px
+	);
+}
+
+#code {
+	background: #888;
+	overflow: hidden;
+	width: 30%;
+	height: 100%;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
+
+#editor {
+	width: 100%;
+	height: 70%;
+	border: 10px solid #888;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+#cursor {
+	position: absolute;
+	top: 0; left: 0;
+	width: 10px;
+	height: 10px;
+	background-color: orangered;
+}
+
+.road {
+	position: absolute;
+	background: #222;
+	opacity: 0.5;
+	border: 1px solid #000;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	min-width: 10px;
+	min-height: 10px;
+}
+
+.room.cave {
+	border: 3px solid #000;
+}
+
+.bridge {
+	position: absolute;
+	background: #ff0000;
+	opacity: 0.5;
+	width: 5px;
+	height: 5px;
+}
+
+.structure {
+	position: absolute;
+	background: #ff00ff;
+	opacity: 0.5;
+	width: 5px;
+	height: 5px;
+}
+
+.object {
+	position: absolute;
+	background: #848;
+	opacity: 0.5;
+	width: 5px;
+	height: 5px;
+	margin: 2px;
+	border: 1px solid #848;
+}
+
+button {
+	border: 1px solid #888;
+	padding: 5px;
+	text-transform: uppercase;
+}
+
+.section {
+	padding: 5px;
+	border-top: 1px solid #666;
+}

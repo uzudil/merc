@@ -97,10 +97,8 @@
 	var FPS_LIMITS = [0, 30, 15];
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
-	//const START_X = 0x33;
-	//const START_Y = 0x66;
-	var START_X = 0xc8;
-	var START_Y = 0xf0;
+	var START_X = 0x33;
+	var START_Y = 0x66;
 	var START_Z = 50000;
 	
 	var Merc = function () {
@@ -36551,7 +36549,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.GameMap = exports.ROAD_COLOR = exports.STRUCTURE_COLOR = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = undefined;
+	exports.GameMap = exports.GRASS_COLOR = exports.SECTOR_SIZE = undefined;
 	
 	var _three = __webpack_require__(1);
 	
@@ -36560,6 +36558,10 @@
 	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
+	
+	var _world = __webpack_require__(17);
+	
+	var world = _interopRequireWildcard(_world);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -36570,39 +36572,10 @@
 	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
 	
 	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
-	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,161,253)");
-	var STRUCTURE_COLOR = exports.STRUCTURE_COLOR = new _three2.default.Color(0xffffff);
-	var ROAD_COLOR = exports.ROAD_COLOR = new _three2.default.Color("rgb(132,126,133)");
-	
-	var ROAD_MAT = new _three2.default.LineBasicMaterial({ color: ROAD_COLOR, linewidth: 4 });
-	
-	var ROAD_Z = 1;
 	
 	var key = function key(sectorX, sectorY) {
 		return sectorX + '.' + sectorY;
 	};
-	
-	var MAP_POSITIONS = {
-		car: [[0xc9, 0xc3]],
-		plane: [[0x32, 0x66, 0.25, 0.15, Math.PI], [0xc8, 0xf0]],
-		elevator: [[0x09, 0x02], [0xd9, 0x42], [0xc8, 0xf0, 0, 0, Math.PI]],
-		light: [[0x09, 0x03]],
-		ruins: [[0xda, 0x42]],
-		opera: [[0x01, 0x01], [0x01, 0xfe], [0xfe, 0x01], [0xfe, 0xfe]],
-		asha: [[0x40, 0x43], [0x42, 0x43], [0x44, 0x43]],
-		tower: [[0x41, 0x45], [0x44, 0x45], [0xc7, 0xf1]],
-		port: [[0x32, 0x66]],
-		tower2: [[0x87, 0x89], [0x89, 0x87, 0, 0, Math.PI], [0x8b, 0x89], [0xcc, 0xce], [0xce, 0xcc]],
-		bldg: [[0xcc, 0xcc, 0, 0, Math.PI / 4], [0xc8, 0xf1, 0, 0, -Math.PI / 6], [0xc9, 0xf0, 0, 0, -Math.PI / 4]]
-	};
-	
-	// [x, y, w, h, [bridges]]
-	var ROAD_POSITIONS = [
-	// borders
-	[0x00, 0x00, 0x100, 0x00], [0x00, 0x00, 0x00, 0x100], [0xff, 0x00, 0x00, 0x100], [0x00, 0xff, 0x100, 0x00],
-	
-	// other roads
-	[0x0a, 0x02, 0x00, 0x43, [[0x0a, 0x0b]]], [0x00, 0x0b, 0x0f, 0x00], [0x30, 0x24, 0x00, 0x44], [0x00, 0x44, 0x55, 0x00, [[0x30, 0x44]]], [0x30, 0x67, 0x04, 0x00], [0xcc, 0x43, 0x10, 0x00], [0xcc, 0x33, 0x00, 0x11], [0x43, 0x33, 0x8a, 0x00], [0x43, 0x33, 0x00, 0x12], [0x54, 0x44, 0x00, 0x45], [0x54, 0x88, 0x44, 0x00], [0x88, 0xef, 0x77, 0x00, [[0xb8, 0xef]]], [0x88, 0x88, 0x00, 0x77, [[0x88, 0xb8], [0x88, 0xd4]]], [0xcb, 0xb8, 0x00, 0x37]];
 	
 	var GameMap = exports.GameMap = function () {
 		function GameMap(scene, models, player, maxAnisotropy) {
@@ -36615,7 +36588,6 @@
 			this.maxSector = { x: 0, y: 0 };
 	
 			// limit calcs
-			this.lastSector = new _three2.default.Vector3();
 			this.heading = new _three2.default.Vector3();
 			this.point = new _three2.default.Vector3();
 	
@@ -36623,15 +36595,16 @@
 			this.structures = [];
 			for (var name in models.models) {
 				var m = models.models[name];
-				if (MAP_POSITIONS[name] && MAP_POSITIONS[name].length > 0) {
+				if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
 					var _iteratorNormalCompletion = true;
 					var _didIteratorError = false;
 					var _iteratorError = undefined;
 	
 					try {
-						for (var _iterator = MAP_POSITIONS[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						for (var _iterator = world.WORLD.structures[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 							var pos = _step.value;
 	
+							pos[4] = util.angle2rad(pos[4]);
 							this.addStructure(m, pos);
 						}
 					} catch (err) {
@@ -36669,7 +36642,7 @@
 				var _iteratorError2 = undefined;
 	
 				try {
-					for (var _iterator2 = ROAD_POSITIONS[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					for (var _iterator2 = world.WORLD.roads[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
 						var road = _step2.value;
 	
 						if (road.length == 4) {
@@ -36693,12 +36666,12 @@
 									var by = _step4$value[1];
 	
 									if (w > 0) {
-										this.addStructure(models.models["bridge"], [bx, by, 0, -0.01, Math.PI / 2]);
+										this.addStructure(models.models["bridge"], [bx, by, 0.001, -0.01, Math.PI / 2]);
 										r = [x, y, bx - x - 1, 0];
 										w = w - bx + x - 1;
 										x = bx + 1;
 									} else {
-										this.addStructure(models.models["bridge"], [bx, by, -0.01, 0, 0]);
+										this.addStructure(models.models["bridge"], [bx, by, -0.01, 0.001, 0]);
 										r = [x, y, 0, by - y - 1];
 										h = h - by + y - 1;
 										y = by + 1;
@@ -36850,8 +36823,8 @@
 				var bb = model.getBoundingBox();
 				var sectorX = pos[0];
 				var sectorY = pos[1];
-				var dx = pos.length > 2 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
-				var dy = pos.length > 3 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+				var dx = pos.length > 2 && pos[2] != 0 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
+				var dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 				var zrot = pos.length > 4 ? pos[4] : 0;
 				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, 0, model, zrot);
 			}
@@ -50527,6 +50500,17 @@
 	
 		return Space;
 	}();
+
+/***/ },
+/* 17 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, []], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, []], [67, 51, 0, 18, []], [84, 68, 0, 69, []], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]] } };
 
 /***/ }
 /******/ ]);

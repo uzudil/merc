@@ -12,10 +12,8 @@ import * as space from 'space'
 const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
-//const START_X = 0x33;
-//const START_Y = 0x66;
-const START_X = 0xc8;
-const START_Y = 0xf0;
+const START_X = 0x33;
+const START_Y = 0x66;
 const START_Z = 50000;
 
 class Merc {

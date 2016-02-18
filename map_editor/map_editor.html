@@ -1,0 +1,59 @@
+<html>
+<head><title>Map editor</title></head>
+<link rel="stylesheet" type="text/css" href="map_editor.css">
+<script src="../node_modules/jquery/dist/jquery.js"></script>
+<script src="map_editor.js"></script>
+<body>
+<div id="main" class="clearfix">
+	<div id="visual_container">
+		<div id="visual">
+			<div id="cursor"></div>
+		</div>
+	</div>
+	<div id="code">
+		<textarea id="editor"></textarea>
+		<div id="palette">
+			<div class="section">
+				<button id="load">Load</button>
+				<span id="current_structure"></span>
+			</div>
+			<div class="section">
+				<select id="structures">
+					<option data-bg="#ffcc88">car</option>
+					<option data-bg="#ccff88">plane</option>
+					<option data-bg="#88ccff">light</option>
+
+					<option data-bg="#ffff00">opera</option>
+					<option data-bg="#ffffff">asha</option>
+					<option data-bg="#00ffff">tower</option>
+					<option data-bg="#00ff00">elevator</option>
+					<option data-bg="#ffff00">port</option>
+					<option data-bg="#f0f0ff">pres</option>
+					<option data-bg="#ffff88">ruins</option>
+					<option data-bg="#0000ff">tower2</option>
+					<option data-bg="#0088ff">bldg</option>
+					<option data-bg="#ff0000">bridge</option>
+				</select>
+				<button id="add_object">Add Structure</button>
+			</div>
+			<div class="section">
+				<div><label>Rotation<input id="rotation"></label></div>
+				<div><label>dx<input id="dx"></label></div>
+				<div><label>dy<input id="dy"></label></div>
+				<div><button id="set_info">Set Info</button></div>
+			</div>
+			<div class="section">
+				<button id="set_bridge">Set Bridge</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		$(function(){
+			window.editor = new Editor();
+			window.editor.start();
+		});
+	</script>
+</div>
+</body>
+</html>
