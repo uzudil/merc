@@ -206,17 +206,13 @@
 	
 				// hack: start in a room
 				//this.movement.loadGame({
-				//sectorX: 0xd9, sectorY: 0x42,
-				//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//vehicle: null,
-				//inventory: ["keya", "keyb", "keyc", "keyd"]
-	
-				//	sectorX: 0x09, sectorY: 0x02,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+				//	sectorX: 0xc8, sectorY: 0xf0,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 				//	vehicle: null,
 				//	inventory: ["keya", "keyb", "keyc", "keyd"],
 				//	state: {
-				//		"lightcar-keys": true
+				//		"lightcar-keys": true,
+				//		"allitus-ttl": 10
 				//	}
 				//});
 			}
@@ -36733,14 +36729,13 @@
 	
 						var geo = undefined;
 						var lineGeo = new _three2.default.Geometry();
+						lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 						if (road[2] > 0) {
 							geo = new _three2.default.PlaneGeometry(road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
-							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 							lineGeo.vertices.push(new _three2.default.Vector3(road[2] * SECTOR_SIZE, 0, 0));
 							geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
 						} else {
 							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
-							lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 							lineGeo.vertices.push(new _three2.default.Vector3(0, road[3] * SECTOR_SIZE, 0));
 							geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
 						}
@@ -47790,11 +47785,11 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car" },
-		"plane": { speed: 200000, flies: true, exp: false, noise: "jet" },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
 		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
 			onEnter: function onEnter(movement) {
 				// todo: this should return true when game is completed
@@ -47819,7 +47814,10 @@
 		"ship": 20,
 		"pres": 15,
 		"elevator": 30,
-		"tower2": 80
+		"tower2": 80,
+		"plant": 80,
+		"term": 15,
+		"disk": 20
 	};
 	
 	var DESCRIPTIONS = {
@@ -49009,6 +49007,7 @@
 						var dx = (object.x + .5) * ROOM_SIZE + WALL_THICKNESS - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dy = (object.y + .5) * ROOM_SIZE + WALL_THICKNESS - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+						mesh.rotation.z = util.angle2rad(object["rot"] || 0);
 						mesh.position.set(dx, dy, dz);
 						this.targetMesh.add(mesh);
 					}
@@ -49908,8 +49907,7 @@
 	var LEVELS = exports.LEVELS = {
 		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] },
 		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 28, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 31, "y": 15, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": true }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 26, "y": 32, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": true }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": true }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": true }, { "x": 41, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 40, "y": 33, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": true }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 22, "y": 27, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": true }, { "x": 38, "y": 36, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 19, "y": 28, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 44, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 27, "y": 16, "dir": "e", "roomA": 4, "roomB": 6, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 9, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 30, "y": 16, "dir": "e", "roomA": 6, "roomB": 7, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 9, "roomB": 10, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 10, "roomB": 11, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 25, "y": 32, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 11, "roomB": 35, "key": "" }, { "x": 23, "y": 27, "dir": "w", "roomA": 11, "roomB": 36, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 11, "roomB": 46, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 12, "roomB": 18, "key": "" }, { "x": 28, "y": 32, "dir": "e", "roomA": 13, "roomB": 14, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 14, "roomB": 15, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 14, "roomB": 16, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 14, "roomB": 31, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 15, "roomB": 37, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 15, "roomB": 39, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 16, "roomB": 17, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 16, "roomB": 39, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 17, "roomB": 20, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 17, "roomB": 22, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 19, "roomB": 27, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 19, "roomB": 29, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 19, "roomB": 30, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 21, "roomB": 24, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 23, "roomB": 26, "key": "" }, { "x": 38, "y": 35, "dir": "s", "roomA": 23, "roomB": 38, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 23, "roomB": 43, "key": "" }, { "x": 41, "y": 29, "dir": "s", "roomA": 24, "roomB": 25, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 24, "roomB": 28, "key": "" }, { "x": 41, "y": 33, "dir": "w", "roomA": 25, "roomB": 26, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 27, "roomB": 28, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 29, "roomB": 40, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 30, "roomB": 40, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 31, "roomB": 32, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 32, "roomB": 33, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 32, "roomB": 34, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 33, "roomB": 37, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 33, "roomB": 48, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 34, "roomB": 35, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 35, "roomB": 51, "key": "" }, { "x": 38, "y": 37, "dir": "n", "roomA": 37, "roomB": 38, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 37, "roomB": 41, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 41, "roomB": 42, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 44, "roomB": 47, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 45, "roomB": 46, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 45, "roomB": 47, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 46, "roomB": 49, "key": "" }, { "x": 19, "y": 31, "dir": "n", "roomA": 46, "roomB": 50, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 49, "roomB": 51, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }] },
-		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }], "objects": [] }
-	
+		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 56, "y": 44, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 59, "y": 26, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 59, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 31, "roomB": 43, "key": "" }, { "x": 58, "y": 26, "dir": "e", "roomA": 31, "roomB": 44, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 55, "y": 44, "dir": "e", "roomA": 35, "roomB": 37, "key": "" }, { "x": 61, "y": 44, "dir": "e", "roomA": 37, "roomB": 38, "key": "" }, { "x": 59, "y": 44, "dir": "n", "roomA": 37, "roomB": 46, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 39, "roomB": 40, "key": "" }, { "x": 64, "y": 40, "dir": "s", "roomA": 39, "roomB": 45, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 40, "roomB": 41, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 41, "roomB": 42, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 42, "roomB": 47, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 47, "roomB": 48, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 61, "y": 34, "object": "term", "room": 29, "rot": 90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {
@@ -49920,7 +49918,7 @@
 
 /***/ },
 /* 12 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
@@ -49929,6 +49927,13 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+	exports.Events = undefined;
+	
+	var _util = __webpack_require__(4);
+	
+	var util = _interopRequireWildcard(_util);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -49939,9 +49944,11 @@
 			_classCallCheck(this, Events);
 	
 			this.movement = movement;
-			this.state = {};
+			this.state = {
+				"allitus-ttl": 10
+			};
 			this.EVENTS = {
-				"9,2": function _() {
+				"09,02": function _() {
 					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
 						_this.state["lift-9-2"] = true;
 						_this.movement.main.benson.addMessage("Take the lift down.");
@@ -49959,7 +49966,7 @@
 				}
 			};
 			this.PICKUP_EVENTS = {
-				"9,2,CCCCFF": function CCCCFF() {
+				"09,02,CCCCFF": function CCCCFF() {
 					_this.movement.main.benson.addMessage("The xeno device Allitus");
 					_this.movement.main.benson.addMessage("was discovered a year ago.");
 					_this.movement.main.benson.addMessage("At first we didn't");
@@ -49978,21 +49985,87 @@
 					_this.movement.main.benson.addMessage("Next, meet with our");
 					_this.movement.main.benson.addMessage("defense counsil at");
 					_this.movement.main.benson.addMessage("coordinates c8-f0.");
+					return true;
 				},
-				"9,2,CCCCCC": function CCCCCC() {
+				"09,02,CCCCCC": function CCCCCC() {
 					_this.movement.main.benson.addMessage("Since your last visit,");
 					_this.movement.main.benson.addMessage("Alien ruins have been");
 					_this.movement.main.benson.addMessage("discovered on Targ.");
 					_this.movement.main.benson.addMessage("An underground complex");
 					_this.movement.main.benson.addMessage("and cave system is");
 					_this.movement.main.benson.addMessage("located at d9-42.");
+					return true;
 				},
-				"9,2,FFCC88": function FFCC88() {
+				"09,02,FFCC88": function FFCC88() {
 					_this.movement.main.benson.addMessage("We have requisitioned");
 					_this.movement.main.benson.addMessage("a Lightcar for your");
 					_this.movement.main.benson.addMessage("travels. It has now been");
 					_this.movement.main.benson.addMessage("encoded for your use.");
 					_this.state["lightcar-keys"] = true;
+					return true;
+				},
+				"c8,f0,CCFFFF": function c8F0CCFFFF() {
+					_this.movement.main.benson.addMessage("Terminal 100: report");
+					if (_this.state["override-17a"]) {
+						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("!System compromised!");
+						_this.movement.main.benson.addMessage("The intruder Allitus is");
+						_this.movement.main.benson.addMessage("taking over all Targ");
+						_this.movement.main.benson.addMessage("communications.");
+					} else {
+						_this.movement.main.benson.addMessage("Memory scan: OK");
+						_this.movement.main.benson.addMessage("Disk scan: OK");
+						_this.movement.main.benson.addMessage("System health: OK");
+					}
+					return true;
+				},
+				"c8,f0,FFCCFF": function c8F0FFCCFF() {
+					_this.movement.main.benson.addMessage("Terminal 110: report");
+					if (_this.state["override-17a"]) {
+						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("!System compromised!");
+						_this.movement.main.benson.addMessage("Allitus has no known");
+						_this.movement.main.benson.addMessage("weakness. To learn more");
+						_this.movement.main.benson.addMessage("visit our Xeno studies");
+						_this.movement.main.benson.addMessage("lab at 36-c9.");
+					} else {
+						_this.movement.main.benson.addMessage("Memory scan: OK");
+						_this.movement.main.benson.addMessage("Disk scan: OK");
+						_this.movement.main.benson.addMessage("System health: OK");
+					}
+					return true;
+				},
+				"c8,f0,CCFFCC": function c8F0CCFFCC() {
+					_this.movement.main.benson.addMessage("Terminal 120: report");
+					if (_this.state["override-17a"]) {
+						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("!System compromised!");
+						_this.movement.main.benson.addMessage("Allitus is now armed.");
+						_this.movement.main.benson.addMessage("It is set to go critical");
+						_this.movement.main.benson.addMessage("in " + _this.state["allitus-ttl"] + " days.");
+					} else {
+						_this.movement.main.benson.addMessage("Memory scan: OK");
+						_this.movement.main.benson.addMessage("Disk scan: OK");
+						_this.movement.main.benson.addMessage("System health: OK");
+					}
+					return true;
+				},
+				"c8,f0,FFCCCC": function c8F0FFCCCC() {
+					_this.movement.main.benson.addMessage("Defense Council Info:");
+					_this.movement.main.benson.addMessage("You're welcome to use");
+					_this.movement.main.benson.addMessage("the Defense Computer Array,");
+					_this.movement.main.benson.addMessage("via the terminals. Your");
+					_this.movement.main.benson.addMessage("security clearance will");
+					_this.movement.main.benson.addMessage("decide the info you see.");
+					return true;
+				},
+				"c8,f0,FF8866": function c8F0FF8866() {
+					_this.movement.main.benson.addMessage("You find a disk labeled");
+					_this.movement.main.benson.addMessage("Emergency Override 17A");
+					_this.movement.main.benson.addMessage("It looks like it fits");
+					_this.movement.main.benson.addMessage("some kind of terminal.");
+					_this.state["override-17a"] = true;
+					return false;
 				}
 			};
 		}
@@ -50000,17 +50073,16 @@
 		_createClass(Events, [{
 			key: "update",
 			value: function update(sectorX, sectorY) {
-				var key = "" + sectorX + "," + sectorY;
+				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
 				if (this.EVENTS[key]) this.EVENTS[key]();
 			}
 		}, {
 			key: "pickup",
 			value: function pickup(modelName, sectorX, sectorY, roomColor) {
-				var key = "" + sectorX + "," + sectorY + "," + roomColor;
+				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2) + "," + roomColor;
 				console.log("key=" + key);
 				if (this.PICKUP_EVENTS[key]) {
-					this.PICKUP_EVENTS[key]();
-					return true;
+					return this.PICKUP_EVENTS[key]();
 				}
 				return false;
 			}
@@ -50510,7 +50582,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, []], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, []], [67, 51, 0, 18, []], [84, 68, 0, 69, []], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]] } };
+	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, [[48, 90]]], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, [[105, 51], [140, 51], [190, 51]]], [67, 51, 0, 18, []], [84, 68, 0, 69, [[84, 131]]], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []], [15, 90, 70, 0, []], [136, 195, 68, 0, []], [186, 195, 0, 11, []], [186, 205, 18, 0, []], [203, 221, 53, 0, []], [223, 221, 0, 35, []], [105, 0, 0, 81, []], [84, 80, 22, 0, []], [140, 29, 0, 52, []], [105, 29, 36, 0, []], [151, 80, 0, 57, []], [140, 80, 12, 0, []], [84, 120, 20, 0, []], [103, 120, 0, 17, []], [219, 67, 0, 129, [[219, 106]]], [203, 195, 17, 0, []], [190, 0, 0, 81, []], [151, 106, 105, 0, []], [190, 80, 30, 0, []], [25, 90, 0, 81, []], [25, 170, 32, 0, []], [40, 170, 0, 32, []], [40, 201, 14, 0, []], [53, 201, 0, 55, [[53, 232]]], [0, 232, 137, 0, []], [25, 131, 60, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180], [54, 201, 0, 0, 0]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0], [14, 90, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0], [26, 133, 0, 0, 180], [26, 135, 0, 0, 180], [26, 137, 0, 0, 180], [24, 137, 0, 0, 0], [24, 135, 0, 0, 0], [24, 133, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]], "plant": [[57, 170, 0, 0, 180]] } };
 
 /***/ }
 /******/ ]);

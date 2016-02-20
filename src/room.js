@@ -245,6 +245,7 @@ export class Level {
 			let dx = (object.x + .5) * ROOM_SIZE + WALL_THICKNESS - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dy = (object.y + .5) * ROOM_SIZE + WALL_THICKNESS - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
 			let dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+			mesh.rotation.z = util.angle2rad(object["rot"] || 0);
 			mesh.position.set(dx, dy, dz);
 			this.targetMesh.add(mesh);
 		}

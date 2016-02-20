@@ -85,14 +85,13 @@ export class GameMap {
 		for(let road of roads) {
 			let geo;
 			let lineGeo = new THREE.Geometry();
+			lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 			if(road[2] > 0) {
 				geo = new THREE.PlaneGeometry(road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
-				lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 				lineGeo.vertices.push(new THREE.Vector3(road[2] * SECTOR_SIZE, 0, 0));
 				geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
 			} else {
 				geo = new THREE.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
-				lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 				lineGeo.vertices.push(new THREE.Vector3(0, road[3] * SECTOR_SIZE, 0));
 				geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
 			}

@@ -110,17 +110,13 @@ class Merc {
 
 		// hack: start in a room
 		//this.movement.loadGame({
-			//sectorX: 0xd9, sectorY: 0x42,
-			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			//vehicle: null,
-			//inventory: ["keya", "keyb", "keyc", "keyd"]
-
-		//	sectorX: 0x09, sectorY: 0x02,
-		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+		//	sectorX: 0xc8, sectorY: 0xf0,
+		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 		//	vehicle: null,
 		//	inventory: ["keya", "keyb", "keyc", "keyd"],
 		//	state: {
-		//		"lightcar-keys": true
+		//		"lightcar-keys": true,
+		//		"allitus-ttl": 10
 		//	}
 		//});
 	}

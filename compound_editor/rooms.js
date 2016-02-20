@@ -94,7 +94,13 @@ function Editor() {
 		$("#add_object").click(bind(this, function(event) {
 			var index = this.getRoomIndex();
 			if(index > -1) {
-				this.objects.push({x:this.x, y:this.y, object:$("#objects").val(), room: index});
+				var rot = $("#rot").val();
+				try {
+					rot = parseFloat(rot, 10);
+				} catch(exc) {
+					rot = 0;
+				}
+				this.objects.push({x:this.x, y:this.y, object:$("#objects").val(), room: index, rot: rot});
 				this.roomsChanged = true;
 				this.render();
 			}

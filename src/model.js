@@ -9,12 +9,13 @@ import * as util from 'util';
 const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
-	"ruins", "tower2", "bldg", "bridge"
+	"ruins", "tower2", "bldg", "bridge", "plant", "term",
+	"disk"
 ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
-	"plane": { speed: 200000, flies: true, exp: false, noise: "jet" },
+	"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
 	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
 		onEnter: (movement)=> {
 			// todo: this should return true when game is completed
@@ -39,7 +40,10 @@ const SCALE = {
 	"ship": 20,
 	"pres": 15,
 	"elevator": 30,
-	"tower2": 80
+	"tower2": 80,
+	"plant": 80,
+	"term": 15,
+	"disk": 20
 };
 
 const DESCRIPTIONS = {
