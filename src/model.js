@@ -10,7 +10,7 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk"
+	"disk", "stadium"
 ];
 
 const VEHICLES = {
@@ -54,7 +54,8 @@ const DESCRIPTIONS = {
 	"car": "Tando groundcar",
 	"plane": "Harris skipjet",
 	"ship": "Templar class cruiser",
-	"light": "Pulsar lightcar"
+	"light": "Pulsar lightcar",
+	"disk": "Emergency Override Disk"
 };
 
 const LIFTS = {

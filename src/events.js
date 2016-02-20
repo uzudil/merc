@@ -1,7 +1,44 @@
 import * as util from 'util'
 
+const X_FILES = [
+	[
+		["File X-100: Xeno info"],
+		["The construct Allitus"],
+		["is set to destroy Targ."],
+		["It was created by an"],
+		["alien race in order to"],
+		["ensure humanity doesn't"],
+		["evolve to discover the"],
+		["Xeno central base."]
+	],
+	[
+		["File X-110: Xeno info"],
+		["The alien artifact"],
+		["in this research lab, has"],
+		["an unknown purpose. It is"],
+		["thought to be related to"],
+		["the object at 79-66."]
+	],
+	[
+		["File X-120: Xeno info"],
+		["The location of the Xeno"],
+		["central base is debated."],
+		["It may be shielded from our"],
+		["scanning equipment somehow."]
+	],
+	[
+		["File X-130: Xeno info"],
+		["Allitus cannot be"],
+		["disarmed at this location."],
+		["However, we think the"],
+		["Xeno central base contains"],
+		["a shutoff mechanism."]
+	]
+];
+
 export class Events {
 	constructor(movement) {
+		this.xFileIndex = 0;
 		this.movement = movement;
 		this.state = {
 			"allitus-ttl": 10
@@ -125,8 +162,48 @@ export class Events {
 				this.movement.main.benson.addMessage("some kind of terminal.");
 				this.state["override-17a"] = true;
 				return false;
+			},
+			"36,c9,CCCCFF": ()=> {
+				return this.xFileTerm();
+			},
+			"36,c9,FFCC88": ()=> {
+				return this.xFileTerm();
+			},
+			"36,c9,FFCCCC": ()=> {
+				this.movement.main.benson.addMessage("This area houses");
+				this.movement.main.benson.addMessage("a Xeno artifact.");
+				this.movement.main.benson.addMessage("Please observe posted");
+				this.movement.main.benson.addMessage("health and safety");
+				this.movement.main.benson.addMessage("regulations.");
+				return true;
+			},
+			"36,c9,FFCCFF": ()=> {
+				this.movement.main.benson.addMessage("This area houses");
+				this.movement.main.benson.addMessage("a Xeno artifact.");
+				this.movement.main.benson.addMessage("Please observe posted");
+				this.movement.main.benson.addMessage("health and safety");
+				this.movement.main.benson.addMessage("regulations.");
+				return true;
+			},
+			"36,c9,CCCCCC": () => {
+				this.movement.main.benson.addMessage("Allitus: a device");
+				this.movement.main.benson.addMessage("of alien origins.");
+				this.movement.main.benson.addMessage("Warning: High Voltage");
+				this.movement.main.benson.addMessage("Ionizing radiation");
+				this.movement.main.benson.addMessage("Posted biohazard");
+				this.movement.main.benson.addMessage("Do not enter.");
+				return true;
 			}
 		}
+	}
+
+	xFileTerm() {
+		for(let line of X_FILES[this.xFileIndex]) {
+			this.movement.main.benson.addMessage(line);
+		}
+		this.xFileIndex++;
+		if(this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
+		return true;
 	}
 
 	update(sectorX, sectorY) {

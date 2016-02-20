@@ -22,8 +22,16 @@ export class Skybox {
 			uniforms: shader.uniforms,
 			depthWrite: false,
 			side: THREE.BackSide
-		} ),
-		mesh = new THREE.Mesh( new THREE.BoxGeometry( far_dist, far_dist, far_dist/2 ), material );
+		} );
+		var box = new THREE.BoxGeometry( far_dist, far_dist, far_dist/2 );
+		// remove bottom face
+		for(let i = 0; i < box.faces.length; i++) {
+			if(box.faces[i].normal.z == -1) {
+				box.faces.splice(i, 1);
+				break;
+			}
+		}
+		var mesh = new THREE.Mesh( box, material );
 		mesh.position.z = far_dist/4;
 		scene.add( mesh );
 	}

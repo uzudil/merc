@@ -208,6 +208,7 @@ function Editor() {
 			top: (this.y * this.size) + "px"
 		});
 
+		$("#coords").text(this.x.toString(16) + "-" + this.y.toString(16));
 		$("#current_structure").text("");
 		out:
 		for(var key in this.structures) {
