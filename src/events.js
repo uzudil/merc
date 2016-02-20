@@ -189,6 +189,10 @@ export class Events {
 				this.movement.main.benson.addMessage("Posted biohazard");
 				this.movement.main.benson.addMessage("Do not enter.");
 				return true;
+			},
+			"36,c9,FF8866": () => {
+				this.movement.main.benson.addMessage("Feels cool to the touch.");
+				return true;
 			}
 		}
 	}

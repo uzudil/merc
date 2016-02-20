@@ -10,7 +10,7 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk", "stadium", "art", "art2", "ufo"
+	"disk", "stadium", "art", "art2", "ufo", "allitus"
 ];
 
 const VEHICLES = {
@@ -57,7 +57,8 @@ const SCALE = {
 	"disk": 20,
 	"art": 20,
 	"art2": 20,
-	"ufo": 20
+	"ufo": 20,
+	"allitus": 15
 };
 
 const DESCRIPTIONS = {
