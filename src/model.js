@@ -10,7 +10,7 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk", "stadium"
+	"disk", "stadium", "art"
 ];
 
 const VEHICLES = {
@@ -43,7 +43,8 @@ const SCALE = {
 	"tower2": 80,
 	"plant": 80,
 	"term": 15,
-	"disk": 20
+	"disk": 20,
+	"art": 20
 };
 
 const DESCRIPTIONS = {
@@ -55,7 +56,8 @@ const DESCRIPTIONS = {
 	"plane": "Harris skipjet",
 	"ship": "Templar class cruiser",
 	"light": "Pulsar lightcar",
-	"disk": "Emergency Override Disk"
+	"disk": "Emergency Override Disk",
+	"art": "Xeno artifact"
 };
 
 const LIFTS = {
