@@ -109,9 +109,7 @@ export class Events {
 					this.movement.main.benson.addMessage("taking over all Targ");
 					this.movement.main.benson.addMessage("communications.");
 				} else {
-					this.movement.main.benson.addMessage("Memory scan: OK");
-					this.movement.main.benson.addMessage("Disk scan: OK");
-					this.movement.main.benson.addMessage("System health: OK");
+					this.okReport();
 				}
 				return true;
 			},
@@ -125,9 +123,7 @@ export class Events {
 					this.movement.main.benson.addMessage("visit our Xeno studies");
 					this.movement.main.benson.addMessage("lab at 36-c9.");
 				} else {
-					this.movement.main.benson.addMessage("Memory scan: OK");
-					this.movement.main.benson.addMessage("Disk scan: OK");
-					this.movement.main.benson.addMessage("System health: OK");
+					this.okReport();
 				}
 				return true;
 			},
@@ -140,9 +136,7 @@ export class Events {
 					this.movement.main.benson.addMessage("It is set to go critical");
 					this.movement.main.benson.addMessage("in " + this.state["allitus-ttl"] + " days.");
 				} else {
-					this.movement.main.benson.addMessage("Memory scan: OK");
-					this.movement.main.benson.addMessage("Disk scan: OK");
-					this.movement.main.benson.addMessage("System health: OK");
+					this.okReport();
 				}
 				return true;
 			},
@@ -164,9 +158,11 @@ export class Events {
 				return false;
 			},
 			"36,c9,CCCCFF": ()=> {
+				this.movement.main.benson.addMessage("Terminal 20A: report");
 				return this.xFileTerm();
 			},
 			"36,c9,FFCC88": ()=> {
+				this.movement.main.benson.addMessage("Terminal 20B: report");
 				return this.xFileTerm();
 			},
 			"36,c9,FFCCCC": ()=> {
@@ -198,12 +194,22 @@ export class Events {
 	}
 
 	xFileTerm() {
-		for(let line of X_FILES[this.xFileIndex]) {
-			this.movement.main.benson.addMessage(line);
+		if(this.state["override-17a"]) {
+			for (let line of X_FILES[this.xFileIndex]) {
+				this.movement.main.benson.addMessage(line);
+			}
+			this.xFileIndex++;
+			if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
+		} else {
+			this.okReport();
 		}
-		this.xFileIndex++;
-		if(this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 		return true;
+	}
+
+	okReport() {
+		this.movement.main.benson.addMessage("Memory scan: OK");
+		this.movement.main.benson.addMessage("Disk scan: OK");
+		this.movement.main.benson.addMessage("System health: OK");
 	}
 
 	update(sectorX, sectorY) {

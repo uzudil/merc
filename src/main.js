@@ -109,16 +109,16 @@ class Merc {
 		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 
 		// hack: start in a room
-		this.movement.loadGame({
-			sectorX: 0x36, sectorY: 0xc9,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			vehicle: null,
-			inventory: ["keya", "keyb", "keyc", "keyd"],
-			state: {
-				"lightcar-keys": true,
-				"allitus-ttl": 10
-			}
-		});
+		//this.movement.loadGame({
+		//	sectorX: 0x36, sectorY: 0xc9,
+		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	vehicle: null,
+		//	inventory: ["keya", "keyb", "keyc", "keyd"],
+		//	state: {
+		//		"lightcar-keys": true,
+		//		"allitus-ttl": 10
+		//	}
+		//});
 	}
 
 	setupUI() {

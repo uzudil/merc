@@ -10,19 +10,30 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk", "stadium", "art"
+	"disk", "stadium", "art", "art2", "ufo"
 ];
 
 const VEHICLES = {
-	"car": { speed: 4000, flies: false, exp: false, noise: "car" },
-	"plane": { speed: 20000, flies: true, exp: false, noise: "jet" },
-	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink",
+	"car": { speed: 4000, flies: false, exp: false, noise: "car", hover: false },
+	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hover: false },
+	"ufo": { speed: 40000, flies: true, exp: true, noise: "jet", hover: true,
+		onEnter: (movement)=> {
+			if(movement.inInventory("art") && movement.inInventory("art2")) {
+				return true;
+			} else {
+				movement.main.benson.addMessage("This craft seems broken.");
+				return false;
+			}
+		}
+	},
+	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hover: true,
 		onEnter: (movement)=> {
 			// todo: this should return true when game is completed
+			movement.main.benson.addMessage("Your ship is locked.");
 			return false;
 		}
 	},
-	"light": { speed: 50000, flies: false, exp: true, noise: "car",
+	"light": { speed: 50000, flies: false, exp: true, noise: "car", hover: false,
 		onEnter: (movement)=> {
 			return movement.events.state["lightcar-keys"];
 		}
@@ -44,7 +55,9 @@ const SCALE = {
 	"plant": 80,
 	"term": 15,
 	"disk": 20,
-	"art": 20
+	"art": 20,
+	"art2": 20,
+	"ufo": 20
 };
 
 const DESCRIPTIONS = {
@@ -57,7 +70,9 @@ const DESCRIPTIONS = {
 	"ship": "Templar class cruiser",
 	"light": "Pulsar lightcar",
 	"disk": "Emergency Override Disk",
-	"art": "Xeno artifact"
+	"art": "Xeno artifact",
+	"art2": "Xeno artifact",
+	"ufo": "Alien craft"
 };
 
 const LIFTS = {

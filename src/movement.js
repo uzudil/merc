@@ -242,6 +242,10 @@ export class Movement {
 		}
 	}
 
+	inInventory(name) {
+		return this.inventory.indexOf(name) >= 0;
+	}
+
 	useElevator() {
 		if(this.vehicle || this.liftDirection) return;
 
