@@ -14,7 +14,6 @@ import * as events from 'events'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
-const STALL_SPEED = 5000;
 const DEBUG = false;
 export const ROOM_DEPTH = -300;
 const WALL_ACTIVATE_DIST = 20;
@@ -24,6 +23,8 @@ const LANDING_ALT = 90000;
 const LANDING_LAST_PERCENT = .25;
 const LANDING_BASE_PERCENT = .1;
 const DOWN = new THREE.Vector3(0, 0, -1);
+const MAX_HOVER_PITCH = Math.PI/10;
+const MAX_Z = 100000;
 
 export class Movement {
 	constructor(main) {
@@ -96,9 +97,14 @@ export class Movement {
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
 
-			if(this.isFlying()) {
+			if(this.vehicle && this.vehicle.model.vehicle.hovers) {
+				this.roll.rotation.y += this.movementX * this.getRollSpeed();
+				if(this.roll.rotation.y < -Math.PI/6) this.roll.rotation.y = -Math.PI/6;
+				if(this.roll.rotation.y > Math.PI/6) this.roll.rotation.y = Math.PI/6;
+			} else if(this.isFlying()) {
+				// planes roll with respect to pitch
 				let p = this.getPitch();
-				this.roll.rotation.y += (p >= Math.PI*.5 && p < Math.PI*1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
+				this.roll.rotation.y += (p >= Math.PI * .5 && p < Math.PI * 1.5 ? -1 : 1) * this.movementX * this.getRollSpeed();
 			} else {
 				this.player.rotation.z -= this.movementX * this.getTurnSpeed();
 				this.roll.rotation.y = 0;
@@ -107,6 +113,10 @@ export class Movement {
 			if(this.vehicle) {
 				// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
 				this.pitch.rotation.x += this.movementY * this.getPitchSpeed();
+				if(this.vehicle.model.vehicle.hovers) {
+					if(this.pitch.rotation.x - Math.PI/2 < -MAX_HOVER_PITCH) this.pitch.rotation.x = Math.PI/2 - MAX_HOVER_PITCH;
+					if(this.pitch.rotation.x - Math.PI/2 > MAX_HOVER_PITCH) this.pitch.rotation.x = Math.PI/2 + MAX_HOVER_PITCH;
+				}
 			} else {
 				this.pitch.rotation.x += this.movementY * this.getTurnSpeed();
 				if(this.pitch.rotation.x < Math.PI/3) this.pitch.rotation.x = Math.PI/3;
@@ -347,10 +357,17 @@ export class Movement {
 		return this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z;
 	}
 
+	isHovering() {
+		return this.vehicle && this.vehicle.model.vehicle.hovers && this.player.position.z > DEFAULT_Z;
+	}
+
 	getRollSpeed() {
 		if(DEBUG) return this.getTurnSpeed();
 
-		if(this.isFlying()) {
+		if(this.vehicle && this.vehicle.model.vehicle.hovers) {
+			// hovers can turn without moving forward
+			return 0.001;
+		} else if(this.isFlying()) {
 			return this.getTurnSpeed();
 		} else {
 			return 0;
@@ -360,7 +377,7 @@ export class Movement {
 	getPitchSpeed() {
 		if(DEBUG) return 0.0005;
 
-		if(this.vehicle && this.vehicle.model.flies && this.getSpeed() > STALL_SPEED) {
+		if(this.vehicle && ((this.vehicle.model.flies && this.power >= .3) || this.vehicle.model.vehicle.hovers)) {
 			return 0.0005;
 		} else {
 			return 0;
@@ -406,7 +423,7 @@ export class Movement {
 	}
 
 	isStalling() {
-		return this.isFlying() && this.getSpeed() < STALL_SPEED;
+		return !this.isHovering() && this.isFlying() && this.power < .3;
 	}
 
 	getSpeed() {
@@ -459,16 +476,24 @@ export class Movement {
 		this.direction.set(0, 1, 0);
 
 		// while flying, roll affects heading
-		if (this.isFlying()) {
+		if(this.vehicle.model.vehicle.hovers) {
+			// hovering craft turns at constant speed
+			this.player.rotation.z -= Math.sin(this.getRoll()) * (15 * delta) * 0.1;
+		} else if (this.isFlying()) {
 			// slower airspeed = tighter turns
 			this.player.rotation.z -= Math.sin(this.getRoll()) * (15 * delta) * 0.0225 * (this.getMaxSpeed() / this.getSpeed());
 		}
 
-		// the roll affects the pitch's direction
-		let r = Math.abs(this.getRoll());
-		let d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
-		this.rotation.set(this.getPitch() * d, 0, 0);
-		this.direction.applyEuler(this.rotation);
+		if (this.vehicle.model.vehicle.hovers) {
+			// for hovers, up/down speed is not related to movement
+			this.player.position.z += this.getMaxSpeed() * .005 * (this.pitch.rotation.x - Math.PI/2) / MAX_HOVER_PITCH;
+		} else {
+			// the roll affects the pitch's direction
+			let r = Math.abs(this.getRoll());
+			let d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
+			this.rotation.set(this.getPitch() * d, 0, 0);
+			this.direction.applyEuler(this.rotation);
+		}
 
 		// actually move player forward
 		this.player.translateOnAxis(this.direction, dx);
@@ -492,6 +517,7 @@ export class Movement {
 		}
 
 		if (!this.level && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
+		if (this.player.position.z > MAX_Z) this.player.position.z = MAX_Z;
 	}
 
 	updateWalking(dx, delta) {

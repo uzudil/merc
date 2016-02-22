@@ -14,11 +14,18 @@ const MODELS = [
 ];
 
 const VEHICLES = {
-	"car": { speed: 4000, flies: false, exp: false, noise: "car", hover: false },
-	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hover: false },
-	"ufo": { speed: 40000, flies: true, exp: true, noise: "jet", hover: true,
+	"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
+	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+	"ufo": { speed: 40000, flies: true, exp: true, noise: "jet", hovers: true,
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {
+				if(!movement.events.state["ufo-first"]) {
+					movement.main.benson.addMessage("The xeno artifacts");
+					movement.main.benson.addMessage("started the craft!");
+					movement.main.benson.addMessage("Try take-off and turns");
+					movement.main.benson.addMessage("without moving first.");
+					movement.events.state["ufo-first"] = true;
+				}
 				return true;
 			} else {
 				movement.main.benson.addMessage("This craft seems broken.");
@@ -26,14 +33,14 @@ const VEHICLES = {
 			}
 		}
 	},
-	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hover: true,
+	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 		onEnter: (movement)=> {
 			// todo: this should return true when game is completed
 			movement.main.benson.addMessage("Your ship is locked.");
 			return false;
 		}
 	},
-	"light": { speed: 50000, flies: false, exp: true, noise: "car", hover: false,
+	"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
 		onEnter: (movement)=> {
 			return movement.events.state["lightcar-keys"];
 		}
