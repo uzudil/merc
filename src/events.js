@@ -229,4 +229,17 @@ export class Events {
 		}
 		return false;
 	}
+
+	checkPosition(pos, vehicle) {
+		// "sonar" to alien base
+		let now = Date.now();
+		if(pos.z >= 10000 && vehicle.model.name == "ufo" &&
+			(!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
+			let d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
+			//console.log("dist to alien base=" + d);
+			this.movement.noise.play("base", 1 - d);
+			this.state["xeno-base-notification"] = now + Math.max(500, (5000 * d)|0);
+		}
+	}
+
 }

@@ -14,10 +14,12 @@ export class Noise {
 			walk: new WalkNoise(),
 			lift: new LiftNoise(),
 			door: new DoorNoise(),
-			benson: new BensonNoise()
+			benson: new BensonNoise(),
+			ufo: new UfoNoise()
 		};
 		this.sounds = {
-			denied: new DeniedSound()
+			denied: new DeniedSound(),
+			base: new AlienBaseSound()
 		}
 	}
 
@@ -33,8 +35,8 @@ export class Noise {
 		if(SOUND_ENABLED) this.noises[name].setLevel(level);
 	}
 
-	play(name) {
-		this.sounds[name].play();
+	play(name, level) {
+		this.sounds[name].play(level);
 	}
 }
 
@@ -108,7 +110,7 @@ class DeniedSound {
 		this.playing = false;
 	}
 
-	play() {
+	play(level) {
 		if(this.playing) return;
 		this.playing = true;
 
@@ -128,6 +130,30 @@ class DeniedSound {
 				voice2.stop();
 				this.playing = false;
 			}, 100);
+		}, 150);
+	}
+}
+
+class AlienBaseSound {
+	constructor() {
+		this.playing = false;
+	}
+
+	play(level) {
+		if(this.playing) return;
+		this.playing = true;
+
+		let voice1 = new Voice(globalContext, 0.2, 300 + level * 250);
+		let voice2 = new Voice(globalContext, 0.2, 320 + level * 250);
+		let voice3 = new Voice(globalContext, 0.2, 340 + level * 250);
+		voice1.start();
+		voice2.start();
+		voice3.start();
+		setTimeout(() => {
+			voice1.stop();
+			voice2.stop();
+			voice3.stop();
+			this.playing = false;
 		}, 150);
 	}
 }
@@ -425,6 +451,45 @@ class CarNoise {
 		this.voice1.setLevel(level);
 		this.voice2.setLevel(level);
 		this.distortion.setLevel(level);
+	}
+}
+
+class UfoNoise {
+	constructor() {
+		this.started = false;
+		this.audioContext = globalContext;
+		this.voice1 = new Voice(this.audioContext, 0.2, 400);
+		this.voice2 = new Voice(this.audioContext, 0.2, 440);
+		this.voice3 = new Voice(this.audioContext, 0.2, 200);
+		this.distortion = new Distortion(this.audioContext, 2, 500, true);
+	}
+
+	start(context) {
+		if(!this.started) {
+			this.voice1.start();
+			this.voice2.start();
+			this.voice3.start();
+			this.distortion.start();
+			this.started = true;
+		}
+	}
+
+	stop() {
+		if(this.started) {
+			this.voice1.stop();
+			this.voice2.stop();
+			this.voice3.stop();
+			this.distortion.stop();
+			this.started = false;
+		}
+	}
+
+	setLevel(level) {
+		this.start();
+		this.voice1.setLevel(level * .05);
+		this.voice2.setLevel(level * .15);
+		this.voice3.setLevel(level * .15);
+		this.distortion.setLevel(level * .05);
 	}
 }
 

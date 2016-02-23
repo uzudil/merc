@@ -206,10 +206,10 @@
 	
 				// hack: start in a room
 				this.movement.loadGame({
-					sectorX: 0x36, sectorY: 0xc9,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.ROOM_DEPTH,
+					sectorX: 0x79, sectorY: 0x66,
+					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z, // movement.ROOM_DEPTH,
 					vehicle: null,
-					inventory: ["keya", "keyb", "keyc", "keyd"],
+					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2"],
 					state: {
 						"lightcar-keys": true,
 						"allitus-ttl": 10
@@ -36620,6 +36620,9 @@
 				}
 			}
 	
+			// add xeno base
+			this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
+	
 			// roads
 			this.drawRoads(maxAnisotropy, models);
 	
@@ -36814,14 +36817,15 @@
 			}
 		}, {
 			key: 'addStructure',
-			value: function addStructure(model, pos) {
+			value: function addStructure(model, pos, zpos) {
 				var bb = model.getBoundingBox();
 				var sectorX = pos[0];
 				var sectorY = pos[1];
 				var dx = pos.length > 2 && pos[2] != 0 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
 				var dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+				var dz = zpos || 0;
 				var zrot = pos.length > 4 ? pos[4] : 0;
-				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, 0, model, zrot);
+				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
 			}
 		}, {
 			key: 'addModelAt',
@@ -46869,7 +46873,6 @@
 	
 	var SIZE = 20;
 	var DEFAULT_Z = exports.DEFAULT_Z = 20;
-	var STALL_SPEED = 5000;
 	var DEBUG = false;
 	var ROOM_DEPTH = exports.ROOM_DEPTH = -300;
 	var WALL_ACTIVATE_DIST = 20;
@@ -46879,6 +46882,10 @@
 	var LANDING_LAST_PERCENT = .25;
 	var LANDING_BASE_PERCENT = .1;
 	var DOWN = new _three2.default.Vector3(0, 0, -1);
+	var MAX_HOVER_PITCH = Math.PI / 10;
+	var MAX_Z = 100000;
+	var ALIEN_BASE_POS = [0xf8, 0xc9];
+	var WALKING_SPEED = 1500;
 	
 	var Movement = exports.Movement = function () {
 		function Movement(main) {
@@ -46955,7 +46962,12 @@
 				_this.movementX = event.originalEvent.movementX;
 				_this.movementY = event.originalEvent.movementY;
 	
-				if (_this.isFlying()) {
+				if (_this.vehicle && _this.vehicle.model.vehicle.hovers) {
+					_this.roll.rotation.y += _this.movementX * _this.getRollSpeed();
+					if (_this.roll.rotation.y < -Math.PI / 6) _this.roll.rotation.y = -Math.PI / 6;
+					if (_this.roll.rotation.y > Math.PI / 6) _this.roll.rotation.y = Math.PI / 6;
+				} else if (_this.isFlying()) {
+					// planes roll with respect to pitch
 					var p = _this.getPitch();
 					_this.roll.rotation.y += (p >= Math.PI * .5 && p < Math.PI * 1.5 ? -1 : 1) * _this.movementX * _this.getRollSpeed();
 				} else {
@@ -46966,6 +46978,10 @@
 				if (_this.vehicle) {
 					// todo: flip the roll angle if pitch crosses 90 or -90 degrees, so it doesn't register as a crash when landing w. 180 roll
 					_this.pitch.rotation.x += _this.movementY * _this.getPitchSpeed();
+					if (_this.vehicle.model.vehicle.hovers) {
+						if (_this.pitch.rotation.x - Math.PI / 2 < -MAX_HOVER_PITCH) _this.pitch.rotation.x = Math.PI / 2 - MAX_HOVER_PITCH;
+						if (_this.pitch.rotation.x - Math.PI / 2 > MAX_HOVER_PITCH) _this.pitch.rotation.x = Math.PI / 2 + MAX_HOVER_PITCH;
+					}
 				} else {
 					_this.pitch.rotation.x += _this.movementY * _this.getTurnSpeed();
 					if (_this.pitch.rotation.x < Math.PI / 3) _this.pitch.rotation.x = Math.PI / 3;
@@ -47080,6 +47096,8 @@
 		}, {
 			key: 'pickup',
 			value: function pickup() {
+				if (!this.level) return;
+	
 				// find the world pos of player
 				this.player.getWorldPosition(this.worldPos);
 	
@@ -47093,13 +47111,11 @@
 				if (closest && closest.object.model) {
 	
 					var handled = false;
-					if (this.level) {
-						var offsetX = this.player.position.x;
-						var offsetY = this.player.position.y;
+					var _offsetX = this.player.position.x;
+					var _offsetY = this.player.position.y;
 	
-						var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
-						handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
-					}
+					var room = this.level.getRoomAtPos(new _three2.default.Vector3(_offsetX, _offsetY, this.player.position.z), true);
+					handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
 	
 					if (!handled) {
 						this.inventory.push(closest.object.model.name);
@@ -47114,40 +47130,54 @@
 				return this.inventory.indexOf(name) >= 0;
 			}
 		}, {
+			key: 'nearXenoBase',
+			value: function nearXenoBase() {
+				if (this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {}
+			}
+		}, {
 			key: 'useElevator',
 			value: function useElevator() {
-				if (this.vehicle || this.liftDirection) return;
-	
-				var offsetX = this.player.position.x;
-				var offsetY = this.player.position.y;
-				if (this.level) {
-					// up
+				if (this.nearXenoBase()) {
+					console.log("Entering alien base.");
+				} else if (this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
 					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
 					if (room && room.elevator) {
-	
-						// Reposition the level, the lift and the player at the elevator platform position.
-						// This is so the player pops up in the middle of the elevator back on the surface.
-						var dx = this.player.position.x - this.level.liftX;
-						var dy = this.player.position.y - this.level.liftY;
-						this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-						this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
-	
-						this.liftDirection = 1;
-						this.noise.stop("door");
-						console.log("heading up");
+						console.log("Exiting alien base.");
 					}
-				} else if (!this.level) {
-					var elevator = this.getElevator();
-					if (elevator) {
-						// down
-						this.level = compounds.getLevel(this.sectorX, this.sectorY);
-						if (this.level) {
-							this.liftDirection = -1;
-							// create room
-							//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+				} else {
+					if (this.vehicle || this.liftDirection) return;
 	
-							var liftPos = elevator.getWorldPosition();
-							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+					var _offsetX2 = this.player.position.x;
+					var _offsetY2 = this.player.position.y;
+					if (this.level) {
+						// up
+						var room = this.level.getRoomAtPos(new _three2.default.Vector3(_offsetX2, _offsetY2, this.player.position.z), true);
+						if (room && room.elevator) {
+	
+							// Reposition the level, the lift and the player at the elevator platform position.
+							// This is so the player pops up in the middle of the elevator back on the surface.
+							var dx = this.player.position.x - this.level.liftX;
+							var dy = this.player.position.y - this.level.liftY;
+							this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+							this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
+	
+							this.liftDirection = 1;
+							this.noise.stop("door");
+							console.log("heading up");
+						}
+					} else if (!this.level) {
+						var elevator = this.getElevator();
+						if (elevator) {
+							// down
+							this.level = compounds.getLevel(this.sectorX, this.sectorY);
+							if (this.level) {
+								this.liftDirection = -1;
+								// create room
+								//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+	
+								var liftPos = elevator.getWorldPosition();
+								this.level.create(this.main.scene, _offsetX2, _offsetY2, liftPos.x, liftPos.y, this.main.models);
+							}
 						}
 					}
 				}
@@ -47222,7 +47252,7 @@
 				if (this.vehicle) {
 					return this.vehicle.model.speed;
 				} else {
-					return 1500;
+					return WALKING_SPEED;
 				}
 			}
 		}, {
@@ -47241,11 +47271,19 @@
 				return this.vehicle && this.vehicle.model.flies && this.player.position.z > DEFAULT_Z;
 			}
 		}, {
+			key: 'isHovering',
+			value: function isHovering() {
+				return this.vehicle && this.vehicle.model.vehicle.hovers && this.player.position.z > DEFAULT_Z;
+			}
+		}, {
 			key: 'getRollSpeed',
 			value: function getRollSpeed() {
 				if (DEBUG) return this.getTurnSpeed();
 	
-				if (this.isFlying()) {
+				if (this.vehicle && this.vehicle.model.vehicle.hovers) {
+					// hovers can turn without moving forward
+					return 0.001;
+				} else if (this.isFlying()) {
 					return this.getTurnSpeed();
 				} else {
 					return 0;
@@ -47256,7 +47294,7 @@
 			value: function getPitchSpeed() {
 				if (DEBUG) return 0.0005;
 	
-				if (this.vehicle && this.vehicle.model.flies && this.getSpeed() > STALL_SPEED) {
+				if (this.vehicle && (this.vehicle.model.flies && this.power >= .3 || this.vehicle.model.vehicle.hovers)) {
 					return 0.0005;
 				} else {
 					return 0;
@@ -47309,11 +47347,12 @@
 		}, {
 			key: 'isStalling',
 			value: function isStalling() {
-				return this.isFlying() && this.getSpeed() < STALL_SPEED;
+				return !this.isHovering() && this.isFlying() && this.power < .3;
 			}
 		}, {
 			key: 'getSpeed',
 			value: function getSpeed() {
+				var walking_movement = this.fw || this.bw || this.left || this.right;
 				if (this.landing) {
 					return this.player.position.z / (LANDING_ALT + DEFAULT_Z) * 100000;
 				} else if (this.vehicle) {
@@ -47323,7 +47362,8 @@
 						return this.power * this.getMaxSpeed();
 					}
 				} else {
-					if (this.fw || this.bw || this.left || this.right) {
+	
+					if (walking_movement) {
 						return this.getMaxSpeed();
 					} else {
 						return 0;
@@ -47366,19 +47406,46 @@
 				this.direction.set(0, 1, 0);
 	
 				// while flying, roll affects heading
-				if (this.isFlying()) {
+				if (this.vehicle.model.vehicle.hovers) {
+					// hovering craft turns at constant speed
+					this.player.rotation.z -= Math.sin(this.getRoll()) * (15 * delta) * 0.1;
+				} else if (this.isFlying()) {
 					// slower airspeed = tighter turns
 					this.player.rotation.z -= Math.sin(this.getRoll()) * (15 * delta) * 0.0225 * (this.getMaxSpeed() / this.getSpeed());
 				}
 	
-				// the roll affects the pitch's direction
-				var r = Math.abs(this.getRoll());
-				var d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
-				this.rotation.set(this.getPitch() * d, 0, 0);
-				this.direction.applyEuler(this.rotation);
+				if (this.vehicle.model.vehicle.hovers) {
+					// for hovers, up/down speed is not related to movement
+					this.player.position.z += this.getMaxSpeed() * .005 * (this.pitch.rotation.x - Math.PI / 2) / MAX_HOVER_PITCH;
+				} else {
+					// the roll affects the pitch's direction
+					var r = Math.abs(this.getRoll());
+					var d = r >= Math.PI * .5 && r < Math.PI * 1.5 ? -1 : 1;
+					this.rotation.set(this.getPitch() * d, 0, 0);
+					this.direction.applyEuler(this.rotation);
+				}
 	
 				// actually move player forward
 				this.player.translateOnAxis(this.direction, dx);
+	
+				// hovering vehicles can also move around like walking
+				if (this.vehicle.model.vehicle.hovers) {
+					if (this.fw) {
+						this.direction.set(0, 1, 0);
+					} else if (this.bw) {
+						this.direction.set(0, -1, 0);
+					} else if (this.right) {
+						this.direction.set(1, 0, 0);
+					} else if (this.left) {
+						this.direction.set(-1, 0, 0);
+					}
+	
+					// actually move player forward
+					if (this.fw || this.bw || this.left || this.right) {
+						var hoverSpeed = WALKING_SPEED / 20 * delta;
+						this.player.translateOnAxis(this.direction, hoverSpeed);
+					}
+				}
 	
 				// stalling
 				if (this.isStalling()) {
@@ -47399,6 +47466,7 @@
 				}
 	
 				if (!this.level && this.player.position.z < DEFAULT_Z) this.player.position.z = DEFAULT_Z;
+				if (this.player.position.z > MAX_Z) this.player.position.z = MAX_Z;
 			}
 		}, {
 			key: 'updateWalking',
@@ -47734,8 +47802,15 @@
 					}
 				}
 	
+				this.events.checkPosition(this.player.position, this.vehicle);
+	
 				this.checkNoise();
 				this.events.update(this.sectorX, this.sectorY);
+			}
+		}, {
+			key: 'getDistanceToAlienBase',
+			value: function getDistanceToAlienBase() {
+				return Math.sqrt((this.sectorX - ALIEN_BASE_POS[0]) * (this.sectorX - ALIEN_BASE_POS[0]) + (this.sectorY - ALIEN_BASE_POS[1]) * (this.sectorY - ALIEN_BASE_POS[1]));
 			}
 		}, {
 			key: 'startLanding',
@@ -47801,14 +47876,21 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno"];
 	
 	var VEHICLES = {
-		"car": { speed: 4000, flies: false, exp: false, noise: "car", hover: false },
-		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hover: false },
-		"ufo": { speed: 40000, flies: true, exp: true, noise: "jet", hover: true,
+		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 			onEnter: function onEnter(movement) {
 				if (movement.inInventory("art") && movement.inInventory("art2")) {
+					if (!movement.events.state["ufo-first"]) {
+						movement.main.benson.addMessage("The xeno artifacts");
+						movement.main.benson.addMessage("started the craft!");
+						movement.main.benson.addMessage("Try take-off and turns");
+						movement.main.benson.addMessage("without moving first.");
+						movement.events.state["ufo-first"] = true;
+					}
 					return true;
 				} else {
 					movement.main.benson.addMessage("This craft seems broken.");
@@ -47816,14 +47898,14 @@
 				}
 			}
 		},
-		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hover: true,
+		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 			onEnter: function onEnter(movement) {
 				// todo: this should return true when game is completed
 				movement.main.benson.addMessage("Your ship is locked.");
 				return false;
 			}
 		},
-		"light": { speed: 50000, flies: false, exp: true, noise: "car", hover: false,
+		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
 			onEnter: function onEnter(movement) {
 				return movement.events.state["lightcar-keys"];
 			}
@@ -48047,10 +48129,12 @@
 				walk: new WalkNoise(),
 				lift: new LiftNoise(),
 				door: new DoorNoise(),
-				benson: new BensonNoise()
+				benson: new BensonNoise(),
+				ufo: new UfoNoise()
 			};
 			this.sounds = {
-				denied: new DeniedSound()
+				denied: new DeniedSound(),
+				base: new AlienBaseSound()
 			};
 		}
 	
@@ -48066,8 +48150,8 @@
 			}
 		}, {
 			key: "play",
-			value: function play(name) {
-				this.sounds[name].play();
+			value: function play(name, level) {
+				this.sounds[name].play(level);
 			}
 		}], [{
 			key: "toggleSound",
@@ -48164,7 +48248,7 @@
 	
 		_createClass(DeniedSound, [{
 			key: "play",
-			value: function play() {
+			value: function play(level) {
 				var _this = this;
 	
 				if (this.playing) return;
@@ -48191,6 +48275,39 @@
 		}]);
 	
 		return DeniedSound;
+	}();
+	
+	var AlienBaseSound = function () {
+		function AlienBaseSound() {
+			_classCallCheck(this, AlienBaseSound);
+	
+			this.playing = false;
+		}
+	
+		_createClass(AlienBaseSound, [{
+			key: "play",
+			value: function play(level) {
+				var _this2 = this;
+	
+				if (this.playing) return;
+				this.playing = true;
+	
+				var voice1 = new Voice(globalContext, 0.2, 300 + level * 250);
+				var voice2 = new Voice(globalContext, 0.2, 320 + level * 250);
+				var voice3 = new Voice(globalContext, 0.2, 340 + level * 250);
+				voice1.start();
+				voice2.start();
+				voice3.start();
+				setTimeout(function () {
+					voice1.stop();
+					voice2.stop();
+					voice3.stop();
+					_this2.playing = false;
+				}, 150);
+			}
+		}]);
+	
+		return AlienBaseSound;
 	}();
 	
 	var PinkNoise = function () {
@@ -48555,6 +48672,54 @@
 		}]);
 	
 		return CarNoise;
+	}();
+	
+	var UfoNoise = function () {
+		function UfoNoise() {
+			_classCallCheck(this, UfoNoise);
+	
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 400);
+			this.voice2 = new Voice(this.audioContext, 0.2, 440);
+			this.voice3 = new Voice(this.audioContext, 0.2, 200);
+			this.distortion = new Distortion(this.audioContext, 2, 500, true);
+		}
+	
+		_createClass(UfoNoise, [{
+			key: "start",
+			value: function start(context) {
+				if (!this.started) {
+					this.voice1.start();
+					this.voice2.start();
+					this.voice3.start();
+					this.distortion.start();
+					this.started = true;
+				}
+			}
+		}, {
+			key: "stop",
+			value: function stop() {
+				if (this.started) {
+					this.voice1.stop();
+					this.voice2.stop();
+					this.voice3.stop();
+					this.distortion.stop();
+					this.started = false;
+				}
+			}
+		}, {
+			key: "setLevel",
+			value: function setLevel(level) {
+				this.start();
+				this.voice1.setLevel(level * .05);
+				this.voice2.setLevel(level * .15);
+				this.voice3.setLevel(level * .15);
+				this.distortion.setLevel(level * .05);
+			}
+		}]);
+	
+		return UfoNoise;
 	}();
 	
 	var WalkNoise = function () {
@@ -50198,6 +50363,18 @@
 					return this.PICKUP_EVENTS[key]();
 				}
 				return false;
+			}
+		}, {
+			key: "checkPosition",
+			value: function checkPosition(pos, vehicle) {
+				// "sonar" to alien base
+				var now = Date.now();
+				if (pos.z >= 10000 && vehicle.model.name == "ufo" && (!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
+					var d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
+					//console.log("dist to alien base=" + d);
+					this.movement.noise.play("base", 1 - d);
+					this.state["xeno-base-notification"] = now + Math.max(500, 5000 * d | 0);
+				}
 			}
 		}]);
 	

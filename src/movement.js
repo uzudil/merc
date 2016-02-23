@@ -25,6 +25,8 @@ const LANDING_BASE_PERCENT = .1;
 const DOWN = new THREE.Vector3(0, 0, -1);
 const MAX_HOVER_PITCH = Math.PI/10;
 const MAX_Z = 100000;
+const ALIEN_BASE_POS = [ 0xf8, 0xc9 ];
+const WALKING_SPEED = 1500;
 
 export class Movement {
 	constructor(main) {
@@ -223,6 +225,8 @@ export class Movement {
 	}
 
 	pickup() {
+		if(!this.level) return;
+
 		// find the world pos of player
 		this.player.getWorldPosition(this.worldPos);
 
@@ -236,13 +240,11 @@ export class Movement {
 		if(closest && closest.object.model) {
 
 			let handled = false;
-			if(this.level) {
-				let offsetX = this.player.position.x;
-				let offsetY = this.player.position.y;
+			let offsetX = this.player.position.x;
+			let offsetY = this.player.position.y;
 
-				let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-				handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
-			}
+			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
+			handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
 
 			if(!handled) {
 				this.inventory.push(closest.object.model.name);
@@ -256,39 +258,55 @@ export class Movement {
 		return this.inventory.indexOf(name) >= 0;
 	}
 
+	nearXenoBase() {
+		if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
+
+
+		}
+	}
+
 	useElevator() {
-		if(this.vehicle || this.liftDirection) return;
-
-		let offsetX = this.player.position.x;
-		let offsetY = this.player.position.y;
-		if(this.level) {
-			// up
+		if(this.nearXenoBase()) {
+			console.log("Entering alien base.")
+		} else if(this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
 			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-			if(room && room.elevator) {
-
-				// Reposition the level, the lift and the player at the elevator platform position.
-				// This is so the player pops up in the middle of the elevator back on the surface.
-				let dx = this.player.position.x - this.level.liftX;
-				let dy = this.player.position.y - this.level.liftY;
-				this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-				this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
-
-				this.liftDirection = 1;
-				this.noise.stop("door");
-				console.log("heading up");
+			if (room && room.elevator) {
+				console.log("Exiting alien base.")
 			}
-		} else if(!this.level) {
-			let elevator = this.getElevator();
-			if(elevator) {
-				// down
-				this.level = compounds.getLevel(this.sectorX, this.sectorY);
-				if (this.level) {
-					this.liftDirection = -1;
-					// create room
-					//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+		} else {
+			if (this.vehicle || this.liftDirection) return;
 
-					let liftPos = elevator.getWorldPosition();
-					this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+			let offsetX = this.player.position.x;
+			let offsetY = this.player.position.y;
+			if (this.level) {
+				// up
+				let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
+				if (room && room.elevator) {
+
+					// Reposition the level, the lift and the player at the elevator platform position.
+					// This is so the player pops up in the middle of the elevator back on the surface.
+					let dx = this.player.position.x - this.level.liftX;
+					let dy = this.player.position.y - this.level.liftY;
+					this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+					this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
+
+					this.liftDirection = 1;
+					this.noise.stop("door");
+					console.log("heading up");
+				}
+			} else if (!this.level) {
+				let elevator = this.getElevator();
+				if (elevator) {
+					// down
+					this.level = compounds.getLevel(this.sectorX, this.sectorY);
+					if (this.level) {
+						this.liftDirection = -1;
+						// create room
+						//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+
+						let liftPos = elevator.getWorldPosition();
+						this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+					}
 				}
 			}
 		}
@@ -340,7 +358,7 @@ export class Movement {
 		if(this.vehicle) {
 			return this.vehicle.model.speed;
 		} else {
-			return 1500;
+			return WALKING_SPEED;
 		}
 	}
 
@@ -427,6 +445,7 @@ export class Movement {
 	}
 
 	getSpeed() {
+		let walking_movement = this.fw || this.bw || this.left || this.right;
 		if(this.landing) {
 			return (this.player.position.z/(LANDING_ALT + DEFAULT_Z)) * 100000;
 		} else if(this.vehicle) {
@@ -436,7 +455,8 @@ export class Movement {
 				return this.power * this.getMaxSpeed();
 			}
 		} else {
-			if(this.fw || this.bw || this.left || this.right) {
+
+			if(walking_movement) {
 				return this.getMaxSpeed();
 			} else {
 				return 0;
@@ -497,6 +517,25 @@ export class Movement {
 
 		// actually move player forward
 		this.player.translateOnAxis(this.direction, dx);
+
+		// hovering vehicles can also move around like walking
+		if(this.vehicle.model.vehicle.hovers) {
+			if (this.fw) {
+				this.direction.set(0, 1, 0);
+			} else if (this.bw) {
+				this.direction.set(0, -1, 0);
+			} else if (this.right) {
+				this.direction.set(1, 0, 0);
+			} else if (this.left) {
+				this.direction.set(-1, 0, 0);
+			}
+
+			// actually move player forward
+			if (this.fw || this.bw || this.left || this.right) {
+				let hoverSpeed = WALKING_SPEED / 20 * delta;
+				this.player.translateOnAxis(this.direction, hoverSpeed);
+			}
+		}
 
 		// stalling
 		if (this.isStalling()) {
@@ -791,8 +830,15 @@ export class Movement {
 			}
 		}
 
+		this.events.checkPosition(this.player.position, this.vehicle);
+
 		this.checkNoise();
 		this.events.update(this.sectorX, this.sectorY);
+	}
+
+	getDistanceToAlienBase() {
+		return Math.sqrt((this.sectorX - ALIEN_BASE_POS[0]) * (this.sectorX - ALIEN_BASE_POS[0]) +
+			(this.sectorY - ALIEN_BASE_POS[1]) * (this.sectorY - ALIEN_BASE_POS[1]));
 	}
 
 	startLanding() {

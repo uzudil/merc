@@ -10,13 +10,13 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk", "stadium", "art", "art2", "ufo", "allitus"
+	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno"
 ];
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
 	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
-	"ufo": { speed: 40000, flies: true, exp: true, noise: "jet", hovers: true,
+	"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {
 				if(!movement.events.state["ufo-first"]) {
