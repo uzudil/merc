@@ -36621,7 +36621,8 @@
 			}
 	
 			// add xeno base
-			this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
+			this.xenoBase = this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
+			this.xenoBase.visible = false;
 	
 			// roads
 			this.drawRoads(maxAnisotropy, models);
@@ -36825,7 +36826,7 @@
 				var dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 				var dz = zpos || 0;
 				var zrot = pos.length > 4 ? pos[4] : 0;
-				this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
+				return this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
 			}
 		}, {
 			key: 'addModelAt',
@@ -36843,6 +36844,8 @@
 				object.position.set(ox, oy, z);
 	
 				this.getSector(sx, sy).add(object);
+	
+				return object;
 			}
 		}, {
 			key: 'getSector',
@@ -47201,8 +47204,12 @@
 				this.noise.stop("car");
 				this.noise.stop("jet");
 				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle.model, this.player.rotation.z);
+				this.noise.stop(this.vehicle.model.noise);
 				this.vehicle = null;
 				this.stop();
+	
+				// the alien base is only visible from the ufo
+				this.main.game_map.xenoBase.visible = false;
 			}
 		}, {
 			key: 'enterVehicle',
@@ -47223,6 +47230,9 @@
 								this.vehicle.parent.remove(this.vehicle);
 								this.main.benson.addMessage(o.model.description);
 								this.stop();
+	
+								// the alien base is only visible from the ufo
+								this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo";
 							} else {
 								this.noise.play("denied");
 							}

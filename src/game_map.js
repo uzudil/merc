@@ -33,7 +33,8 @@ export class GameMap {
 		}
 
 		// add xeno base
-		this.addStructure(models.models["xeno"], [ 0xf8, 0xc9 ], 10000);
+		this.xenoBase = this.addStructure(models.models["xeno"], [ 0xf8, 0xc9 ], 10000);
+		this.xenoBase.visible = false;
 
 		// roads
 		this.drawRoads(maxAnisotropy, models);
@@ -164,7 +165,7 @@ export class GameMap {
 		let dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
 		let dz = zpos || 0;
 		let zrot = pos.length > 4 ? pos[4] : 0;
-		this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
+		return this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
 	}
 
 	addModelAt(x, y, z, model, zRot) {
@@ -181,6 +182,8 @@ export class GameMap {
 		object.position.set(ox, oy, z);
 
 		this.getSector(sx, sy).add(object);
+
+		return object;
 	}
 
 	getSector(sectorX, sectorY) {

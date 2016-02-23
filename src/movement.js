@@ -330,8 +330,12 @@ export class Movement {
 			this.player.position.z - DEFAULT_Z,
 			this.vehicle.model,
 			this.player.rotation.z);
+		this.noise.stop(this.vehicle.model.noise);
 		this.vehicle = null;
 		this.stop();
+
+		// the alien base is only visible from the ufo
+		this.main.game_map.xenoBase.visible = false;
 	}
 
 	enterVehicle() {
@@ -344,6 +348,9 @@ export class Movement {
 					this.vehicle.parent.remove(this.vehicle);
 					this.main.benson.addMessage(o.model.description);
 					this.stop();
+
+					// the alien base is only visible from the ufo
+					this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo";
 				} else {
 					this.noise.play("denied");
 				}
