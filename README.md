@@ -9,18 +9,8 @@ An open-ended exploration game with a minimalist plot. A variation and alternate
 
 ## Play the game
 
-It's very early in development, but here are some things you can do:
-- click in the game for cursor lock
-- walk around (wasd keys, turn with mouse)
-- walk into a vehicle and press SPACE to drive it. 
-- All vehicles work by pressing 0-9 for power levels. Press ~ to stop. Drive with the mouse. 
-- Planes can take off after power level 3.
-- to exit a vehicle press SPACE again.
-- walk (or drive) into an elevator (thing with red stripe). Make sure you exit your vehicle (SPACE) and press E to activate the elevator.
-- walk around downstairs (wasd)
-- press E to take the elevator up again (only works in the pink room)
-- Let me know what you like/dislike about the game so far.
- 
+From an early age, you knew one day you'd be a mercenary. Motivated only by money you travel the galaxy in search of the next gig. On your way to the [Novagen](https://en.wikipedia.org/wiki/Novagen_Software) system, you're interrupted by a message - an old acquaintance asking for assistance. It's been over thirty years since your last visit, but one thing you remember is that the money is good on Targ...
+
 http://uzudil.github.io/merc/
 
 ## Development
