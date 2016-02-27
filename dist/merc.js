@@ -101,12 +101,15 @@
 	var START_Y = 0x66;
 	var START_Z = 50000;
 	
+	var VERSION = 0.1; // todo: git hook this
+	
 	var Merc = function () {
 		function Merc() {
 			var _this = this;
 	
 			_classCallCheck(this, Merc);
 	
+			console.log('Merc (c) 2016 v' + VERSION);
 			new model.Models(function (models) {
 				return _this.init(models);
 			});
