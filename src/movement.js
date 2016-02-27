@@ -28,6 +28,10 @@ const MAX_Z = 100000;
 const ALIEN_BASE_POS = [ 0xf8, 0xc9 ];
 const WALKING_SPEED = 1500;
 
+const ENTER_BASE = "ENTER_BASE";
+const EXIT_COMPOUND = "EXIT_COMPOUND";
+const ENTER_COMPOUND = "ENTER_COMPOUND";
+
 export class Movement {
 	constructor(main) {
 		this.main = main;
@@ -56,6 +60,8 @@ export class Movement {
 		this.bw = false;
 		this.left = false;
 		this.right = false;
+		this.enterMode = null;
+		this.pickupObject = null;
 
 		main.camera.rotation.set( 0, 0, 0 );
 
@@ -224,8 +230,9 @@ export class Movement {
 		return crossHair;
 	}
 
-	pickup() {
-		if(!this.level) return;
+	checkPickup() {
+		this.pickupObject = null;
+		if (!this.level) return;
 
 		// find the world pos of player
 		this.player.getWorldPosition(this.worldPos);
@@ -237,19 +244,23 @@ export class Movement {
 		this.raycaster.set(this.worldPos, this.worldDir);
 		let intersections = this.raycaster.intersectObject(this.level.targetMesh, true);
 		let closest = intersections.length > 0 ? intersections[0] : null;
-		if(closest && closest.object.model) {
+		if (closest && closest.object.model) {
+			this.pickupObject = closest.object;
+		}
+	}
 
-			let handled = false;
+	pickup() {
+		if(this.pickupObject) {
 			let offsetX = this.player.position.x;
 			let offsetY = this.player.position.y;
 
 			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-			handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+			let handled = room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
 
 			if(!handled) {
-				this.inventory.push(closest.object.model.name);
-				closest.object.parent.remove(closest.object);
-				this.main.benson.addMessage(closest.object.model.description);
+				this.inventory.push(this.pickupObject.model.name);
+				closest.object.parent.remove(this.pickupObject);
+				this.main.benson.addMessage(this.pickupObject.model.description);
 			}
 		}
 	}
@@ -259,14 +270,31 @@ export class Movement {
 	}
 
 	nearXenoBase() {
-		if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
+		//if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
+		//
+		//
+		//}
+		return false;
+	}
 
-
+	checkEnter() {
+		if(this.nearXenoBase()) {
+			return ENTER_BASE;
+		} else if (!(this.vehicle || this.liftDirection)) {
+			if (this.level) {
+				let room = this.level.getRoomAtPos(new THREE.Vector3(this.player.position.x, this.player.position.y, this.player.position.z), true);
+				if (room && room.elevator) {
+					return EXIT_COMPOUND;
+				}
+			} else if (!this.level && this.getElevator()) {
+				return ENTER_COMPOUND;
+			}
 		}
+		return null;
 	}
 
 	useElevator() {
-		if(this.nearXenoBase()) {
+		if(this.enterMode == ENTER_BASE) {
 			console.log("Entering alien base.")
 		} else if(this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
 			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
@@ -278,23 +306,18 @@ export class Movement {
 
 			let offsetX = this.player.position.x;
 			let offsetY = this.player.position.y;
-			if (this.level) {
-				// up
-				let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-				if (room && room.elevator) {
+			if (this.enterMode == EXIT_COMPOUND) {
+				// Reposition the level, the lift and the player at the elevator platform position.
+				// This is so the player pops up in the middle of the elevator back on the surface.
+				let dx = this.player.position.x - this.level.liftX;
+				let dy = this.player.position.y - this.level.liftY;
+				this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+				this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 
-					// Reposition the level, the lift and the player at the elevator platform position.
-					// This is so the player pops up in the middle of the elevator back on the surface.
-					let dx = this.player.position.x - this.level.liftX;
-					let dy = this.player.position.y - this.level.liftY;
-					this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-					this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
-
-					this.liftDirection = 1;
-					this.noise.stop("door");
-					console.log("heading up");
-				}
-			} else if (!this.level) {
+				this.liftDirection = 1;
+				this.noise.stop("door");
+				console.log("heading up");
+			} else if (this.enterMode == ENTER_COMPOUND) {
 				let elevator = this.getElevator();
 				if (elevator) {
 					// down
@@ -821,6 +844,10 @@ export class Movement {
 			this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 		}
 
+		this.enterMode = this.checkEnter();
+		$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+		$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+
 		if(this.landing) {
 			this.updateLanding(time, delta);
 		} else {
@@ -834,6 +861,10 @@ export class Movement {
 					this.updateWalking(dx, delta);
 				}
 				this.checkBoundingBox();
+				$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
+
+				this.checkPickup();
+				$("#pickup").toggle(this.pickupObject != null);
 			}
 		}
 

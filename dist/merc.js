@@ -46890,6 +46890,10 @@
 	var ALIEN_BASE_POS = [0xf8, 0xc9];
 	var WALKING_SPEED = 1500;
 	
+	var ENTER_BASE = "ENTER_BASE";
+	var EXIT_COMPOUND = "EXIT_COMPOUND";
+	var ENTER_COMPOUND = "ENTER_COMPOUND";
+	
 	var Movement = exports.Movement = function () {
 		function Movement(main) {
 			var _this = this;
@@ -46922,6 +46926,8 @@
 			this.bw = false;
 			this.left = false;
 			this.right = false;
+			this.enterMode = null;
+			this.pickupObject = null;
 	
 			main.camera.rotation.set(0, 0, 0);
 	
@@ -47097,8 +47103,9 @@
 				}
 			}
 		}, {
-			key: 'pickup',
-			value: function pickup() {
+			key: 'checkPickup',
+			value: function checkPickup() {
+				this.pickupObject = null;
 				if (!this.level) return;
 	
 				// find the world pos of player
@@ -47112,18 +47119,23 @@
 				var intersections = this.raycaster.intersectObject(this.level.targetMesh, true);
 				var closest = intersections.length > 0 ? intersections[0] : null;
 				if (closest && closest.object.model) {
-	
-					var handled = false;
+					this.pickupObject = closest.object;
+				}
+			}
+		}, {
+			key: 'pickup',
+			value: function pickup() {
+				if (this.pickupObject) {
 					var _offsetX = this.player.position.x;
 					var _offsetY = this.player.position.y;
 	
 					var room = this.level.getRoomAtPos(new _three2.default.Vector3(_offsetX, _offsetY, this.player.position.z), true);
-					handled = room && this.events.pickup(closest.object.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+					var handled = room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
 	
 					if (!handled) {
-						this.inventory.push(closest.object.model.name);
-						closest.object.parent.remove(closest.object);
-						this.main.benson.addMessage(closest.object.model.description);
+						this.inventory.push(this.pickupObject.model.name);
+						closest.object.parent.remove(this.pickupObject);
+						this.main.benson.addMessage(this.pickupObject.model.description);
 					}
 				}
 			}
@@ -47135,12 +47147,33 @@
 		}, {
 			key: 'nearXenoBase',
 			value: function nearXenoBase() {
-				if (this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {}
+				//if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
+				//
+				//
+				//}
+				return false;
+			}
+		}, {
+			key: 'checkEnter',
+			value: function checkEnter() {
+				if (this.nearXenoBase()) {
+					return ENTER_BASE;
+				} else if (!(this.vehicle || this.liftDirection)) {
+					if (this.level) {
+						var room = this.level.getRoomAtPos(new _three2.default.Vector3(this.player.position.x, this.player.position.y, this.player.position.z), true);
+						if (room && room.elevator) {
+							return EXIT_COMPOUND;
+						}
+					} else if (!this.level && this.getElevator()) {
+						return ENTER_COMPOUND;
+					}
+				}
+				return null;
 			}
 		}, {
 			key: 'useElevator',
 			value: function useElevator() {
-				if (this.nearXenoBase()) {
+				if (this.enterMode == ENTER_BASE) {
 					console.log("Entering alien base.");
 				} else if (this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
 					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
@@ -47152,23 +47185,18 @@
 	
 					var _offsetX2 = this.player.position.x;
 					var _offsetY2 = this.player.position.y;
-					if (this.level) {
-						// up
-						var room = this.level.getRoomAtPos(new _three2.default.Vector3(_offsetX2, _offsetY2, this.player.position.z), true);
-						if (room && room.elevator) {
+					if (this.enterMode == EXIT_COMPOUND) {
+						// Reposition the level, the lift and the player at the elevator platform position.
+						// This is so the player pops up in the middle of the elevator back on the surface.
+						var dx = this.player.position.x - this.level.liftX;
+						var dy = this.player.position.y - this.level.liftY;
+						this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+						this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 	
-							// Reposition the level, the lift and the player at the elevator platform position.
-							// This is so the player pops up in the middle of the elevator back on the surface.
-							var dx = this.player.position.x - this.level.liftX;
-							var dy = this.player.position.y - this.level.liftY;
-							this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-							this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
-	
-							this.liftDirection = 1;
-							this.noise.stop("door");
-							console.log("heading up");
-						}
-					} else if (!this.level) {
+						this.liftDirection = 1;
+						this.noise.stop("door");
+						console.log("heading up");
+					} else if (this.enterMode == ENTER_COMPOUND) {
 						var elevator = this.getElevator();
 						if (elevator) {
 							// down
@@ -47525,10 +47553,10 @@
 	
 				try {
 					for (var _iterator2 = intersections[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var closest = _step2.value;
+						var _closest = _step2.value;
 	
-						if (closest && closest.object && closest.object.model && closest.object.model.lifts) {
-							this.player.position.z = closest.point.z + DEFAULT_Z;
+						if (_closest && _closest.object && _closest.object.model && _closest.object.model.lifts) {
+							this.player.position.z = _closest.point.z + DEFAULT_Z;
 							found = true;
 							break;
 						}
@@ -47796,6 +47824,10 @@
 					this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
 				}
 	
+				this.enterMode = this.checkEnter();
+				(0, _jquery2.default)("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+				(0, _jquery2.default)("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+	
 				if (this.landing) {
 					this.updateLanding(time, delta);
 				} else {
@@ -47809,6 +47841,12 @@
 							this.updateWalking(dx, delta);
 						}
 						this.checkBoundingBox();
+						(0, _jquery2.default)("#vehicle").toggle(this.intersections.filter(function (o) {
+							return o.model instanceof models.Vehicle;
+						}).length > 0);
+	
+						this.checkPickup();
+						(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
 					}
 				}
 	
