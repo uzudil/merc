@@ -16,8 +16,11 @@ const START_X = 0x33;
 const START_Y = 0x66;
 const START_Z = 50000;
 
+const VERSION = 0.1; // todo: git hook this
+
 class Merc {
 	constructor() {
+		console.log(`Merc (c) 2016 v${VERSION}`);
 		new model.Models((models)=>this.init(models))
 	}
 
