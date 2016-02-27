@@ -236,8 +236,10 @@ export class Events {
 		if(pos.z >= 10000 && vehicle.model.name == "ufo" &&
 			(!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
 			let d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
-			//console.log("dist to alien base=" + d);
-			this.movement.noise.play("base", 1 - d);
+			// stop beeping when really close
+			if(d > 0.01) {
+				this.movement.noise.play("base", 1 - d);
+			}
 			this.state["xeno-base-notification"] = now + Math.max(500, (5000 * d)|0);
 		}
 	}

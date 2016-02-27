@@ -15,7 +15,8 @@ export class Noise {
 			lift: new LiftNoise(),
 			door: new DoorNoise(),
 			benson: new BensonNoise(),
-			ufo: new UfoNoise()
+			ufo: new UfoNoise(),
+			teleport: new TeleportNoise()
 		};
 		this.sounds = {
 			denied: new DeniedSound(),
@@ -380,6 +381,42 @@ class DoorNoise {
 		this.start();
 		this.voice1.setLevel(level);
 		this.distortion.setLevel(level);
+	}
+}
+
+class TeleportNoise {
+
+	constructor() {
+		this.started = false;
+		this.audioContext = globalContext;
+		this.voice1 = new Voice(this.audioContext, 0.2, 600);
+		this.voice2 = new Voice(this.audioContext, 0.2, 560);
+		this.voice3 = new Voice(this.audioContext, 0.2, 520);
+	}
+
+	start(context) {
+		if(!this.started) {
+			this.voice1.start();
+			this.voice2.start();
+			this.voice3.start();
+			this.started = true;
+		}
+	}
+
+	stop() {
+		if(this.started) {
+			this.voice1.stop();
+			this.voice2.stop();
+			this.voice3.stop();
+			this.started = false;
+		}
+	}
+
+	setLevel(level) {
+		this.start();
+		this.voice1.setLevel(level);
+		this.voice2.setLevel(level);
+		this.voice3.setLevel(level);
 	}
 }
 

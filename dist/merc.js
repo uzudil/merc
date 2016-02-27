@@ -46885,10 +46885,12 @@
 	var LANDING_LAST_PERCENT = .25;
 	var LANDING_BASE_PERCENT = .1;
 	var DOWN = new _three2.default.Vector3(0, 0, -1);
+	var FORWARD = new _three2.default.Vector3(0, 1, 0);
 	var MAX_HOVER_PITCH = Math.PI / 10;
 	var MAX_Z = 100000;
 	var ALIEN_BASE_POS = [0xf8, 0xc9];
 	var WALKING_SPEED = 1500;
+	var TELEPORT_TIME = 1500;
 	
 	var ENTER_BASE = "ENTER_BASE";
 	var EXIT_COMPOUND = "EXIT_COMPOUND";
@@ -46915,10 +46917,14 @@
 	
 			this.inventory = [];
 			this.vehicle = null;
+			this.lastVehicle = null;
 			this.level = null;
 			this.doorsUp = [];
 			this.doorsDown = [];
 			this.liftDirection = 0;
+			this.teleportDir = 0;
+			this.teleportTime = 0;
+			this.baseMove = 0;
 			this.sectorX = 0;
 			this.sectorY = 0;
 			this.power = 0.0;
@@ -46945,6 +46951,7 @@
 			this.main.scene.add(this.player);
 	
 			this.pitch.add(Movement.makeCrossHair());
+			this.pitch.add(this.makeTeleporter());
 	
 			// room collisions
 			this.raycaster = new _three2.default.Raycaster();
@@ -47103,6 +47110,13 @@
 				}
 			}
 		}, {
+			key: 'makeTeleporter',
+			value: function makeTeleporter() {
+				this.teleporter = new _three2.default.Mesh(new _three2.default.PlaneGeometry(100, 100), new _three2.default.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0 }));
+				this.teleporter.position.z = -2.5;
+				return this.teleporter;
+			}
+		}, {
 			key: 'checkPickup',
 			value: function checkPickup() {
 				this.pickupObject = null;
@@ -47126,10 +47140,10 @@
 			key: 'pickup',
 			value: function pickup() {
 				if (this.pickupObject) {
-					var _offsetX = this.player.position.x;
-					var _offsetY = this.player.position.y;
+					var offsetX = this.player.position.x;
+					var offsetY = this.player.position.y;
 	
-					var room = this.level.getRoomAtPos(new _three2.default.Vector3(_offsetX, _offsetY, this.player.position.z), true);
+					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
 					var handled = room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
 	
 					if (!handled) {
@@ -47147,10 +47161,43 @@
 		}, {
 			key: 'nearXenoBase',
 			value: function nearXenoBase() {
-				//if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
-				//
-				//
-				//}
+				// find the world pos of player
+				this.player.getWorldPosition(this.worldPos);
+				this.worldPos.z += 50;
+	
+				// cast a ray in this direction
+				this.normalToWorld(this.player, FORWARD, this.worldDir);
+	
+				// find the closest intersection
+				this.raycasterOutside.set(this.worldPos, this.worldDir);
+				var intersections = this.raycasterOutside.intersectObject(this.main.game_map.land, true);
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
+	
+				try {
+					for (var _iterator = intersections[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var _closest = _step.value;
+	
+						if (_closest && _closest.object == this.main.game_map.xenoBase) {
+							return true;
+						}
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
+					}
+				}
+	
 				return false;
 			}
 		}, {
@@ -47175,25 +47222,38 @@
 			value: function useElevator() {
 				if (this.enterMode == ENTER_BASE) {
 					console.log("Entering alien base.");
-				} else if (this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
-					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
-					if (room && room.elevator) {
-						console.log("Exiting alien base.");
+					this.sectorX = ALIEN_BASE_POS[0];
+					this.sectorY = ALIEN_BASE_POS[1];
+					var offsetX = this.player.position.x;
+					var offsetY = this.player.position.y;
+					this.level = compounds.getLevel(this.sectorX, this.sectorY);
+					if (this.level) {
+						this.teleportDir = 1;
+						this.teleportTime = Date.now() + TELEPORT_TIME;
+						this.baseMove = 1;
+						this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
 					}
 				} else {
-					if (this.vehicle || this.liftDirection) return;
+					if (this.vehicle || this.liftDirection || this.teleportDir) return;
 	
-					var _offsetX2 = this.player.position.x;
-					var _offsetY2 = this.player.position.y;
+					var offsetX = this.player.position.x;
+					var offsetY = this.player.position.y;
 					if (this.enterMode == EXIT_COMPOUND) {
-						// Reposition the level, the lift and the player at the elevator platform position.
-						// This is so the player pops up in the middle of the elevator back on the surface.
-						var dx = this.player.position.x - this.level.liftX;
-						var dy = this.player.position.y - this.level.liftY;
-						this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-						this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
+						if (this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1]) {
+							this.teleportDir = 1;
+							this.teleportTime = Date.now() + TELEPORT_TIME;
+							this.baseMove = -1;
+							console.log("Exiting alien base.");
+						} else {
+							// Reposition the level, the lift and the player at the elevator platform position.
+							// This is so the player pops up in the middle of the elevator back on the surface.
+							var dx = this.player.position.x - this.level.liftX;
+							var dy = this.player.position.y - this.level.liftY;
+							this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+							this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 	
-						this.liftDirection = 1;
+							this.liftDirection = 1;
+						}
 						this.noise.stop("door");
 						console.log("heading up");
 					} else if (this.enterMode == ENTER_COMPOUND) {
@@ -47207,7 +47267,7 @@
 								//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
 	
 								var liftPos = elevator.getWorldPosition();
-								this.level.create(this.main.scene, _offsetX2, _offsetY2, liftPos.x, liftPos.y, this.main.models);
+								this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
 							}
 						}
 					}
@@ -47242,13 +47302,13 @@
 		}, {
 			key: 'enterVehicle',
 			value: function enterVehicle() {
-				var _iteratorNormalCompletion = true;
-				var _didIteratorError = false;
-				var _iteratorError = undefined;
+				var _iteratorNormalCompletion2 = true;
+				var _didIteratorError2 = false;
+				var _iteratorError2 = undefined;
 	
 				try {
-					for (var _iterator = this.intersections[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						var o = _step.value;
+					for (var _iterator2 = this.intersections[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+						var o = _step2.value;
 	
 						this.noise.stop("walk");
 						if (o.model instanceof models.Vehicle) {
@@ -47268,16 +47328,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError = true;
-					_iteratorError = err;
+					_didIteratorError2 = true;
+					_iteratorError2 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion && _iterator.return) {
-							_iterator.return();
+						if (!_iteratorNormalCompletion2 && _iterator2.return) {
+							_iterator2.return();
 						}
 					} finally {
-						if (_didIteratorError) {
-							throw _iteratorError;
+						if (_didIteratorError2) {
+							throw _iteratorError2;
 						}
 					}
 				}
@@ -47435,13 +47495,56 @@
 				}
 			}
 		}, {
+			key: 'updateTeleporter',
+			value: function updateTeleporter(delta, time) {
+				var p = undefined;
+				if (this.teleportDir == 1) {
+					if (time < this.teleportTime) {
+						p = 1 - (this.teleportTime - time) / TELEPORT_TIME;
+						this.teleporter.material.opacity = p;
+						this.teleporter.material.needsUpdate = true;
+						this.noise.setLevel("teleport", p);
+					} else {
+						this.teleportDir = -1;
+						this.teleportTime = time + TELEPORT_TIME;
+						if (this.baseMove == -1) {
+							// moving out of the base
+							this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
+							this.vehicle = this.lastVehicle;
+							this.lastVehicle = null;
+							this.level.destroy();
+							this.level = null;
+						} else if (this.baseMove == 1) {
+							// moving into the base
+							this.lastVehicle = this.vehicle;
+							this.vehicle = null;
+							this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+						}
+					}
+				} else {
+					if (time < this.teleportTime) {
+						p = (this.teleportTime - time) / TELEPORT_TIME;
+						this.teleporter.material.opacity = p;
+						this.teleporter.material.needsUpdate = true;
+						this.noise.setLevel("teleport", p);
+					} else {
+						this.teleportDir = 0;
+						this.teleportTime = 0;
+						this.teleporter.material.opacity = 0;
+						this.teleporter.material.needsUpdate = true;
+						this.noise.stop("teleport");
+						this.baseMove = 0;
+					}
+				}
+			}
+		}, {
 			key: 'updateVehicle',
 			value: function updateVehicle(dx, delta) {
 				if (dx != 0) this.updateOutsideZ();
 	
 				var in_air_before = this.isFlying();
 	
-				this.direction.set(0, 1, 0);
+				this.direction.copy(FORWARD);
 	
 				// while flying, roll affects heading
 				if (this.vehicle.model.vehicle.hovers) {
@@ -47547,31 +47650,31 @@
 				this.raycasterOutside.set(this.worldPos, this.worldDir);
 				var intersections = this.raycasterOutside.intersectObject(this.main.game_map.land, true);
 				var found = false;
-				var _iteratorNormalCompletion2 = true;
-				var _didIteratorError2 = false;
-				var _iteratorError2 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator2 = intersections[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var _closest = _step2.value;
+					for (var _iterator3 = intersections[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var _closest2 = _step3.value;
 	
-						if (_closest && _closest.object && _closest.object.model && _closest.object.model.lifts) {
-							this.player.position.z = _closest.point.z + DEFAULT_Z;
+						if (_closest2 && _closest2.object && _closest2.object.model && _closest2.object.model.lifts) {
+							this.player.position.z = _closest2.point.z + DEFAULT_Z;
 							found = true;
 							break;
 						}
 					}
 				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
@@ -47734,13 +47837,13 @@
 				this.bbox.max.set(this.player.position.x + SIZE, this.player.position.y + SIZE, this.player.position.z + SIZE);
 	
 				this.intersections.splice(0, this.intersections.length);
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
 	
 				try {
-					for (var _iterator3 = this.main.game_map.structures[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var o = _step3.value;
+					for (var _iterator4 = this.main.game_map.structures[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var o = _step4.value;
 	
 						this.model_bbox.setFromObject(o);
 						if (this.model_bbox.isIntersectionBox(this.bbox)) {
@@ -47748,16 +47851,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
+					_didIteratorError4 = true;
+					_iteratorError4 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
+						if (!_iteratorNormalCompletion4 && _iterator4.return) {
+							_iterator4.return();
 						}
 					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
+						if (_didIteratorError4) {
+							throw _iteratorError4;
 						}
 					}
 				}
@@ -47833,6 +47936,8 @@
 				} else {
 					if (this.liftDirection != 0) {
 						this.updateLift(delta);
+					} else if (this.teleportDir != 0) {
+						this.updateTeleporter(delta, time);
 					} else {
 						var dx = this.getSpeed() / 20 * delta;
 						if (this.vehicle) {
@@ -47871,7 +47976,6 @@
 		}], [{
 			key: 'makeCrossHair',
 			value: function makeCrossHair() {
-				// the crosshair
 				var crossHair = new _three2.default.Object3D();
 				var horiz = new _three2.default.Mesh(new _three2.default.PlaneGeometry(0.1, 0.01), new _three2.default.MeshBasicMaterial({ color: "#ffffff" }));
 				crossHair.add(horiz);
@@ -48178,7 +48282,8 @@
 				lift: new LiftNoise(),
 				door: new DoorNoise(),
 				benson: new BensonNoise(),
-				ufo: new UfoNoise()
+				ufo: new UfoNoise(),
+				teleport: new TeleportNoise()
 			};
 			this.sounds = {
 				denied: new DeniedSound(),
@@ -48632,6 +48737,50 @@
 		}]);
 	
 		return DoorNoise;
+	}();
+	
+	var TeleportNoise = function () {
+		function TeleportNoise() {
+			_classCallCheck(this, TeleportNoise);
+	
+			this.started = false;
+			this.audioContext = globalContext;
+			this.voice1 = new Voice(this.audioContext, 0.2, 600);
+			this.voice2 = new Voice(this.audioContext, 0.2, 560);
+			this.voice3 = new Voice(this.audioContext, 0.2, 520);
+		}
+	
+		_createClass(TeleportNoise, [{
+			key: "start",
+			value: function start(context) {
+				if (!this.started) {
+					this.voice1.start();
+					this.voice2.start();
+					this.voice3.start();
+					this.started = true;
+				}
+			}
+		}, {
+			key: "stop",
+			value: function stop() {
+				if (this.started) {
+					this.voice1.stop();
+					this.voice2.stop();
+					this.voice3.stop();
+					this.started = false;
+				}
+			}
+		}, {
+			key: "setLevel",
+			value: function setLevel(level) {
+				this.start();
+				this.voice1.setLevel(level);
+				this.voice2.setLevel(level);
+				this.voice3.setLevel(level);
+			}
+		}]);
+	
+		return TeleportNoise;
 	}();
 	
 	var BensonNoise = function () {
@@ -50156,7 +50305,8 @@
 		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] },
 		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 28, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 31, "y": 15, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": true }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 26, "y": 32, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": true }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": true }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": true }, { "x": 41, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 40, "y": 33, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": true }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 22, "y": 27, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": true }, { "x": 38, "y": 36, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 19, "y": 28, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 44, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 27, "y": 16, "dir": "e", "roomA": 4, "roomB": 6, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 9, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 30, "y": 16, "dir": "e", "roomA": 6, "roomB": 7, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 9, "roomB": 10, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 10, "roomB": 11, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 25, "y": 32, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 11, "roomB": 35, "key": "" }, { "x": 23, "y": 27, "dir": "w", "roomA": 11, "roomB": 36, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 11, "roomB": 46, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 12, "roomB": 18, "key": "" }, { "x": 28, "y": 32, "dir": "e", "roomA": 13, "roomB": 14, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 14, "roomB": 15, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 14, "roomB": 16, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 14, "roomB": 31, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 15, "roomB": 37, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 15, "roomB": 39, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 16, "roomB": 17, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 16, "roomB": 39, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 17, "roomB": 20, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 17, "roomB": 22, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 19, "roomB": 27, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 19, "roomB": 29, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 19, "roomB": 30, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 21, "roomB": 24, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 23, "roomB": 26, "key": "" }, { "x": 38, "y": 35, "dir": "s", "roomA": 23, "roomB": 38, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 23, "roomB": 43, "key": "" }, { "x": 41, "y": 29, "dir": "s", "roomA": 24, "roomB": 25, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 24, "roomB": 28, "key": "" }, { "x": 41, "y": 33, "dir": "w", "roomA": 25, "roomB": 26, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 27, "roomB": 28, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 29, "roomB": 40, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 30, "roomB": 40, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 31, "roomB": 32, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 32, "roomB": 33, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 32, "roomB": 34, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 33, "roomB": 37, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 33, "roomB": 48, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 34, "roomB": 35, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 35, "roomB": 51, "key": "" }, { "x": 38, "y": 37, "dir": "n", "roomA": 37, "roomB": 38, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 37, "roomB": 41, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 41, "roomB": 42, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 44, "roomB": 47, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 45, "roomB": 46, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 45, "roomB": 47, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 46, "roomB": 49, "key": "" }, { "x": 19, "y": 31, "dir": "n", "roomA": 46, "roomB": 50, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 49, "roomB": 51, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 11, "y": 22, "object": "art2", "room": 47, "rot": 45 }] },
 		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 56, "y": 44, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 59, "y": 26, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 59, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 31, "roomB": 43, "key": "" }, { "x": 58, "y": 26, "dir": "e", "roomA": 31, "roomB": 44, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 55, "y": 44, "dir": "e", "roomA": 35, "roomB": 37, "key": "" }, { "x": 61, "y": 44, "dir": "e", "roomA": 37, "roomB": 38, "key": "" }, { "x": 59, "y": 44, "dir": "n", "roomA": 37, "roomB": 46, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 39, "roomB": 40, "key": "" }, { "x": 64, "y": 40, "dir": "s", "roomA": 39, "roomB": 45, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 40, "roomB": 41, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 41, "roomB": 42, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 42, "roomB": 47, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 47, "roomB": 48, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 61, "y": 34, "object": "term", "room": 29, "rot": 90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }] },
-		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] }
+		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
+		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 37, "y": 25, "w": 11, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 48, "y": 24, "w": 6, "h": 6, "color": "#ccffcc", "cave": false }, { "x": 51, "y": 30, "w": 2, "h": 10, "color": "#ccffff", "cave": false }, { "x": 32, "y": 30, "w": 2, "h": 10, "color": "#ff8866", "cave": false }, { "x": 31, "y": 40, "w": 23, "h": 5, "color": "#cccccc", "cave": false }], "doors": [{ "x": 36, "y": 26, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 33, "y": 29, "dir": "s", "roomA": 0, "roomB": 4, "key": "" }, { "x": 47, "y": 26, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 52, "y": 29, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 39, "dir": "s", "roomA": 3, "roomB": 5, "key": "" }, { "x": 33, "y": 39, "dir": "s", "roomA": 4, "roomB": 5, "key": "" }], "objects": [] }
 	};
 	
 	function getLevel(sectorX, sectorY) {
@@ -50419,8 +50569,10 @@
 				var now = Date.now();
 				if (pos.z >= 10000 && vehicle.model.name == "ufo" && (!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
 					var d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
-					//console.log("dist to alien base=" + d);
-					this.movement.noise.play("base", 1 - d);
+					// stop beeping when really close
+					if (d > 0.01) {
+						this.movement.noise.play("base", 1 - d);
+					}
 					this.state["xeno-base-notification"] = now + Math.max(500, 5000 * d | 0);
 				}
 			}

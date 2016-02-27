@@ -23,10 +23,12 @@ const LANDING_ALT = 90000;
 const LANDING_LAST_PERCENT = .25;
 const LANDING_BASE_PERCENT = .1;
 const DOWN = new THREE.Vector3(0, 0, -1);
+const FORWARD = new THREE.Vector3(0, 1, 0);
 const MAX_HOVER_PITCH = Math.PI/10;
 const MAX_Z = 100000;
 const ALIEN_BASE_POS = [ 0xf8, 0xc9 ];
 const WALKING_SPEED = 1500;
+const TELEPORT_TIME = 1500;
 
 const ENTER_BASE = "ENTER_BASE";
 const EXIT_COMPOUND = "EXIT_COMPOUND";
@@ -49,10 +51,14 @@ export class Movement {
 
 		this.inventory = [];
 		this.vehicle = null;
+		this.lastVehicle = null;
 		this.level = null;
 		this.doorsUp = [];
 		this.doorsDown = [];
 		this.liftDirection = 0;
+		this.teleportDir = 0;
+		this.teleportTime = 0;
+		this.baseMove = 0;
 		this.sectorX = 0;
 		this.sectorY = 0;
 		this.power = 0.0;
@@ -79,6 +85,7 @@ export class Movement {
 		this.main.scene.add(this.player);
 
 		this.pitch.add(Movement.makeCrossHair());
+		this.pitch.add(this.makeTeleporter());
 
 		// room collisions
 		this.raycaster = new THREE.Raycaster();
@@ -220,7 +227,6 @@ export class Movement {
 	}
 
 	static makeCrossHair() {
-		// the crosshair
 		let crossHair = new THREE.Object3D();
 		let horiz = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.01), new THREE.MeshBasicMaterial({color: "#ffffff"}));
 		crossHair.add(horiz);
@@ -228,6 +234,15 @@ export class Movement {
 		crossHair.add(vert);
 		crossHair.position.z = -2;
 		return crossHair;
+	}
+
+	makeTeleporter() {
+		this.teleporter = new THREE.Mesh(
+			new THREE.PlaneGeometry(100, 100),
+			new THREE.MeshBasicMaterial({color: "#ffffff", transparent: true, opacity: 0})
+		);
+		this.teleporter.position.z = -2.5;
+		return this.teleporter;
 	}
 
 	checkPickup() {
@@ -270,10 +285,21 @@ export class Movement {
 	}
 
 	nearXenoBase() {
-		//if(this.vehicle && this.vehicle.model.name == "ufo" && dist <= .25) {
-		//
-		//
-		//}
+		// find the world pos of player
+		this.player.getWorldPosition(this.worldPos);
+		this.worldPos.z += 50;
+
+		// cast a ray in this direction
+		this.normalToWorld(this.player, FORWARD, this.worldDir);
+
+		// find the closest intersection
+		this.raycasterOutside.set(this.worldPos, this.worldDir);
+		let intersections = this.raycasterOutside.intersectObject(this.main.game_map.land, true);
+		for(let closest of intersections) {
+			if (closest && closest.object == this.main.game_map.xenoBase) {
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -295,26 +321,39 @@ export class Movement {
 
 	useElevator() {
 		if(this.enterMode == ENTER_BASE) {
-			console.log("Entering alien base.")
-		} else if(this.level && this.levelX == ALIEN_BASE_POS[0] && this.levelY == ALIEN_BASE_POS[1]) {
-			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-			if (room && room.elevator) {
-				console.log("Exiting alien base.")
+			console.log("Entering alien base.");
+			this.sectorX = ALIEN_BASE_POS[0];
+			this.sectorY = ALIEN_BASE_POS[1];
+			let offsetX = this.player.position.x;
+			let offsetY = this.player.position.y;
+			this.level = compounds.getLevel(this.sectorX, this.sectorY);
+			if (this.level) {
+				this.teleportDir = 1;
+				this.teleportTime = Date.now() + TELEPORT_TIME;
+				this.baseMove = 1;
+				this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
 			}
 		} else {
-			if (this.vehicle || this.liftDirection) return;
+			if (this.vehicle || this.liftDirection || this.teleportDir) return;
 
 			let offsetX = this.player.position.x;
 			let offsetY = this.player.position.y;
 			if (this.enterMode == EXIT_COMPOUND) {
-				// Reposition the level, the lift and the player at the elevator platform position.
-				// This is so the player pops up in the middle of the elevator back on the surface.
-				let dx = this.player.position.x - this.level.liftX;
-				let dy = this.player.position.y - this.level.liftY;
-				this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
-				this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
+				if(this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1]) {
+					this.teleportDir = 1;
+					this.teleportTime = Date.now() + TELEPORT_TIME;
+					this.baseMove = -1;
+					console.log("Exiting alien base.");
+				} else {
+					// Reposition the level, the lift and the player at the elevator platform position.
+					// This is so the player pops up in the middle of the elevator back on the surface.
+					let dx = this.player.position.x - this.level.liftX;
+					let dy = this.player.position.y - this.level.liftY;
+					this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
+					this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
 
-				this.liftDirection = 1;
+					this.liftDirection = 1;
+				}
 				this.noise.stop("door");
 				console.log("heading up");
 			} else if (this.enterMode == ENTER_COMPOUND) {
@@ -518,12 +557,54 @@ export class Movement {
 		}
 	}
 
+	updateTeleporter(delta, time) {
+		let p;
+		if(this.teleportDir == 1) {
+			if(time < this.teleportTime) {
+				p = 1 - (this.teleportTime - time)/TELEPORT_TIME;
+				this.teleporter.material.opacity = p;
+				this.teleporter.material.needsUpdate = true;
+				this.noise.setLevel("teleport", p);
+			} else {
+				this.teleportDir = -1;
+				this.teleportTime = time + TELEPORT_TIME;
+				if(this.baseMove == -1) {
+					// moving out of the base
+					this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
+					this.vehicle = this.lastVehicle;
+					this.lastVehicle = null;
+					this.level.destroy();
+					this.level = null;
+				} else if(this.baseMove == 1) {
+					// moving into the base
+					this.lastVehicle = this.vehicle;
+					this.vehicle = null;
+					this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+				}
+			}
+		} else {
+			if(time < this.teleportTime) {
+				p = (this.teleportTime - time)/TELEPORT_TIME;
+				this.teleporter.material.opacity = p;
+				this.teleporter.material.needsUpdate = true;
+				this.noise.setLevel("teleport", p);
+			} else {
+				this.teleportDir = 0;
+				this.teleportTime = 0;
+				this.teleporter.material.opacity = 0;
+				this.teleporter.material.needsUpdate = true;
+				this.noise.stop("teleport");
+				this.baseMove = 0;
+			}
+		}
+	}
+
 	updateVehicle(dx, delta) {
 		if(dx != 0) this.updateOutsideZ();
 
 		var in_air_before = this.isFlying();
 
-		this.direction.set(0, 1, 0);
+		this.direction.copy(FORWARD);
 
 		// while flying, roll affects heading
 		if(this.vehicle.model.vehicle.hovers) {
@@ -853,6 +934,8 @@ export class Movement {
 		} else {
 			if (this.liftDirection != 0) {
 				this.updateLift(delta);
+			} else if(this.teleportDir != 0) {
+				this.updateTeleporter(delta, time);
 			} else {
 				var dx = this.getSpeed() / 20 * delta;
 				if (this.vehicle) {
