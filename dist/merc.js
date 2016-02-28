@@ -148,8 +148,10 @@
 				var skipping = false;
 				(0, _jquery2.default)(document).keyup(function (event) {
 					if (event.keyCode == 27) {
-						skipping = true;
-						_this2.space.abort();
+						if (!skipping) {
+							skipping = true;
+							_this2.space.abort();
+						}
 					} else if (event.keyCode == 70) {
 						_this2.incrFpsLimit();
 					}

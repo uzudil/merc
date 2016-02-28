@@ -52,8 +52,10 @@ class Merc {
 		let skipping = false;
 		$(document).keyup(( event ) => {
 			if(event.keyCode == 27) {
-				skipping = true;
-				this.space.abort();
+				if(!skipping) {
+					skipping = true;
+					this.space.abort();
+				}
 			} else if(event.keyCode == 70) {
 				this.incrFpsLimit();
 			}
