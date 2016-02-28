@@ -28,7 +28,7 @@ const MAX_HOVER_PITCH = Math.PI/10;
 const MAX_Z = 100000;
 const ALIEN_BASE_POS = [ 0xf8, 0xc9 ];
 const WALKING_SPEED = 1500;
-const TELEPORT_TIME = 1500;
+const TELEPORT_TIME = 500;
 
 const ENTER_BASE = "ENTER_BASE";
 const EXIT_COMPOUND = "EXIT_COMPOUND";
@@ -53,6 +53,8 @@ export class Movement {
 		this.vehicle = null;
 		this.lastVehicle = null;
 		this.level = null;
+		this.room = null;
+		this.pickupPoint = new THREE.Vector3(0, 0, 0);
 		this.doorsUp = [];
 		this.doorsDown = [];
 		this.liftDirection = 0;
@@ -196,6 +198,9 @@ export class Movement {
 				case 72: // h
 					$("#help").toggle();
 					break;
+				case 84: // t
+					this.teleport();
+					break;
 			}
 		});
 	}
@@ -247,6 +252,7 @@ export class Movement {
 
 	checkPickup() {
 		this.pickupObject = null;
+		this.room = null;
 		if (!this.level) return;
 
 		// find the world pos of player
@@ -262,19 +268,29 @@ export class Movement {
 		if (closest && closest.object.model) {
 			this.pickupObject = closest.object;
 		}
+
+		if(this.level) {
+			let offsetX = this.player.position.x;
+			let offsetY = this.player.position.y;
+			this.pickupPoint.set(offsetX, offsetY, this.player.position.z);
+			this.room = this.level.getRoomAtPos(this.pickupPoint, true);
+		}
+	}
+
+	teleport() {
+	    if(this.room != null && this.room.teleportToRoom != null) {
+			this.teleportDir = 1;
+			this.teleportTime = Date.now() + TELEPORT_TIME;
+		}
 	}
 
 	pickup() {
 		if(this.pickupObject) {
-			let offsetX = this.player.position.x;
-			let offsetY = this.player.position.y;
-
-			let room = this.level.getRoomAtPos(new THREE.Vector3(offsetX, offsetY, this.player.position.z), true);
-			let handled = room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+			let handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase());
 
 			if(!handled) {
 				this.inventory.push(this.pickupObject.model.name);
-				closest.object.parent.remove(this.pickupObject);
+				this.pickupObject.parent.remove(this.pickupObject);
 				this.main.benson.addMessage(this.pickupObject.model.description);
 			}
 		}
@@ -580,6 +596,8 @@ export class Movement {
 					this.lastVehicle = this.vehicle;
 					this.vehicle = null;
 					this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+				} else if(this.room != null && this.room.teleportToRoom != null) {
+					this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
 				}
 			}
 		} else {
@@ -948,6 +966,8 @@ export class Movement {
 
 				this.checkPickup();
 				$("#pickup").toggle(this.pickupObject != null);
+
+				$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
 			}
 		}
 

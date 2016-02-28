@@ -62,10 +62,15 @@
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
+	box-shadow: none;
 }
 
 .room.cave {
 	border: 3px solid #000;
+}
+
+.room.teleporter {
+	box-shadow: inset 0 0 10px #000000;
 }
 
 .door {

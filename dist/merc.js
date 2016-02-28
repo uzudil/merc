@@ -46893,7 +46893,7 @@
 	var MAX_Z = 100000;
 	var ALIEN_BASE_POS = [0xf8, 0xc9];
 	var WALKING_SPEED = 1500;
-	var TELEPORT_TIME = 1500;
+	var TELEPORT_TIME = 500;
 	
 	var ENTER_BASE = "ENTER_BASE";
 	var EXIT_COMPOUND = "EXIT_COMPOUND";
@@ -46922,6 +46922,8 @@
 			this.vehicle = null;
 			this.lastVehicle = null;
 			this.level = null;
+			this.room = null;
+			this.pickupPoint = new _three2.default.Vector3(0, 0, 0);
 			this.doorsUp = [];
 			this.doorsDown = [];
 			this.liftDirection = 0;
@@ -47089,6 +47091,10 @@
 						// h
 						(0, _jquery2.default)("#help").toggle();
 						break;
+					case 84:
+						// t
+						_this.teleport();
+						break;
 				}
 			});
 		}
@@ -47123,6 +47129,7 @@
 			key: 'checkPickup',
 			value: function checkPickup() {
 				this.pickupObject = null;
+				this.room = null;
 				if (!this.level) return;
 	
 				// find the world pos of player
@@ -47138,20 +47145,31 @@
 				if (closest && closest.object.model) {
 					this.pickupObject = closest.object;
 				}
+	
+				if (this.level) {
+					var offsetX = this.player.position.x;
+					var offsetY = this.player.position.y;
+					this.pickupPoint.set(offsetX, offsetY, this.player.position.z);
+					this.room = this.level.getRoomAtPos(this.pickupPoint, true);
+				}
+			}
+		}, {
+			key: 'teleport',
+			value: function teleport() {
+				if (this.room != null && this.room.teleportToRoom != null) {
+					this.teleportDir = 1;
+					this.teleportTime = Date.now() + TELEPORT_TIME;
+				}
 			}
 		}, {
 			key: 'pickup',
 			value: function pickup() {
 				if (this.pickupObject) {
-					var offsetX = this.player.position.x;
-					var offsetY = this.player.position.y;
-	
-					var room = this.level.getRoomAtPos(new _three2.default.Vector3(offsetX, offsetY, this.player.position.z), true);
-					var handled = room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, room.color.getHexString().toUpperCase());
+					var handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase());
 	
 					if (!handled) {
 						this.inventory.push(this.pickupObject.model.name);
-						closest.object.parent.remove(this.pickupObject);
+						this.pickupObject.parent.remove(this.pickupObject);
 						this.main.benson.addMessage(this.pickupObject.model.description);
 					}
 				}
@@ -47180,9 +47198,9 @@
 	
 				try {
 					for (var _iterator = intersections[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						var _closest = _step.value;
+						var closest = _step.value;
 	
-						if (_closest && _closest.object == this.main.game_map.xenoBase) {
+						if (closest && closest.object == this.main.game_map.xenoBase) {
 							return true;
 						}
 					}
@@ -47522,6 +47540,8 @@
 							this.lastVehicle = this.vehicle;
 							this.vehicle = null;
 							this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+						} else if (this.room != null && this.room.teleportToRoom != null) {
+							this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
 						}
 					}
 				} else {
@@ -47659,10 +47679,10 @@
 	
 				try {
 					for (var _iterator3 = intersections[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var _closest2 = _step3.value;
+						var closest = _step3.value;
 	
-						if (_closest2 && _closest2.object && _closest2.object.model && _closest2.object.model.lifts) {
-							this.player.position.z = _closest2.point.z + DEFAULT_Z;
+						if (closest && closest.object && closest.object.model && closest.object.model.lifts) {
+							this.player.position.z = closest.point.z + DEFAULT_Z;
 							found = true;
 							break;
 						}
@@ -47955,6 +47975,8 @@
 	
 						this.checkPickup();
 						(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
+	
+						(0, _jquery2.default)("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
 					}
 				}
 	
@@ -49067,6 +49089,8 @@
 	var roomCount = 0;
 	
 	var Room = exports.Room = function Room(x, y, w, h, color, cave) {
+		var teleportToRoom = arguments.length <= 6 || arguments[6] === undefined ? null : arguments[6];
+	
 		_classCallCheck(this, Room);
 	
 		this.name = roomCount;
@@ -49078,6 +49102,7 @@
 		this.cave = cave;
 		this.caveMesh = null;
 		this.elevator = roomCount == 0;
+		this.teleportToRoom = teleportToRoom;
 		roomCount++;
 	};
 	
@@ -49089,6 +49114,32 @@
 			this.rooms = data.rooms.map(function (r) {
 				return new Room(r.x, r.y, r.w, r.h, r.color, r.cave);
 			});
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
+	
+			try {
+				for (var _iterator = data.teleporters[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var teleporter = _step.value;
+	
+					this.rooms[teleporter.roomA].teleportToRoom = this.rooms[teleporter.roomB];
+					this.rooms[teleporter.roomB].teleportToRoom = this.rooms[teleporter.roomA];
+				}
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator.return) {
+						_iterator.return();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
+	
 			this.doors = data.doors.map(function (d) {
 				return new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key);
 			});
@@ -49106,48 +49157,18 @@
 			    maxx = 0,
 			    miny = 0,
 			    maxy = 0;
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
-	
-			try {
-				for (var _iterator = this.rooms[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var room = _step.value;
-	
-					if (room.x < minx) minx = room.x;
-					if (room.y < miny) miny = room.y;
-					if (room.x + room.w > maxx) maxx = room.x + room.w;
-					if (room.y + room.h > maxy) maxy = room.y + room.h;
-				}
-			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
-					}
-				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
-					}
-				}
-			}
-	
-			this.w = maxx - minx;
-			this.h = maxy - miny;
-			//console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
-	
 			var _iteratorNormalCompletion2 = true;
 			var _didIteratorError2 = false;
 			var _iteratorError2 = undefined;
 	
 			try {
-				for (var _iterator2 = this.doors[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-					var door = _step2.value;
+				for (var _iterator2 = this.rooms[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+					var room = _step2.value;
 	
-					door.roomA = this.rooms[door.roomAName];
-					door.roomB = this.rooms[door.roomBName];
+					if (room.x < minx) minx = room.x;
+					if (room.y < miny) miny = room.y;
+					if (room.x + room.w > maxx) maxx = room.x + room.w;
+					if (room.y + room.h > maxy) maxy = room.y + room.h;
 				}
 			} catch (err) {
 				_didIteratorError2 = true;
@@ -49160,6 +49181,36 @@
 				} finally {
 					if (_didIteratorError2) {
 						throw _iteratorError2;
+					}
+				}
+			}
+	
+			this.w = maxx - minx;
+			this.h = maxy - miny;
+			//console.log("compound: " + minx + "," + miny + "-" + maxx + "," + maxy + " dim=" + this.w + "," + this.h);
+	
+			var _iteratorNormalCompletion3 = true;
+			var _didIteratorError3 = false;
+			var _iteratorError3 = undefined;
+	
+			try {
+				for (var _iterator3 = this.doors[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+					var door = _step3.value;
+	
+					door.roomA = this.rooms[door.roomAName];
+					door.roomB = this.rooms[door.roomBName];
+				}
+			} catch (err) {
+				_didIteratorError3 = true;
+				_iteratorError3 = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion3 && _iterator3.return) {
+						_iterator3.return();
+					}
+				} finally {
+					if (_didIteratorError3) {
+						throw _iteratorError3;
 					}
 				}
 			}
@@ -49176,13 +49227,13 @@
 					point.y -= this.offsetY;
 				}
 				if (debug) console.log("point=", point);
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
 	
 				try {
-					for (var _iterator3 = this.rooms[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var room = _step3.value;
+					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var room = _step4.value;
 	
 						var min = new _three2.default.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE / 2);
 						var max = new _three2.default.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE / 2);
@@ -49194,21 +49245,27 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
+					_didIteratorError4 = true;
+					_iteratorError4 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
+						if (!_iteratorNormalCompletion4 && _iterator4.return) {
+							_iterator4.return();
 						}
 					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
+						if (_didIteratorError4) {
+							throw _iteratorError4;
 						}
 					}
 				}
 	
 				return null;
+			}
+		}, {
+			key: 'moveToRoom',
+			value: function moveToRoom(room, position) {
+				position.x = (room.x + room.w / 2) * ROOM_SIZE + this.offsetX;
+				position.y = (room.y + room.h / 2) * ROOM_SIZE + this.offsetY;
 			}
 		}, {
 			key: 'create',
@@ -49232,13 +49289,13 @@
 				t2 = Date.now();console.log("1. " + (t2 - t));t = t2;
 	
 				// cut out the rooms
-				var _iteratorNormalCompletion4 = true;
-				var _didIteratorError4 = false;
-				var _iteratorError4 = undefined;
+				var _iteratorNormalCompletion5 = true;
+				var _didIteratorError5 = false;
+				var _iteratorError5 = undefined;
 	
 				try {
-					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-						var room = _step4.value;
+					for (var _iterator5 = this.rooms[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+						var room = _step5.value;
 	
 						var inner_geometry = new _three2.default.CubeGeometry(room.w * ROOM_SIZE - WALL_THICKNESS, room.h * ROOM_SIZE - WALL_THICKNESS, ROOM_SIZE - WALL_THICKNESS);
 						var inner_mesh = new _three2.default.Mesh(inner_geometry);
@@ -49252,16 +49309,16 @@
 						level_bsp = level_bsp.subtract(inner_bsp);
 					}
 				} catch (err) {
-					_didIteratorError4 = true;
-					_iteratorError4 = err;
+					_didIteratorError5 = true;
+					_iteratorError5 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion4 && _iterator4.return) {
-							_iterator4.return();
+						if (!_iteratorNormalCompletion5 && _iterator5.return) {
+							_iterator5.return();
 						}
 					} finally {
-						if (_didIteratorError4) {
-							throw _iteratorError4;
+						if (_didIteratorError5) {
+							throw _iteratorError5;
 						}
 					}
 				}
@@ -49269,13 +49326,13 @@
 				t2 = Date.now();console.log("2. " + (t2 - t));t = t2;
 	
 				// door cutouts
-				var _iteratorNormalCompletion5 = true;
-				var _didIteratorError5 = false;
-				var _iteratorError5 = undefined;
+				var _iteratorNormalCompletion6 = true;
+				var _didIteratorError6 = false;
+				var _iteratorError6 = undefined;
 	
 				try {
-					for (var _iterator5 = this.doors[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-						var door = _step5.value;
+					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+						var door = _step6.value;
 	
 						//console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
 	
@@ -49318,16 +49375,16 @@
 						level_bsp = level_bsp.subtract(shell_bsp);
 					}
 				} catch (err) {
-					_didIteratorError5 = true;
-					_iteratorError5 = err;
+					_didIteratorError6 = true;
+					_iteratorError6 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion5 && _iterator5.return) {
-							_iterator5.return();
+						if (!_iteratorNormalCompletion6 && _iterator6.return) {
+							_iterator6.return();
 						}
 					} finally {
-						if (_didIteratorError5) {
-							throw _iteratorError5;
+						if (_didIteratorError6) {
+							throw _iteratorError6;
 						}
 					}
 				}
@@ -49353,13 +49410,13 @@
 				this.caveMeshes = [];
 	
 				// actual doors
-				var _iteratorNormalCompletion6 = true;
-				var _didIteratorError6 = false;
-				var _iteratorError6 = undefined;
+				var _iteratorNormalCompletion7 = true;
+				var _didIteratorError7 = false;
+				var _iteratorError7 = undefined;
 	
 				try {
-					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-						var door = _step6.value;
+					for (var _iterator7 = this.doors[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+						var door = _step7.value;
 	
 						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx - this.w * ROOM_SIZE * .5 - WALL_THICKNESS;
 						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy - this.h * ROOM_SIZE * .5 - WALL_THICKNESS;
@@ -49377,16 +49434,16 @@
 						this.targetMesh.add(door_mesh);
 					}
 				} catch (err) {
-					_didIteratorError6 = true;
-					_iteratorError6 = err;
+					_didIteratorError7 = true;
+					_iteratorError7 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion6 && _iterator6.return) {
-							_iterator6.return();
+						if (!_iteratorNormalCompletion7 && _iterator7.return) {
+							_iterator7.return();
 						}
 					} finally {
-						if (_didIteratorError6) {
-							throw _iteratorError6;
+						if (_didIteratorError7) {
+							throw _iteratorError7;
 						}
 					}
 				}
@@ -49394,13 +49451,13 @@
 				t2 = Date.now();console.log("5. " + (t2 - t));t = t2;
 	
 				// objects
-				var _iteratorNormalCompletion7 = true;
-				var _didIteratorError7 = false;
-				var _iteratorError7 = undefined;
+				var _iteratorNormalCompletion8 = true;
+				var _didIteratorError8 = false;
+				var _iteratorError8 = undefined;
 	
 				try {
-					for (var _iterator7 = this.objects[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var object = _step7.value;
+					for (var _iterator8 = this.objects[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+						var object = _step8.value;
 	
 						var m = models.models[object.object];
 						var mesh = m.createObject();
@@ -49412,16 +49469,16 @@
 						this.targetMesh.add(mesh);
 					}
 				} catch (err) {
-					_didIteratorError7 = true;
-					_iteratorError7 = err;
+					_didIteratorError8 = true;
+					_iteratorError8 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion7 && _iterator7.return) {
-							_iterator7.return();
+						if (!_iteratorNormalCompletion8 && _iterator8.return) {
+							_iterator8.return();
 						}
 					} finally {
-						if (_didIteratorError7) {
-							throw _iteratorError7;
+						if (_didIteratorError8) {
+							throw _iteratorError8;
 						}
 					}
 				}
@@ -49439,13 +49496,13 @@
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
 	
 				// color the rooms
-				var _iteratorNormalCompletion8 = true;
-				var _didIteratorError8 = false;
-				var _iteratorError8 = undefined;
+				var _iteratorNormalCompletion9 = true;
+				var _didIteratorError9 = false;
+				var _iteratorError9 = undefined;
 	
 				try {
-					for (var _iterator8 = this.geo.faces[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-						var face = _step8.value;
+					for (var _iterator9 = this.geo.faces[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+						var face = _step9.value;
 	
 						var p = this.geo.vertices[face.a].clone();
 						p.x += this.w * ROOM_SIZE * .5;
@@ -49457,16 +49514,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError8 = true;
-					_iteratorError8 = err;
+					_didIteratorError9 = true;
+					_iteratorError9 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion8 && _iterator8.return) {
-							_iterator8.return();
+						if (!_iteratorNormalCompletion9 && _iterator9.return) {
+							_iterator9.return();
 						}
 					} finally {
-						if (_didIteratorError8) {
-							throw _iteratorError8;
+						if (_didIteratorError9) {
+							throw _iteratorError9;
 						}
 					}
 				}
@@ -49486,27 +49543,27 @@
 				var bsp = new csg.ThreeBSP(room.caveMesh);
 				bsp = bsp.subtract(shell_bsp);
 				room.caveMesh = bsp.toMesh(this.mat);
-				var _iteratorNormalCompletion9 = true;
-				var _didIteratorError9 = false;
-				var _iteratorError9 = undefined;
+				var _iteratorNormalCompletion10 = true;
+				var _didIteratorError10 = false;
+				var _iteratorError10 = undefined;
 	
 				try {
-					for (var _iterator9 = room.caveMesh.geometry.faces[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-						var face = _step9.value;
+					for (var _iterator10 = room.caveMesh.geometry.faces[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+						var face = _step10.value;
 	
 						face.color = room.color.clone();
 					}
 				} catch (err) {
-					_didIteratorError9 = true;
-					_iteratorError9 = err;
+					_didIteratorError10 = true;
+					_iteratorError10 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion9 && _iterator9.return) {
-							_iterator9.return();
+						if (!_iteratorNormalCompletion10 && _iterator10.return) {
+							_iterator10.return();
 						}
 					} finally {
-						if (_didIteratorError9) {
-							throw _iteratorError9;
+						if (_didIteratorError10) {
+							throw _iteratorError10;
 						}
 					}
 				}
@@ -49535,29 +49592,29 @@
 				var h = room.h * ROOM_SIZE - WALL_THICKNESS - CAVE_RAND_FACTOR * 2;
 				var d = ROOM_SIZE - WALL_THICKNESS;
 				var geo = new _three2.default.BoxGeometry(w, h, d, room.w * WALL_SEGMENTS, room.h * WALL_SEGMENTS, WALL_SEGMENTS);
-				var _iteratorNormalCompletion10 = true;
-				var _didIteratorError10 = false;
-				var _iteratorError10 = undefined;
+				var _iteratorNormalCompletion11 = true;
+				var _didIteratorError11 = false;
+				var _iteratorError11 = undefined;
 	
 				try {
-					for (var _iterator10 = geo.vertices[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-						var v = _step10.value;
+					for (var _iterator11 = geo.vertices[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+						var v = _step11.value;
 	
 						v.x += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
 						v.y += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
 						v.z += Math.random() * CAVE_RAND_FACTOR * 2 - CAVE_RAND_FACTOR;
 					}
 				} catch (err) {
-					_didIteratorError10 = true;
-					_iteratorError10 = err;
+					_didIteratorError11 = true;
+					_iteratorError11 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion10 && _iterator10.return) {
-							_iterator10.return();
+						if (!_iteratorNormalCompletion11 && _iterator11.return) {
+							_iterator11.return();
 						}
 					} finally {
-						if (_didIteratorError10) {
-							throw _iteratorError10;
+						if (_didIteratorError11) {
+							throw _iteratorError11;
 						}
 					}
 				}
@@ -49575,47 +49632,16 @@
 				room.caveMesh = mesh;
 	
 				// cutout doors
-				var _iteratorNormalCompletion11 = true;
-				var _didIteratorError11 = false;
-				var _iteratorError11 = undefined;
-	
-				try {
-					for (var _iterator11 = this.doors[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-						var door = _step11.value;
-	
-						if (door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
-						if (door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
-					}
-				} catch (err) {
-					_didIteratorError11 = true;
-					_iteratorError11 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion11 && _iterator11.return) {
-							_iterator11.return();
-						}
-					} finally {
-						if (_didIteratorError11) {
-							throw _iteratorError11;
-						}
-					}
-				}
-	
-				var dx = (room.x + room.w / 2) * ROOM_SIZE + WALL_THICKNESS;
-				var dy = (room.y + room.h / 2) * ROOM_SIZE + WALL_THICKNESS;
-				var dz = 0;
-				room.caveMesh.position.set(dx, dy, dz);
-				room.caveMesh.updateMatrix();
-	
 				var _iteratorNormalCompletion12 = true;
 				var _didIteratorError12 = false;
 				var _iteratorError12 = undefined;
 	
 				try {
-					for (var _iterator12 = room.caveMesh.geometry.faces[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-						var face = _step12.value;
+					for (var _iterator12 = this.doors[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
+						var door = _step12.value;
 	
-						face.color = room.color.clone();
+						if (door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
+						if (door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
 					}
 				} catch (err) {
 					_didIteratorError12 = true;
@@ -49628,6 +49654,37 @@
 					} finally {
 						if (_didIteratorError12) {
 							throw _iteratorError12;
+						}
+					}
+				}
+	
+				var dx = (room.x + room.w / 2) * ROOM_SIZE + WALL_THICKNESS;
+				var dy = (room.y + room.h / 2) * ROOM_SIZE + WALL_THICKNESS;
+				var dz = 0;
+				room.caveMesh.position.set(dx, dy, dz);
+				room.caveMesh.updateMatrix();
+	
+				var _iteratorNormalCompletion13 = true;
+				var _didIteratorError13 = false;
+				var _iteratorError13 = undefined;
+	
+				try {
+					for (var _iterator13 = room.caveMesh.geometry.faces[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
+						var face = _step13.value;
+	
+						face.color = room.color.clone();
+					}
+				} catch (err) {
+					_didIteratorError13 = true;
+					_iteratorError13 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion13 && _iterator13.return) {
+							_iterator13.return();
+						}
+					} finally {
+						if (_didIteratorError13) {
+							throw _iteratorError13;
 						}
 					}
 				}
@@ -49685,27 +49742,27 @@
 				this.geo.dispose();
 				this.mat.dispose();
 	
-				var _iteratorNormalCompletion13 = true;
-				var _didIteratorError13 = false;
-				var _iteratorError13 = undefined;
+				var _iteratorNormalCompletion14 = true;
+				var _didIteratorError14 = false;
+				var _iteratorError14 = undefined;
 	
 				try {
-					for (var _iterator13 = this.caveMeshes[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-						var m = _step13.value;
+					for (var _iterator14 = this.caveMeshes[Symbol.iterator](), _step14; !(_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done); _iteratorNormalCompletion14 = true) {
+						var m = _step14.value;
 	
 						m.geometry.dispose();
 					}
 				} catch (err) {
-					_didIteratorError13 = true;
-					_iteratorError13 = err;
+					_didIteratorError14 = true;
+					_iteratorError14 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion13 && _iterator13.return) {
-							_iterator13.return();
+						if (!_iteratorNormalCompletion14 && _iterator14.return) {
+							_iterator14.return();
 						}
 					} finally {
-						if (_didIteratorError13) {
-							throw _iteratorError13;
+						if (_didIteratorError14) {
+							throw _iteratorError14;
 						}
 					}
 				}
@@ -50305,11 +50362,20 @@
 	
 	// edit these via: http://localhost:8000/compound_editor/rooms.html
 	var LEVELS = exports.LEVELS = {
+		// info room
 		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] },
-		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 28, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 31, "y": 15, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": true }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 26, "y": 32, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": true }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": true }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": true }, { "x": 41, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 40, "y": 33, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": true }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 22, "y": 27, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": true }, { "x": 38, "y": 36, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 19, "y": 28, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 44, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 27, "y": 16, "dir": "e", "roomA": 4, "roomB": 6, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 9, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 30, "y": 16, "dir": "e", "roomA": 6, "roomB": 7, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 9, "roomB": 10, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 10, "roomB": 11, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 25, "y": 32, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 11, "roomB": 35, "key": "" }, { "x": 23, "y": 27, "dir": "w", "roomA": 11, "roomB": 36, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 11, "roomB": 46, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 12, "roomB": 18, "key": "" }, { "x": 28, "y": 32, "dir": "e", "roomA": 13, "roomB": 14, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 14, "roomB": 15, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 14, "roomB": 16, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 14, "roomB": 31, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 15, "roomB": 37, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 15, "roomB": 39, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 16, "roomB": 17, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 16, "roomB": 39, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 17, "roomB": 20, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 17, "roomB": 22, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 19, "roomB": 27, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 19, "roomB": 29, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 19, "roomB": 30, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 21, "roomB": 24, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 23, "roomB": 26, "key": "" }, { "x": 38, "y": 35, "dir": "s", "roomA": 23, "roomB": 38, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 23, "roomB": 43, "key": "" }, { "x": 41, "y": 29, "dir": "s", "roomA": 24, "roomB": 25, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 24, "roomB": 28, "key": "" }, { "x": 41, "y": 33, "dir": "w", "roomA": 25, "roomB": 26, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 27, "roomB": 28, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 29, "roomB": 40, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 30, "roomB": 40, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 31, "roomB": 32, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 32, "roomB": 33, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 32, "roomB": 34, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 33, "roomB": 37, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 33, "roomB": 48, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 34, "roomB": 35, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 35, "roomB": 51, "key": "" }, { "x": 38, "y": 37, "dir": "n", "roomA": 37, "roomB": 38, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 37, "roomB": 41, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 41, "roomB": 42, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 44, "roomB": 47, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 45, "roomB": 46, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 45, "roomB": 47, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 46, "roomB": 49, "key": "" }, { "x": 19, "y": 31, "dir": "n", "roomA": 46, "roomB": 50, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 49, "roomB": 51, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 11, "y": 22, "object": "art2", "room": 47, "rot": 45 }] },
-		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 56, "y": 44, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 59, "y": 26, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 59, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 31, "roomB": 43, "key": "" }, { "x": 58, "y": 26, "dir": "e", "roomA": 31, "roomB": 44, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 55, "y": 44, "dir": "e", "roomA": 35, "roomB": 37, "key": "" }, { "x": 61, "y": 44, "dir": "e", "roomA": 37, "roomB": 38, "key": "" }, { "x": 59, "y": 44, "dir": "n", "roomA": 37, "roomB": 46, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 39, "roomB": 40, "key": "" }, { "x": 64, "y": 40, "dir": "s", "roomA": 39, "roomB": 45, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 40, "roomB": 41, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 41, "roomB": 42, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 42, "roomB": 47, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 47, "roomB": 48, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 61, "y": 34, "object": "term", "room": 29, "rot": 90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }] },
+	
+		// xeno ruins
+		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 28, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 31, "y": 15, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": true }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 26, "y": 32, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": true }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": true }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": true }, { "x": 41, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 40, "y": 33, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": true }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 22, "y": 27, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": true }, { "x": 38, "y": 36, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 19, "y": 28, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 30, "y": 42, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 14, "y": 35, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 44, "y": 36, "w": 3, "h": 3, "color": "#ccffff", "cave": false }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 44, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 27, "y": 16, "dir": "e", "roomA": 4, "roomB": 6, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 9, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 30, "y": 16, "dir": "e", "roomA": 6, "roomB": 7, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 9, "roomB": 10, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 10, "roomB": 11, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 25, "y": 32, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 11, "roomB": 35, "key": "" }, { "x": 23, "y": 27, "dir": "w", "roomA": 11, "roomB": 36, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 11, "roomB": 46, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 12, "roomB": 18, "key": "" }, { "x": 28, "y": 32, "dir": "e", "roomA": 13, "roomB": 14, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 14, "roomB": 15, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 14, "roomB": 16, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 14, "roomB": 31, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 15, "roomB": 37, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 15, "roomB": 39, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 16, "roomB": 17, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 16, "roomB": 39, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 17, "roomB": 20, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 17, "roomB": 22, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 19, "roomB": 27, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 19, "roomB": 29, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 19, "roomB": 30, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 21, "roomB": 24, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 23, "roomB": 26, "key": "" }, { "x": 38, "y": 35, "dir": "s", "roomA": 23, "roomB": 38, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 23, "roomB": 43, "key": "" }, { "x": 41, "y": 29, "dir": "s", "roomA": 24, "roomB": 25, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 24, "roomB": 28, "key": "" }, { "x": 41, "y": 33, "dir": "w", "roomA": 25, "roomB": 26, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 27, "roomB": 28, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 29, "roomB": 40, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 30, "roomB": 40, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 31, "roomB": 32, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 32, "roomB": 33, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 32, "roomB": 34, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 33, "roomB": 37, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 33, "roomB": 48, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 34, "roomB": 35, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 35, "roomB": 51, "key": "" }, { "x": 38, "y": 37, "dir": "n", "roomA": 37, "roomB": 38, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 37, "roomB": 41, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 41, "roomB": 42, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 43, "y": 37, "dir": "e", "roomA": 42, "roomB": 54, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 44, "roomB": 47, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 45, "roomB": 46, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 45, "roomB": 47, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 46, "roomB": 49, "key": "" }, { "x": 19, "y": 31, "dir": "n", "roomA": 46, "roomB": 50, "key": "" }, { "x": 31, "y": 41, "dir": "s", "roomA": 48, "roomB": 52, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 49, "roomB": 51, "key": "" }, { "x": 17, "y": 35, "dir": "w", "roomA": 51, "roomB": 53, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 11, "y": 22, "object": "art2", "room": 47, "rot": 45 }], "teleporters": [{ "roomA": 52, "roomB": 29 }, { "roomA": 53, "roomB": 54 }] },
+	
+		// defense council
+		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 56, "y": 44, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 59, "y": 26, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 59, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }, { "x": 66, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 69, "y": 37, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 31, "roomB": 43, "key": "" }, { "x": 58, "y": 26, "dir": "e", "roomA": 31, "roomB": 44, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 55, "y": 44, "dir": "e", "roomA": 35, "roomB": 37, "key": "" }, { "x": 61, "y": 44, "dir": "e", "roomA": 37, "roomB": 38, "key": "" }, { "x": 59, "y": 44, "dir": "n", "roomA": 37, "roomB": 46, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 39, "roomB": 40, "key": "" }, { "x": 64, "y": 40, "dir": "s", "roomA": 39, "roomB": 45, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 40, "roomB": 41, "key": "" }, { "x": 65, "y": 38, "dir": "e", "roomA": 40, "roomB": 49, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 41, "roomB": 42, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 42, "roomB": 47, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 47, "roomB": 48, "key": "" }, { "x": 68, "y": 38, "dir": "e", "roomA": 49, "roomB": 50, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 61, "y": 34, "object": "term", "room": 29, "rot": 90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }], "teleporters": [{ "roomA": 7, "roomB": 8 }, { "roomA": 50, "roomB": 6 }] },
+	
+		// xeno lab
 		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
-		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 37, "y": 25, "w": 11, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 48, "y": 24, "w": 6, "h": 6, "color": "#ccffcc", "cave": false }, { "x": 51, "y": 30, "w": 2, "h": 10, "color": "#ccffff", "cave": false }, { "x": 32, "y": 30, "w": 2, "h": 10, "color": "#ff8866", "cave": false }, { "x": 31, "y": 40, "w": 23, "h": 5, "color": "#cccccc", "cave": false }], "doors": [{ "x": 36, "y": 26, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 33, "y": 29, "dir": "s", "roomA": 0, "roomB": 4, "key": "" }, { "x": 47, "y": 26, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 52, "y": 29, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 39, "dir": "s", "roomA": 3, "roomB": 5, "key": "" }, { "x": 33, "y": 39, "dir": "s", "roomA": 4, "roomB": 5, "key": "" }], "objects": [] }
+	
+		// xeno base
+		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 28, "y": 26, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 37, "y": 26, "w": 4, "h": 2, "color": "#cccccc", "cave": false }, { "x": 41, "y": 25, "w": 4, "h": 4, "color": "#ff8866", "cave": false }, { "x": 77, "y": 26, "w": 3, "h": 3, "color": "#ff8866", "cave": false }, { "x": 73, "y": 24, "w": 4, "h": 7, "color": "#ffccff", "cave": false }, { "x": 70, "y": 25, "w": 3, "h": 2, "color": "#ccffff", "cave": false }, { "x": 70, "y": 28, "w": 3, "h": 2, "color": "#ffcc88", "cave": false }, { "x": 74, "y": 22, "w": 2, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 69, "y": 51, "w": 2, "h": 2, "color": "#ccffcc", "cave": false }, { "x": 68, "y": 46, "w": 4, "h": 5, "color": "#ccccff", "cave": false }, { "x": 65, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 72, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 69, "y": 35, "w": 1, "h": 11, "color": "#cccccc", "cave": false }, { "x": 66, "y": 36, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 70, "y": 36, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 66, "y": 40, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 70, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 68, "y": 32, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 33, "y": 30, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 32, "y": 20, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 45, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 52, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 54, "y": 25, "w": 8, "h": 4, "color": "#ff8866", "cave": false }], "doors": [{ "x": 31, "y": 27, "dir": "w", "roomA": 0, "roomB": 1, "key": "" }, { "x": 36, "y": 27, "dir": "e", "roomA": 0, "roomB": 2, "key": "" }, { "x": 34, "y": 29, "dir": "s", "roomA": 0, "roomB": 19, "key": "" }, { "x": 34, "y": 24, "dir": "n", "roomA": 0, "roomB": 20, "key": "" }, { "x": 40, "y": 27, "dir": "e", "roomA": 2, "roomB": 3, "key": "" }, { "x": 44, "y": 27, "dir": "e", "roomA": 3, "roomB": 21, "key": "" }, { "x": 77, "y": 27, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 73, "y": 26, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 73, "y": 29, "dir": "w", "roomA": 5, "roomB": 7, "key": "" }, { "x": 75, "y": 24, "dir": "n", "roomA": 5, "roomB": 8, "key": "" }, { "x": 70, "y": 51, "dir": "n", "roomA": 9, "roomB": 10, "key": "" }, { "x": 68, "y": 48, "dir": "w", "roomA": 10, "roomB": 11, "key": "" }, { "x": 71, "y": 48, "dir": "e", "roomA": 10, "roomB": 12, "key": "" }, { "x": 69, "y": 46, "dir": "n", "roomA": 10, "roomB": 13, "key": "" }, { "x": 69, "y": 37, "dir": "w", "roomA": 13, "roomB": 14, "key": "" }, { "x": 69, "y": 37, "dir": "e", "roomA": 13, "roomB": 15, "key": "" }, { "x": 69, "y": 41, "dir": "w", "roomA": 13, "roomB": 16, "key": "" }, { "x": 69, "y": 41, "dir": "e", "roomA": 13, "roomB": 17, "key": "" }, { "x": 69, "y": 35, "dir": "n", "roomA": 13, "roomB": 18, "key": "" }, { "x": 53, "y": 27, "dir": "e", "roomA": 22, "roomB": 23, "key": "" }], "objects": [], "teleporters": [{ "roomA": 4, "roomB": 1 }, { "roomA": 8, "roomB": 9 }, { "roomA": 19, "roomB": 18 }, { "roomA": 21, "roomB": 22 }] }
 	};
 	
 	function getLevel(sectorX, sectorY) {

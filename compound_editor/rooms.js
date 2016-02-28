@@ -24,9 +24,11 @@ function Editor() {
 		this.y = 0;
 		this.sx = -1;
 		this.sy = -1;
+		this.teleport = -1;
 		this.rooms = [];
 		this.doors = [];
 		this.objects = [];
+		this.teleporters = [];
 		this.cursor = $("#cursor");
 		this.size = this.cursor.width();
 		this.viewport = $("#visual");
@@ -56,6 +58,7 @@ function Editor() {
 				case 82: this.startRoom(); break;
 				case 27: this.deleteRoom(); break;
 				case 13: this.createRoom(); break;
+				case 84: this.createTeleporter(); break;
 				default: handled = false;
 			}
 			if(this.x < 0) this.x = 0;
@@ -76,6 +79,7 @@ function Editor() {
 			this.rooms = d.rooms || [];
 			this.doors = d.doors || [];
 			this.objects = d.objects || [];
+			this.teleporters = d.teleporters || [];
 			this.roomsChanged = true;
 			this.render();
 			return false;
@@ -159,6 +163,13 @@ function Editor() {
 			var index = this.getRoomIndex();
 			if (index > -1) {
 				var a = [];
+				for(var i = 0; i < this.teleporters.length; i++) {
+					if(this.teleporters[i].roomA != index && this.teleporters[i].roomB != index) a.push(this.teleporters[i]);
+					if(this.teleporters[i].roomA > index) this.teleporters[i].roomA--;
+					if(this.teleporters[i].roomB > index) this.teleporters[i].roomB--;
+				}
+				this.teleporters = a;
+				a = [];
 				for (var i = 0; i < this.objects.length; i++) {
 					if (this.objects[i].room != index) a.push(this.objects[i]);
 				}
@@ -172,6 +183,17 @@ function Editor() {
 	Editor.prototype.startRoom = function() {
 		this.sx = this.x;
 		this.sy = this.y;
+	};
+
+	Editor.prototype.createTeleporter = function() {
+		if(this.teleport == -1) {
+			this.teleport = this.getRoomIndex();
+			this.teleporters.push({ roomA: this.teleport, roomB: null });
+		} else {
+			this.teleporters[this.teleporters.length - 1].roomB = this.getRoomIndex();
+			this.teleport = -1;
+		}
+		this.roomsChanged = true;
 	};
 
 	Editor.prototype.createRoom = function() {
@@ -198,7 +220,14 @@ function Editor() {
 			$(".room", this.viewport).remove();
 			for (var i = 0; i < this.rooms.length; i++) {
 				var room = this.rooms[i];
-				this.viewport.append("<div class='room" + (room.cave ? ' cave' : '') + "'></div>");
+				var teleporter = false;
+				for(var t = 0; t < this.teleporters.length; t++) {
+					if(this.teleporters[t].roomA == i || this.teleporters[t].roomB == i) {
+						teleporter = true;
+						break;
+					}
+				}
+				this.viewport.append("<div class='room" + (room.cave ? ' cave' : '') + (teleporter ? ' teleporter' : '') + "'></div>");
 				$(".room", this.viewport).last().css({
 					left: (room.x * this.size) + "px",
 					top: (room.y * this.size) + "px",
@@ -230,7 +259,7 @@ function Editor() {
 				});
 			}
 
-			$("#editor").val(JSON.stringify({rooms: this.rooms, doors: this.doors, objects: this.objects }));
+			$("#editor").val(JSON.stringify({rooms: this.rooms, doors: this.doors, objects: this.objects, teleporters: this.teleporters }));
 		}
 		if(this.sx > -1) {
 			if($(".room.active").length == 0) {

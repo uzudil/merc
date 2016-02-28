@@ -57,7 +57,7 @@ export class Door {
 
 var roomCount = 0;
 export class Room {
-	constructor(x, y, w, h, color, cave) {
+	constructor(x, y, w, h, color, cave, teleportToRoom=null) {
 		this.name = roomCount;
 		this.x = x;
 		this.y = y;
@@ -67,6 +67,7 @@ export class Room {
 		this.cave = cave;
 		this.caveMesh = null;
 		this.elevator = roomCount == 0;
+		this.teleportToRoom = teleportToRoom;
 		roomCount++;
 	}
 }
@@ -76,6 +77,10 @@ export class Level {
 	constructor(data) {
 		roomCount = 0;
 		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, r.cave));
+		for(let teleporter of data.teleporters) {
+			this.rooms[teleporter.roomA].teleportToRoom = this.rooms[teleporter.roomB];
+			this.rooms[teleporter.roomB].teleportToRoom = this.rooms[teleporter.roomA];
+		}
 		this.doors = data.doors.map((d)=>new Door(d.x, d.y, d.dir, d.roomA, d.roomB, "#cc8800", d.key));
 		this.objects = data.objects;
 
@@ -121,6 +126,11 @@ export class Level {
 			}
 		}
 		return null;
+	}
+
+	moveToRoom(room, position) {
+		position.x = (room.x + room.w/2) * ROOM_SIZE + this.offsetX;
+		position.y = (room.y + room.h/2) * ROOM_SIZE + this.offsetY;
 	}
 
 	create(scene, x, y, liftX, liftY, models, progressUpdate=null) {
