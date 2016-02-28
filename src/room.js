@@ -77,7 +77,7 @@ export class Level {
 	constructor(data) {
 		roomCount = 0;
 		this.rooms = data.rooms.map((r)=>new Room(r.x, r.y, r.w, r.h, r.color, r.cave));
-		for(let teleporter of data.teleporters) {
+		for(let teleporter of data.teleporters || []) {
 			this.rooms[teleporter.roomA].teleportToRoom = this.rooms[teleporter.roomB];
 			this.rooms[teleporter.roomB].teleportToRoom = this.rooms[teleporter.roomA];
 		}

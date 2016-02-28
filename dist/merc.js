@@ -208,16 +208,16 @@
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
 				// hack: start in a room
-				//this.movement.loadGame({
-				//	sectorX: 0x79, sectorY: 0x66,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z, // movement.ROOM_DEPTH,
-				//	vehicle: null,
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2"],
-				//	state: {
-				//		"lightcar-keys": true,
-				//		"allitus-ttl": 10
-				//	}
-				//});
+				this.movement.loadGame({
+					sectorX: 0x79, sectorY: 0x66,
+					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z, // movement.ROOM_DEPTH,
+					vehicle: null,
+					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2"],
+					state: {
+						"lightcar-keys": true,
+						"allitus-ttl": 10
+					}
+				});
 			}
 		}, {
 			key: 'setupUI',
@@ -49119,7 +49119,7 @@
 			var _iteratorError = undefined;
 	
 			try {
-				for (var _iterator = data.teleporters[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				for (var _iterator = (data.teleporters || [])[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 					var teleporter = _step.value;
 	
 					this.rooms[teleporter.roomA].teleportToRoom = this.rooms[teleporter.roomB];
