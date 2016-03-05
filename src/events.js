@@ -2,43 +2,78 @@ import * as util from 'util'
 
 const X_FILES = [
 	[
-		["File X-100: Xeno info"],
-		["The construct Allitus"],
-		["is set to destroy Targ."],
-		["It was created by an"],
-		["alien race in order to"],
-		["ensure humanity doesn't"],
-		["evolve to discover the"],
-		["Xeno central base."]
+		"File X-100: Xeno info",
+		"The construct Allitus",
+		"is set to destroy Targ.",
+		"It was created by an",
+		"alien race in order to",
+		"ensure humanity doesn't",
+		"evolve to discover the",
+		"Xeno central base."
 	],
 	[
-		["File X-110: Xeno info"],
-		["The alien artifact"],
-		["in this research lab, has"],
-		["an unknown purpose. It is"],
-		["thought to be related to"],
-		["the object at 79-66."]
+		"File X-110: Xeno info",
+		"The alien artifact",
+		"in this research lab, has",
+		"an unknown purpose. It is",
+		"thought to be related to",
+		"the object at 79-66."
 	],
 	[
-		["File X-120: Xeno info"],
-		["The location of the Xeno"],
-		["central base is debated."],
-		["It may be shielded from our"],
-		["scanning equipment somehow."]
+		"File X-120: Xeno info",
+		"The location of the Xeno",
+		"central base is debated.",
+		"It may be shielded from our",
+		"scanning equipment somehow."
 	],
 	[
-		["File X-130: Xeno info"],
-		["Allitus cannot be"],
-		["disarmed at this location."],
-		["However, we think the"],
-		["Xeno central base contains"],
-		["a shutoff mechanism."]
+		"File X-130: Xeno info",
+		"Allitus cannot be",
+		"disarmed at this location.",
+		"However, we think the",
+		"Xeno central base contains",
+		"a shutoff mechanism."
+	]
+];
+
+const XENO_FILES = [
+	[
+		"30-72: main drive failure",
+		"A3 craft ejected and",
+		"assumed lost. Shields",
+		"and Allitus deployed.",
+		"We have not been detected",
+		"so far."
+	],
+	[
+		"Targ natives have been",
+		"observed evolving to",
+		"within grasp of hyperlight",
+		"technology. To avoid their",
+		"expansion further,",
+		"Allitus has been deployed."
+	],
+	[
+		"It pains us to end their",
+		"civilization on this ",
+		"planet. But it is needed",
+		"in order to protect",
+		"ourselves from detection."
+	],
+	[
+		"Allitus override controls",
+		"are located on this base.",
+		"The terminal energy",
+		"released by the device",
+		"should propel us into",
+		"orbit again."
 	]
 ];
 
 export class Events {
 	constructor(movement) {
 		this.xFileIndex = 0;
+		this.xenoFileIndex = 0;
 		this.movement = movement;
 		this.state = {
 			"allitus-ttl": 10
@@ -193,6 +228,14 @@ export class Events {
 			"36,c9,FF8866": () => {
 				this.movement.main.benson.addMessage("Feels cool to the touch.");
 				return true;
+			},
+			"f8,c9,CCFFFF": () => {
+				this.xenoTerm();
+				return true;
+			},
+			"f8,c9,FF8866": () => {
+				this.xenoTerm();
+				return true;
 			}
 		}
 	}
@@ -206,6 +249,19 @@ export class Events {
 			if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 		} else {
 			this.okReport();
+		}
+		return true;
+	}
+
+	xenoTerm() {
+		if(this.movement.inInventory("trans")) {
+			for (let line of XENO_FILES[this.xenoFileIndex]) {
+				this.movement.main.benson.addMessage(line);
+			}
+			this.xenoFileIndex++;
+			if (this.xenoFileIndex >= XENO_FILES.length) this.xenoFileIndex = 0;
+		} else {
+			this.movement.main.benson.addMessage("Xargff norgil Mggarth.");
 		}
 		return true;
 	}

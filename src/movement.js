@@ -51,7 +51,6 @@ export class Movement {
 
 		this.inventory = [];
 		this.vehicle = null;
-		this.lastVehicle = null;
 		this.level = null;
 		this.room = null;
 		this.pickupPoint = new THREE.Vector3(0, 0, 0);
@@ -587,13 +586,12 @@ export class Movement {
 				if(this.baseMove == -1) {
 					// moving out of the base
 					this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-					this.vehicle = this.lastVehicle;
-					this.lastVehicle = null;
+					this.vehicle = this.main.models.models["ufo"].createObject();
+					this.main.game_map.xenoBase.visible = true;
 					this.level.destroy();
 					this.level = null;
 				} else if(this.baseMove == 1) {
 					// moving into the base
-					this.lastVehicle = this.vehicle;
 					this.vehicle = null;
 					this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
 				} else if(this.room != null && this.room.teleportToRoom != null) {

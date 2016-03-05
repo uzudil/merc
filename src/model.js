@@ -10,7 +10,8 @@ const MODELS = [
 	"opera", "asha", "car", "plane", "tower", "elevator",
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
-	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno"
+	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno",
+	"xenterm", "trans"
 ];
 
 const VEHICLES = {
@@ -65,7 +66,9 @@ const SCALE = {
 	"art": 20,
 	"art2": 20,
 	"ufo": 20,
-	"allitus": 15
+	"allitus": 15,
+	"xenterm": 8,
+	"trans": 10
 };
 
 const DESCRIPTIONS = {
@@ -80,7 +83,8 @@ const DESCRIPTIONS = {
 	"disk": "Emergency Override Disk",
 	"art": "Xeno artifact",
 	"art2": "Xeno artifact",
-	"ufo": "Alien craft"
+	"ufo": "Alien craft A3",
+	"trans": "Xeno translator chip"
 };
 
 const LIFTS = {
