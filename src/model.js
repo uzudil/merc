@@ -135,7 +135,7 @@ export class Model {
 
 	load(onLoad) {
 		var loader = new THREE.JSONLoader();
-		loader.load("models/" + this.name + ".json?cb=" + Date.now(), (geometry, materials) => {
+		loader.load("models/" + this.name + ".json?cb=" + window.cb, (geometry, materials) => {
 
 			// put the geom. on the ground
 			geometry.center();

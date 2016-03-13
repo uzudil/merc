@@ -4,6 +4,7 @@ import * as util from 'util'
 import $ from 'jquery'
 import THREE from 'three.js';
 import JSZip from 'jszip';
+import JSZipUtils from 'jszip-utils';
 
 // edit these via: http://localhost:8000/compound_editor/rooms.html
 export const LEVELS = {
@@ -24,14 +25,60 @@ export const LEVELS = {
 };
 
 export function loadLevel(sectorX, sectorY, onload) {
-	let name = "models/compounds/" + util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
-	console.log("Loading model=" + name);
+	startLoadingUI();
 
-	var loader = new THREE.ObjectLoader();
-	loader.load(name + "?cb=" + Date.now(), (obj) => {
-		console.log("loaded=", obj);
-		onload(getLevel(sectorX, sectorY, obj));
+	setLoadingUIProgress(0, ()=> {
+		let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+		console.log("Loading model=" + name);
+
+		let zipName = "models/compounds/" + name + ".zip";
+		console.log("Loading zip=" + zipName);
+		JSZipUtils.getBinaryContent(zipName + "?cb=" + window.cb, function(err, data) {
+
+			setLoadingUIProgress(30, ()=> {
+				if(err) {
+					stopLoadingUI();
+					throw err; // or handle err
+				}
+
+				setLoadingUIProgress(50, ()=> {
+					console.log("Loaded. Decompressing...");
+					var zip = new JSZip(data);
+					console.log("zip data=", zip);
+					let jsonContent = zip.file(name).asText();
+
+					setLoadingUIProgress(80, ()=> {
+						console.log("Constructing object... json size=", jsonContent.length);
+						let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
+						console.log("constructed=", obj);
+
+						setLoadingUIProgress(95, ()=> {
+							stopLoadingUI();
+							onload(getLevel(sectorX, sectorY, obj));
+						});
+					});
+				});
+			});
+		});
 	});
+}
+
+function startLoadingUI() {
+	window.loadingComplex = true;
+	$(".alert").hide();
+	$("#loading").show();
+	$("#wait").show();
+}
+
+function stopLoadingUI() {
+	$("#loading").hide();
+	$("#wait").hide();
+	window.loadingComplex = false;
+}
+
+function setLoadingUIProgress(percent, action) {
+	$("#progress-value").css("width", percent + "%");
+	setTimeout(action, 100);
 }
 
 export function getLevel(sectorX, sectorY, obj=null) {

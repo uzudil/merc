@@ -143,6 +143,7 @@ export class Level {
 		this.targetMesh = this.mesh.children[0];
 		this.targetMesh["name"] = "room_wall";
 		this.targetMesh["type"] = "wall";
+		this.mat = this.targetMesh.material;
 		this.geo = this.targetMesh.geometry;
 		this.geo.translate(this.w/2 * ROOM_SIZE + WALL_THICKNESS, this.h/2 * ROOM_SIZE + WALL_THICKNESS, 0);
 		this.caveMeshObj = this.mesh.children[1];

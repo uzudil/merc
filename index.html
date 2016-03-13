@@ -182,11 +182,40 @@
 			margin-bottom: 5px;
 			margin-top: 5px;
 		}
+
+		#loading {
+			display: none;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 200px;
+			margin-left: -100px;
+			height: 40px;
+			margin-top: -20px;
+			background: #888;
+			z-index: 1000;
+		}
+
+		#progress {
+			position: relative;
+			top: 10px;
+			left: 10px;
+			width: 180px;
+			height: 20px;
+			border: 1px solid #444;
+		}
+
+		#progress-value {
+			background: #44f;
+			height: 20px;
+		}
 	</style>
 </head>
 <body>
 	<script src="dist/merc.js"></script>
+	<div id="loading"><div id="progress"><div id="progress-value"></div></div></div>
 	<div id="alert">
+		<div id="wait" class="alert">Loading complex...</div>
 		<div id="enter" class="alert">Press E to enter</div>
 		<div id="exit" class="alert">Press E to exit</div>
 		<div id="vehicle" class="alert">Press SPACE to drive</div>

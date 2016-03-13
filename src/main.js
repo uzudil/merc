@@ -21,6 +21,7 @@ const VERSION = 0.1; // todo: git hook this
 class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
+		window.cb = "" + Date.now();
 		new model.Models((models)=>this.init(models))
 	}
 
@@ -116,7 +117,7 @@ class Merc {
 		// hack: start in a room
 		this.movement.loadGame({
 			//sectorX: 0xf8, sectorY: 0xc9,
-			sectorX: 0xc8, sectorY: 0xf0,
+			sectorX: 0xd9, sectorY: 0x42,
 			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
@@ -130,6 +131,8 @@ class Merc {
 	}
 
 	setupUI() {
+		window.loadingComplex = false;
+
 		let h = this.height;
 		var height = (h * 0.333)|0;
 		let w = h * ASPECT_RATIO;

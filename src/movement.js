@@ -950,8 +950,6 @@ export class Movement {
 		}
 
 		this.enterMode = this.checkEnter();
-		$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
-		$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
 
 		if(this.landing) {
 			this.updateLanding(time, delta);
@@ -968,12 +966,15 @@ export class Movement {
 					this.updateWalking(dx, delta);
 				}
 				this.checkBoundingBox();
-				$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
-
 				this.checkPickup();
-				$("#pickup").toggle(this.pickupObject != null);
 
-				$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
+				if(!window.loadingComplex) {
+					$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+					$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+					$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
+					$("#pickup").toggle(this.pickupObject != null);
+					$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
+				}
 			}
 		}
 

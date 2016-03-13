@@ -68,7 +68,7 @@
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(58);
+	var _skybox = __webpack_require__(59);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
@@ -76,15 +76,15 @@
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(59);
+	var _compass = __webpack_require__(60);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(60);
+	var _benson = __webpack_require__(61);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(61);
+	var _space = __webpack_require__(62);
 	
 	var space = _interopRequireWildcard(_space);
 	
@@ -110,6 +110,7 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
+			window.cb = "" + Date.now();
 			new model.Models(function (models) {
 				return _this.init(models);
 			});
@@ -212,7 +213,7 @@
 				// hack: start in a room
 				this.movement.loadGame({
 					//sectorX: 0xf8, sectorY: 0xc9,
-					sectorX: 0xc8, sectorY: 0xf0,
+					sectorX: 0xd9, sectorY: 0x42,
 					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
 					vehicle: null,
@@ -227,6 +228,8 @@
 		}, {
 			key: 'setupUI',
 			value: function setupUI() {
+				window.loadingComplex = false;
+	
 				var h = this.height;
 				var height = h * 0.333 | 0;
 				var w = h * ASPECT_RATIO;
@@ -46874,7 +46877,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(57);
+	var _events = __webpack_require__(58);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -47974,8 +47977,6 @@
 				}
 	
 				this.enterMode = this.checkEnter();
-				(0, _jquery2.default)("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
-				(0, _jquery2.default)("#exit").toggle(this.enterMode == EXIT_COMPOUND);
 	
 				if (this.landing) {
 					this.updateLanding(time, delta);
@@ -47992,14 +47993,17 @@
 							this.updateWalking(dx, delta);
 						}
 						this.checkBoundingBox();
-						(0, _jquery2.default)("#vehicle").toggle(this.intersections.filter(function (o) {
-							return o.model instanceof models.Vehicle;
-						}).length > 0);
-	
 						this.checkPickup();
-						(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
 	
-						(0, _jquery2.default)("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
+						if (!window.loadingComplex) {
+							(0, _jquery2.default)("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+							(0, _jquery2.default)("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+							(0, _jquery2.default)("#vehicle").toggle(this.intersections.filter(function (o) {
+								return o.model instanceof models.Vehicle;
+							}).length > 0);
+							(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
+							(0, _jquery2.default)("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
+						}
 					}
 				}
 	
@@ -48237,7 +48241,7 @@
 				var _this2 = this;
 	
 				var loader = new _three2.default.JSONLoader();
-				loader.load("models/" + this.name + ".json?cb=" + Date.now(), function (geometry, materials) {
+				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
 	
 					// put the geom. on the ground
 					geometry.center();
@@ -49307,6 +49311,7 @@
 				this.targetMesh = this.mesh.children[0];
 				this.targetMesh["name"] = "room_wall";
 				this.targetMesh["type"] = "wall";
+				this.mat = this.targetMesh.material;
 				this.geo = this.targetMesh.geometry;
 				this.geo.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
 				this.caveMeshObj = this.mesh.children[1];
@@ -50107,6 +50112,10 @@
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
+	var _jszipUtils = __webpack_require__(57);
+	
+	var _jszipUtils2 = _interopRequireDefault(_jszipUtils);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
@@ -50130,14 +50139,60 @@
 	};
 	
 	function loadLevel(sectorX, sectorY, onload) {
-		var name = "models/compounds/" + util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
-		console.log("Loading model=" + name);
+		startLoadingUI();
 	
-		var loader = new _three2.default.ObjectLoader();
-		loader.load(name + "?cb=" + Date.now(), function (obj) {
-			console.log("loaded=", obj);
-			onload(getLevel(sectorX, sectorY, obj));
+		setLoadingUIProgress(0, function () {
+			var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+			console.log("Loading model=" + name);
+	
+			var zipName = "models/compounds/" + name + ".zip";
+			console.log("Loading zip=" + zipName);
+			_jszipUtils2.default.getBinaryContent(zipName + "?cb=" + window.cb, function (err, data) {
+	
+				setLoadingUIProgress(30, function () {
+					if (err) {
+						stopLoadingUI();
+						throw err; // or handle err
+					}
+	
+					setLoadingUIProgress(50, function () {
+						console.log("Loaded. Decompressing...");
+						var zip = new _jszip2.default(data);
+						console.log("zip data=", zip);
+						var jsonContent = zip.file(name).asText();
+	
+						setLoadingUIProgress(80, function () {
+							console.log("Constructing object... json size=", jsonContent.length);
+							var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
+							console.log("constructed=", obj);
+	
+							setLoadingUIProgress(95, function () {
+								stopLoadingUI();
+								onload(getLevel(sectorX, sectorY, obj));
+							});
+						});
+					});
+				});
+			});
 		});
+	}
+	
+	function startLoadingUI() {
+		window.loadingComplex = true;
+		(0, _jquery2.default)(".alert").hide();
+		(0, _jquery2.default)("#loading").show();
+		(0, _jquery2.default)("#wait").show();
+	}
+	
+	function stopLoadingUI() {
+		(0, _jquery2.default)("#loading").hide();
+		(0, _jquery2.default)("#wait").hide();
+		window.loadingComplex = false;
+	}
+	
+	function setLoadingUIProgress(percent, action) {
+		(0, _jquery2.default)("#progress-value").css("width", percent + "%");
+		setTimeout(action, 100);
 	}
 	
 	function getLevel(sectorX, sectorY) {
@@ -61811,6 +61866,115 @@
 
 /***/ },
 /* 57 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	var JSZipUtils = {};
+	// just use the responseText with xhr1, response with xhr2.
+	// The transformation doesn't throw away high-order byte (with responseText)
+	// because JSZip handles that case. If not used with JSZip, you may need to
+	// do it, see https://developer.mozilla.org/En/Using_XMLHttpRequest#Handling_binary_data
+	JSZipUtils._getBinaryFromXHR = function (xhr) {
+	    // for xhr.responseText, the 0xFF mask is applied by JSZip
+	    return xhr.response || xhr.responseText;
+	};
+	
+	// taken from jQuery
+	function createStandardXHR() {
+	    try {
+	        return new window.XMLHttpRequest();
+	    } catch( e ) {}
+	}
+	
+	function createActiveXHR() {
+	    try {
+	        return new window.ActiveXObject("Microsoft.XMLHTTP");
+	    } catch( e ) {}
+	}
+	
+	// Create the request object
+	var createXHR = window.ActiveXObject ?
+	    /* Microsoft failed to properly
+	     * implement the XMLHttpRequest in IE7 (can't request local files),
+	     * so we use the ActiveXObject when it is available
+	     * Additionally XMLHttpRequest can be disabled in IE7/IE8 so
+	     * we need a fallback.
+	     */
+	    function() {
+	    return createStandardXHR() || createActiveXHR();
+	} :
+	    // For all other browsers, use the standard XMLHttpRequest object
+	    createStandardXHR;
+	
+	
+	
+	JSZipUtils.getBinaryContent = function(path, callback) {
+	    /*
+	     * Here is the tricky part : getting the data.
+	     * In firefox/chrome/opera/... setting the mimeType to 'text/plain; charset=x-user-defined'
+	     * is enough, the result is in the standard xhr.responseText.
+	     * cf https://developer.mozilla.org/En/XMLHttpRequest/Using_XMLHttpRequest#Receiving_binary_data_in_older_browsers
+	     * In IE <= 9, we must use (the IE only) attribute responseBody
+	     * (for binary data, its content is different from responseText).
+	     * In IE 10, the 'charset=x-user-defined' trick doesn't work, only the
+	     * responseType will work :
+	     * http://msdn.microsoft.com/en-us/library/ie/hh673569%28v=vs.85%29.aspx#Binary_Object_upload_and_download
+	     *
+	     * I'd like to use jQuery to avoid this XHR madness, but it doesn't support
+	     * the responseType attribute : http://bugs.jquery.com/ticket/11461
+	     */
+	    try {
+	
+	        var xhr = createXHR();
+	
+	        xhr.open('GET', path, true);
+	
+	        // recent browsers
+	        if ("responseType" in xhr) {
+	            xhr.responseType = "arraybuffer";
+	        }
+	
+	        // older browser
+	        if(xhr.overrideMimeType) {
+	            xhr.overrideMimeType("text/plain; charset=x-user-defined");
+	        }
+	
+	        xhr.onreadystatechange = function(evt) {
+	            var file, err;
+	            // use `xhr` and not `this`... thanks IE
+	            if (xhr.readyState === 4) {
+	                if (xhr.status === 200 || xhr.status === 0) {
+	                    file = null;
+	                    err = null;
+	                    try {
+	                        file = JSZipUtils._getBinaryFromXHR(xhr);
+	                    } catch(e) {
+	                        err = new Error(e);
+	                    }
+	                    callback(err, file);
+	                } else {
+	                    callback(new Error("Ajax error for " + path + " : " + this.status + " " + this.statusText), null);
+	                }
+	            }
+	        };
+	
+	        xhr.send();
+	
+	    } catch (e) {
+	        callback(new Error(e), null);
+	    }
+	};
+	
+	// export
+	module.exports = JSZipUtils;
+	
+	// enforcing Stuk's coding style
+	// vim: set shiftwidth=4 softtabstop=4:
+
+
+/***/ },
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -62123,7 +62287,7 @@
 	}();
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62174,7 +62338,7 @@
 	};
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62287,7 +62451,7 @@
 	}();
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62392,7 +62556,7 @@
 	}();
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
