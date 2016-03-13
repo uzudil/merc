@@ -27,7 +27,7 @@ export function shadeGeo(geo, light, color) {
 				f.color.copy(f.vertexColors[0]);
 			}
 		}
-		let a = 0.75 + f.normal.dot(light) * 0.25;
+		let a = 0.75 + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
 		f.color.multiplyScalar(a);
 		// do not use vertex colors
 		f.vertexColors = [];

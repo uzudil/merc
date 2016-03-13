@@ -109,46 +109,9 @@ export class CompoundGenerator {
 
 		// add the cave meshes
 		this.caveMeshObj = new THREE.Object3D();
-		//this.caveMeshObj.position.set(
-		//			(this.w * constants.ROOM_SIZE)/2 + constants.WALL_THICKNESS,
-		//			(this.h * constants.ROOM_SIZE)/2 + constants.WALL_THICKNESS,
-		//			0);
 		this.mesh.add(this.caveMeshObj);
 
 		this.caveMeshes = [];
-
-		//// actual doors
-		//for(let door of this.doors) {
-		//	let dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx - this.w * constants.ROOM_SIZE * .5 - constants.WALL_THICKNESS;
-		//	let dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy - this.h * constants.ROOM_SIZE * .5 - constants.WALL_THICKNESS;
-		//	let dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
-		//
-		//	let door_geo = new THREE.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), constants.DOOR_HEIGHT);
-		//	let door_mesh = new THREE.Mesh(door_geo,
-		//		new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, vertexColors: THREE.FaceColors }));
-		//	util.shadeGeo(door_mesh.geometry, constants.LIGHT, door.color);
-		//
-		//	door_mesh.position.set(dx, dy, dz);
-		//	door_mesh["merc_name"] = "door_" + door.dir;
-		//	door_mesh["merc_type"] = "door";
-		//	door_mesh["door"] = door;
-		//
-		//	this.targetMesh.add(door_mesh);
-		//}
-		//t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
-		//
-		//// objects
-		//for(let object of this.objects) {
-		//	let m = models.models[object.object];
-		//	let mesh = m.createObject();
-		//	let dx = (object.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS - this.w * constants.ROOM_SIZE * .5 - constants.WALL_THICKNESS;
-		//	let dy = (object.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS - this.h * constants.ROOM_SIZE * .5 - constants.WALL_THICKNESS;
-		//	let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-		//	mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-		//	mesh.position.set(dx, dy, dz);
-		//	this.targetMesh.add(mesh);
-		//}
-		//t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
 
 		// color the rooms
 		for(let face of this.geo.faces) {
@@ -231,6 +194,7 @@ export class CompoundGenerator {
 
 		for(let face of room.caveMesh.geometry.faces) {
 			face.color = room.color.clone();
+			face.vertexColors = [room.color.clone()];
 		}
 		room.caveMesh.geometry.computeVertexNormals();
 		room.caveMesh.geometry.computeFaceNormals();
