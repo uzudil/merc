@@ -26,7 +26,7 @@ class Merc {
 
 	init(models) {
 		this.fpsLimitIndex = 0;
-		this.models = models;
+		window.models = this.models = models;
 		this.camera = new THREE.PerspectiveCamera( 65, ASPECT_RATIO, 1, FAR_DIST );
 
 		this.scene = new THREE.Scene();
@@ -115,8 +115,10 @@ class Merc {
 
 		// hack: start in a room
 		this.movement.loadGame({
-			sectorX: 0xf8, sectorY: 0xc9,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			//sectorX: 0xf8, sectorY: 0xc9,
+			sectorX: 0xc8, sectorY: 0xf0,
+			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
 			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
 			state: {

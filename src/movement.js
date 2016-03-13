@@ -374,16 +374,24 @@ export class Movement {
 			} else if (this.enterMode == ENTER_COMPOUND) {
 				let elevator = this.getElevator();
 				if (elevator) {
+					compounds.loadLevel(this.sectorX, this.sectorY, (level) => {
+						this.level = level;
+						if (this.level) {
+							this.liftDirection = -1;
+							let liftPos = elevator.getWorldPosition();
+							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+						}
+					});
 					// down
-					this.level = compounds.getLevel(this.sectorX, this.sectorY);
-					if (this.level) {
-						this.liftDirection = -1;
-						// create room
-						//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
-
-						let liftPos = elevator.getWorldPosition();
-						this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
-					}
+					//this.level = compounds.getLevel(this.sectorX, this.sectorY);
+					//if (this.level) {
+					//	this.liftDirection = -1;
+					//	// create room
+					//	//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
+					//
+					//	let liftPos = elevator.getWorldPosition();
+					//	this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+					//}
 				}
 			}
 		}
@@ -731,7 +739,7 @@ export class Movement {
 				break;
 			}
 		}
-		if(!found && !this.isFlying()) {
+		if(!found && !this.isFlying() && !this.level) {
 			this.player.position.z = DEFAULT_Z;
 		}
 	}
@@ -756,7 +764,7 @@ export class Movement {
 			this.noise.play("denied");
 			return;
 		}
-		this.level.makeCave(door.door);
+		//this.level.makeCave(door.door);
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
 		door["moving"] = "up";
 		this.doorsUp.push(door);

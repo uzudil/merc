@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "jquery": "^2.1.4",
+    "jszip": "^2.5.0",
     "three.js": "^0.73.0"
   }
 }
