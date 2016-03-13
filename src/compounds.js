@@ -81,7 +81,7 @@ function setLoadingUIProgress(percent, action) {
 	setTimeout(action, 100);
 }
 
-export function getLevel(sectorX, sectorY, obj=null) {
+function getLevel(sectorX, sectorY, obj=null) {
 	let key = "" + sectorX.toString(16) + "," + sectorY.toString(16);
 	console.log("Looking for compound=" + key + " found=" + LEVELS[key]);
 	return new room.Level(LEVELS[key], obj);

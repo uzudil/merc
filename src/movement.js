@@ -217,16 +217,18 @@ export class Movement {
 		this.liftDirection = 0;
 		this.events.state = gameState.state;
 		if(this.player.position.z == ROOM_DEPTH) {
-			this.level = compounds.getLevel(this.sectorX, this.sectorY);
-			if(this.level) {
-				var offsetX = this.player.position.x;
-				var offsetY = this.player.position.y;
-				this.level.create(this.main.scene,
-					offsetX, offsetY,
-					offsetX - this.main.models.models["elevator"].bbox.size().x/2,
-					offsetY - this.main.models.models["elevator"].bbox.size().y/2,
-					this.main.models);
-			}
+			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
+				this.level = level;
+				if(this.level) {
+					var offsetX = this.player.position.x;
+					var offsetY = this.player.position.y;
+					this.level.create(this.main.scene,
+						offsetX, offsetY,
+						offsetX - this.main.models.models["elevator"].bbox.size().x/2,
+						offsetY - this.main.models.models["elevator"].bbox.size().y/2,
+						this.main.models);
+				}
+			});
 		}
 	}
 
@@ -341,13 +343,15 @@ export class Movement {
 			this.sectorY = ALIEN_BASE_POS[1];
 			let offsetX = this.player.position.x;
 			let offsetY = this.player.position.y;
-			this.level = compounds.getLevel(this.sectorX, this.sectorY);
-			if (this.level) {
-				this.teleportDir = 1;
-				this.teleportTime = Date.now() + TELEPORT_TIME;
-				this.baseMove = 1;
-				this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
-			}
+			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
+				this.level = level;
+				if (this.level) {
+					this.teleportDir = 1;
+					this.teleportTime = Date.now() + TELEPORT_TIME;
+					this.baseMove = 1;
+					this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
+				}
+			});
 		} else {
 			if (this.vehicle || this.liftDirection || this.teleportDir) return;
 
@@ -374,6 +378,7 @@ export class Movement {
 			} else if (this.enterMode == ENTER_COMPOUND) {
 				let elevator = this.getElevator();
 				if (elevator) {
+					// down
 					compounds.loadLevel(this.sectorX, this.sectorY, (level) => {
 						this.level = level;
 						if (this.level) {
@@ -382,16 +387,6 @@ export class Movement {
 							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
 						}
 					});
-					// down
-					//this.level = compounds.getLevel(this.sectorX, this.sectorY);
-					//if (this.level) {
-					//	this.liftDirection = -1;
-					//	// create room
-					//	//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
-					//
-					//	let liftPos = elevator.getWorldPosition();
-					//	this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
-					//}
 				}
 			}
 		}

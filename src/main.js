@@ -116,10 +116,10 @@ class Merc {
 
 		// hack: start in a room
 		this.movement.loadGame({
-			//sectorX: 0xf8, sectorY: 0xc9,
-			sectorX: 0xd9, sectorY: 0x42,
-			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+			sectorX: 0xf8, sectorY: 0xc9,
+			//sectorX: 0xd9, sectorY: 0x42,
+			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
 			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
 			state: {

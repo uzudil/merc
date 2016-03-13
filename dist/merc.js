@@ -212,10 +212,10 @@
 	
 				// hack: start in a room
 				this.movement.loadGame({
-					//sectorX: 0xf8, sectorY: 0xc9,
-					sectorX: 0xd9, sectorY: 0x42,
-					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
+					sectorX: 0xf8, sectorY: 0xc9,
+					//sectorX: 0xd9, sectorY: 0x42,
+					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.ROOM_DEPTH,
+					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 					vehicle: null,
 					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
 					state: {
@@ -47111,6 +47111,8 @@
 		_createClass(Movement, [{
 			key: 'loadGame',
 			value: function loadGame(gameState) {
+				var _this2 = this;
+	
 				this.player.position.set(gameState.sectorX * game_map.SECTOR_SIZE + gameState.x, gameState.sectorY * game_map.SECTOR_SIZE + gameState.y, gameState.z);
 				this.inventory = gameState.inventory;
 				this.vehicle = gameState.vehicle;
@@ -47119,12 +47121,14 @@
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
 				if (this.player.position.z == ROOM_DEPTH) {
-					this.level = compounds.getLevel(this.sectorX, this.sectorY);
-					if (this.level) {
-						var offsetX = this.player.position.x;
-						var offsetY = this.player.position.y;
-						this.level.create(this.main.scene, offsetX, offsetY, offsetX - this.main.models.models["elevator"].bbox.size().x / 2, offsetY - this.main.models.models["elevator"].bbox.size().y / 2, this.main.models);
-					}
+					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
+						_this2.level = level;
+						if (_this2.level) {
+							var offsetX = _this2.player.position.x;
+							var offsetY = _this2.player.position.y;
+							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models);
+						}
+					});
 				}
 			}
 		}, {
@@ -47250,75 +47254,70 @@
 		}, {
 			key: 'useElevator',
 			value: function useElevator() {
-				var _this2 = this;
+				var _this3 = this;
 	
 				if (this.enterMode == ENTER_BASE) {
-					console.log("Entering alien base.");
-					this.sectorX = ALIEN_BASE_POS[0];
-					this.sectorY = ALIEN_BASE_POS[1];
-					var offsetX = this.player.position.x;
-					var offsetY = this.player.position.y;
-					this.level = compounds.getLevel(this.sectorX, this.sectorY);
-					if (this.level) {
-						this.teleportDir = 1;
-						this.teleportTime = Date.now() + TELEPORT_TIME;
-						this.baseMove = 1;
-						this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
-					}
+					(function () {
+						console.log("Entering alien base.");
+						_this3.sectorX = ALIEN_BASE_POS[0];
+						_this3.sectorY = ALIEN_BASE_POS[1];
+						var offsetX = _this3.player.position.x;
+						var offsetY = _this3.player.position.y;
+						compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
+							_this3.level = level;
+							if (_this3.level) {
+								_this3.teleportDir = 1;
+								_this3.teleportTime = Date.now() + TELEPORT_TIME;
+								_this3.baseMove = 1;
+								_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models);
+							}
+						});
+					})();
 				} else {
-					var _ret = function () {
-						if (_this2.vehicle || _this2.liftDirection || _this2.teleportDir) return {
+					var _ret2 = function () {
+						if (_this3.vehicle || _this3.liftDirection || _this3.teleportDir) return {
 								v: undefined
 							};
 	
-						var offsetX = _this2.player.position.x;
-						var offsetY = _this2.player.position.y;
-						if (_this2.enterMode == EXIT_COMPOUND) {
-							if (_this2.sectorX == ALIEN_BASE_POS[0] && _this2.sectorY == ALIEN_BASE_POS[1]) {
-								_this2.teleportDir = 1;
-								_this2.teleportTime = Date.now() + TELEPORT_TIME;
-								_this2.baseMove = -1;
+						var offsetX = _this3.player.position.x;
+						var offsetY = _this3.player.position.y;
+						if (_this3.enterMode == EXIT_COMPOUND) {
+							if (_this3.sectorX == ALIEN_BASE_POS[0] && _this3.sectorY == ALIEN_BASE_POS[1]) {
+								_this3.teleportDir = 1;
+								_this3.teleportTime = Date.now() + TELEPORT_TIME;
+								_this3.baseMove = -1;
 								console.log("Exiting alien base.");
 							} else {
 								// Reposition the level, the lift and the player at the elevator platform position.
 								// This is so the player pops up in the middle of the elevator back on the surface.
-								var dx = _this2.player.position.x - _this2.level.liftX;
-								var dy = _this2.player.position.y - _this2.level.liftY;
-								_this2.player.position.set(_this2.level.liftX, _this2.level.liftY, _this2.player.position.z);
-								_this2.level.setPosition(_this2.level.mesh.position.x - dx, _this2.level.mesh.position.y - dy);
+								var dx = _this3.player.position.x - _this3.level.liftX;
+								var dy = _this3.player.position.y - _this3.level.liftY;
+								_this3.player.position.set(_this3.level.liftX, _this3.level.liftY, _this3.player.position.z);
+								_this3.level.setPosition(_this3.level.mesh.position.x - dx, _this3.level.mesh.position.y - dy);
 	
-								_this2.liftDirection = 1;
+								_this3.liftDirection = 1;
 							}
-							_this2.noise.stop("door");
+							_this3.noise.stop("door");
 							console.log("heading up");
-						} else if (_this2.enterMode == ENTER_COMPOUND) {
+						} else if (_this3.enterMode == ENTER_COMPOUND) {
 							(function () {
-								var elevator = _this2.getElevator();
+								var elevator = _this3.getElevator();
 								if (elevator) {
-									compounds.loadLevel(_this2.sectorX, _this2.sectorY, function (level) {
-										_this2.level = level;
-										if (_this2.level) {
-											_this2.liftDirection = -1;
+									// down
+									compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
+										_this3.level = level;
+										if (_this3.level) {
+											_this3.liftDirection = -1;
 											var liftPos = elevator.getWorldPosition();
-											_this2.level.create(_this2.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this2.main.models);
+											_this3.level.create(_this3.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this3.main.models);
 										}
 									});
-									// down
-									//this.level = compounds.getLevel(this.sectorX, this.sectorY);
-									//if (this.level) {
-									//	this.liftDirection = -1;
-									//	// create room
-									//	//this.level.create(this.main.game_map.getSector(this.sectorX, this.sectorY), offsetX, offsetY);
-									//
-									//	let liftPos = elevator.getWorldPosition();
-									//	this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
-									//}
 								}
 							})();
 						}
 					}();
 	
-					if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+					if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
 				}
 			}
 		}, {
@@ -47767,23 +47766,23 @@
 		}, {
 			key: 'updateDoors',
 			value: function updateDoors(dx, delta) {
-				var _this3 = this;
+				var _this4 = this;
 	
 				if (this.doorsUp.length > 0) {
 					var _loop = function _loop(_i) {
-						var door = _this3.doorsUp[_i];
-						door.getWorldPosition(_this3.worldPos);
+						var door = _this4.doorsUp[_i];
+						door.getWorldPosition(_this4.worldPos);
 						var dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
-						if (_this3.worldPos.z < dz) {
+						if (_this4.worldPos.z < dz) {
 							door.position.z += delta * 50;
-							_this3.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - _this3.worldPos.z)) / room_package.DOOR_HEIGHT);
+							_this4.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - _this4.worldPos.z)) / room_package.DOOR_HEIGHT);
 						} else {
 							door.moving = "down";
-							_this3.doorsUp.splice(_i, 1);
-							_this3.noise.stop("door");
+							_this4.doorsUp.splice(_i, 1);
+							_this4.noise.stop("door");
 							_i--;
 							setTimeout(function () {
-								_this3.doorsDown.push(door);
+								_this4.doorsDown.push(door);
 							}, 1500);
 						}
 						i = _i;
@@ -50086,7 +50085,6 @@
 	});
 	exports.LEVELS = undefined;
 	exports.loadLevel = loadLevel;
-	exports.getLevel = getLevel;
 	
 	var _room = __webpack_require__(10);
 	
