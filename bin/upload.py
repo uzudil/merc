@@ -1,6 +1,6 @@
 # credit: https://gist.githubusercontent.com/igniteflow/5436066/raw/f239c0e2dfe3a40f1d1612c43770912df70a7de8/corsdevserver.py
 import BaseHTTPServer
-import cgi, os, json, traceback
+import cgi, os, json, traceback, commands
 
 PORT = 9000
 FILE_TO_SERVE = 'path/to/your/response/content.json'
@@ -40,6 +40,15 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             with open('../models/compounds/%s.json' % name, 'w') as file_:
                 file_.write(val)
 
+            # zip file
+            print "+++ Creating archive..."
+            commands.getoutput("pushd ../models/compounds; zip %s.json.zip %s.json; popd" % (name, name))
+
+            # keep only the zip file
+            print "+++ Removing original..."
+            os.remove('../models/compounds/%s.json' % name)
+
+            print "+++ Done."
             body = 'ok'
 
             # set headers
