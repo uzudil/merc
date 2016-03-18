@@ -20,7 +20,8 @@ export class Noise {
 		};
 		this.sounds = {
 			denied: new DeniedSound(),
-			base: new AlienBaseSound()
+			base: new AlienBaseSound(),
+			control: new ControlSound()
 		}
 	}
 
@@ -132,6 +133,35 @@ class DeniedSound {
 				this.playing = false;
 			}, 100);
 		}, 150);
+	}
+}
+
+class ControlSound {
+	constructor() {
+		this.playing = false;
+	}
+
+	play(level) {
+		if(this.playing) return;
+		this.playing = true;
+
+		let voice1 = new Voice(globalContext, 0.2, 700);
+		let voice2 = new Voice(globalContext, 0.2, 650);
+		voice1.start();
+		voice2.start();
+		setTimeout(() => {
+			voice1.stop();
+			voice2.stop();
+			voice1 = new Voice(globalContext, 0.2, 500);
+			voice2 = new Voice(globalContext, 0.2, 450);
+			voice1.start();
+			voice2.start();
+			setTimeout(() => {
+				voice1.stop();
+				voice2.stop();
+				this.playing = false;
+			}, 100);
+		}, 100);
 	}
 }
 

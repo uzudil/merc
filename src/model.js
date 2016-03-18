@@ -11,7 +11,7 @@ const MODELS = [
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
 	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno",
-	"xenterm", "trans"
+	"xenterm", "trans", "control"
 ];
 
 const VEHICLES = {
@@ -36,8 +36,13 @@ const VEHICLES = {
 	},
 	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 		onEnter: (movement)=> {
-			// todo: this should return true when game is completed
-			movement.main.benson.addMessage("Your ship is locked.");
+			if(movement.events.state["allitus_control"]) {
+				movement.main.benson.addMessage("Until you complete");
+				movement.main.benson.addMessage("your mission, your");
+				movement.main.benson.addMessage("ship remains locked.");
+			} else {
+				// todo: begin takeoff sequence
+			}
 			return false;
 		}
 	},
@@ -68,7 +73,8 @@ const SCALE = {
 	"ufo": 20,
 	"allitus": 15,
 	"xenterm": 8,
-	"trans": 10
+	"trans": 10,
+	"control": 10
 };
 
 const DESCRIPTIONS = {

@@ -98,6 +98,10 @@
 			background: brown;
 		}
 
+		#time {
+			background: darkcyan;
+		}
+
 		#message {
 			background: darkred;
 			position: relative;
@@ -226,15 +230,16 @@
 		<div class="title"><div class="text">Benson 5000: H for help</div></div>
 	<table>
 		<tr>
-			<td rowspan="2"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
+			<td rowspan="3"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
 			<td valign="bottom"><div id="loc" class="uibox"><label>LOC</label><div class="value"></div></div></td>
 			<td valign="bottom"><div id="alt" class="uibox"><label>ALT</label><div class="value"></div></div></td>
 			<td valign="bottom"><div id="speed" class="uibox"><label>SPEED</label><div class="value"></div></div></td>
-			<td rowspan="2"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
+			<td rowspan="3"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
 		</tr>
 		<tr>
 			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
 		</tr>
+		<tr><td valign="top"><div id="time" class="uibox"><label>DAY-TIME</label><div class="value"></div></div></td></tr>
 	</table>
 	</div>
 	<div id="help">

@@ -42,9 +42,6 @@ export class GameMap {
 		scene.add(this.land);
 	}
 
-	update() {
-	}
-
 	drawRoads(maxAnisotropy, models) {
 		let roads = [];
 		for(let road of world.WORLD.roads) {

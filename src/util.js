@@ -28,6 +28,8 @@ export function shadeGeo(geo, light, color) {
 			}
 		}
 		let a = 0.75 + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
+		f["original_color"] = f.color.getHex();
+		f["light_mod"] = a;
 		f.color.multiplyScalar(a);
 		// do not use vertex colors
 		f.vertexColors = [];
@@ -67,4 +69,23 @@ export function toHex(num, digits) {
 		s = s.substr(s.length - digits);
 	}
 	return s;
+}
+
+export function toggleColor(object, colorFrom, colorTo) {
+	//console.log("Changing color!");
+	for (var i = 0; i < object.geometry.faces.length; i++) {
+		let f = object.geometry.faces[i];
+		//console.log("face color=" + f.original_color.toString(16) + " vs " + colorFrom.toString(16) + " eq=" + (f.original_color == colorFrom));
+		if(f.original_color == colorFrom) {
+			let c = new THREE.Color(colorTo);
+			c.multiplyScalar(f.light_mod);
+			f.color.setRGB(c.r, c.g, c.b);
+			f.original_color = colorTo;
+		}
+	}
+	object.material.needsUpdate = true;
+	object.geometry.needsUpdate = true;
+	object.geometry.colorsNeedUpdate = true;
+	object.geometry.elementsNeedUpdate = true;
+	object.needsUpdate = true;
 }

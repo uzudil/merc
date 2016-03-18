@@ -88,6 +88,10 @@
 	
 	var space = _interopRequireWildcard(_space);
 	
+	var _events = __webpack_require__(58);
+	
+	var events = _interopRequireWildcard(_events);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -110,6 +114,7 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
+			this.hourOfDay = 0;
 			window.cb = "" + Date.now();
 			new model.Models(function (models) {
 				return _this.init(models);
@@ -212,17 +217,17 @@
 	
 				// hack: start in a room
 				this.movement.loadGame({
-					//sectorX: 0xf8, sectorY: 0xc9,
-					sectorX: 0xc8, sectorY: 0xf0,
-					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
+					sectorX: 0xf8, sectorY: 0xc9,
+					//sectorX: 0xc8, sectorY: 0xf0,
+					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.ROOM_DEPTH,
+					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 					vehicle: null,
 					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
-					state: {
+					state: Object.assign(events.Events.getStartState(), {
 						"lightcar-keys": true,
 						"allitus-ttl": 10,
 						"override-17a": true
-					}
+					})
 				});
 			}
 		}, {
@@ -287,11 +292,18 @@
 	
 				this.benson.update();
 				if (this.movement) {
-					this.game_map.update();
 					this.movement.update();
+	
+					// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
+					if (this.movement.events.hourOfDay != this.hourOfDay) {
+						this.hourOfDay = this.movement.events.hourOfDay;
+						var p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+						console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
+						//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
+					}
 				} else if (this.space) {
-					this.space.update();
-				}
+						this.space.update();
+					}
 				this.renderer.render(this.scene, this.camera);
 	
 				if (this.movement) {
@@ -309,6 +321,7 @@
 					(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
 					(0, _jquery2.default)("#alt .value").text("" + z);
 					(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
+					(0, _jquery2.default)("#time .value").text("" + (11 - this.movement.events.state["allitus-ttl"]) + "-" + this.getAMPMHour());
 					this.compass.update(this.movement.getHeadingAngle());
 					this.horizon.update(this.movement.getPitchAngle());
 				} else if (this.space) {
@@ -321,6 +334,17 @@
 					}, 1000 / FPS_LIMITS[this.fpsLimitIndex]);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
+				}
+			}
+		}, {
+			key: 'getAMPMHour',
+			value: function getAMPMHour() {
+				if (this.movement.events.hourOfDay >= 0 && this.movement.events.hourOfDay < 12) {
+					return this.movement.events.hourOfDay + "AM";
+				} else if (this.movement.events.hourOfDay == 12) {
+					return this.movement.events.hourOfDay + "PM";
+				} else {
+					return this.movement.events.hourOfDay - 12 + "PM";
 				}
 			}
 		}]);
@@ -36549,14 +36573,14 @@
 
 	'use strict';
 	
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.GameMap = exports.GRASS_COLOR = exports.SECTOR_SIZE = undefined;
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _three = __webpack_require__(1);
 	
@@ -36642,9 +36666,6 @@
 		}
 	
 		_createClass(GameMap, [{
-			key: 'update',
-			value: function update() {}
-		}, {
 			key: 'drawRoads',
 			value: function drawRoads(maxAnisotropy, models) {
 				var roads = [];
@@ -36664,7 +36685,7 @@
 							var w = road[2];
 							var h = road[3];
 							//console.log("Original=", x, ",", y, "-", w, ",", h);
-							var r = undefined;
+							var r = void 0;
 							var _iteratorNormalCompletion4 = true;
 							var _didIteratorError4 = false;
 							var _iteratorError4 = undefined;
@@ -36740,28 +36761,28 @@
 	
 				try {
 					for (var _iterator3 = roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var road = _step3.value;
+						var _road = _step3.value;
 	
-						var geo = undefined;
+						var geo = void 0;
 						var lineGeo = new _three2.default.Geometry();
 						lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
-						if (road[2] > 0) {
-							geo = new _three2.default.PlaneGeometry(road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
-							lineGeo.vertices.push(new _three2.default.Vector3(road[2] * SECTOR_SIZE, 0, 0));
-							geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
+						if (_road[2] > 0) {
+							geo = new _three2.default.PlaneGeometry(_road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
+							lineGeo.vertices.push(new _three2.default.Vector3(_road[2] * SECTOR_SIZE, 0, 0));
+							geo.translate(_road[2] * SECTOR_SIZE * .5, 0, 0);
 						} else {
-							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
-							lineGeo.vertices.push(new _three2.default.Vector3(0, road[3] * SECTOR_SIZE, 0));
-							geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
+							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, _road[3] * SECTOR_SIZE);
+							lineGeo.vertices.push(new _three2.default.Vector3(0, _road[3] * SECTOR_SIZE, 0));
+							geo.translate(0, _road[3] * SECTOR_SIZE * .5, 0);
 						}
 	
 						for (var i = 0; i < geo.faceVertexUvs[0].length; i++) {
 							for (var t = 0; t < geo.faceVertexUvs[0][i].length; t++) {
 								var uv = geo.faceVertexUvs[0][i][t];
-								if (road[2] > 0) {
-									uv.x *= road[2];
+								if (_road[2] > 0) {
+									uv.x *= _road[2];
 								} else {
-									uv.y *= road[3];
+									uv.y *= _road[3];
 									// 'rotate' texture so stripes point the correct way
 									var _ref = [uv.x, uv.y];
 									uv.y = _ref[0];
@@ -36771,13 +36792,13 @@
 						}
 	
 						var mesh = new _three2.default.Mesh(geo);
-						mesh.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+						mesh.position.set(_road[0] * SECTOR_SIZE, _road[1] * SECTOR_SIZE, 0);
 						mesh.updateMatrix();
 						roadQ.merge(geo, mesh.matrix);
 						mesh.frustumCulled = false;
 	
 						var lines = new _three2.default.LineSegments(lineGeo);
-						lines.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+						lines.position.set(_road[0] * SECTOR_SIZE, _road[1] * SECTOR_SIZE, 0);
 						lines.updateMatrix();
 						roadL.merge(lineGeo, lines.matrix);
 					}
@@ -36896,6 +36917,7 @@
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
 	exports.toHex = toHex;
+	exports.toggleColor = toggleColor;
 	
 	var _three = __webpack_require__(1);
 	
@@ -36930,6 +36952,8 @@
 				}
 			}
 			var a = 0.75 + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
+			f["original_color"] = f.color.getHex();
+			f["light_mod"] = a;
 			f.color.multiplyScalar(a);
 			// do not use vertex colors
 			f.vertexColors = [];
@@ -36978,6 +37002,25 @@
 		}
 		return s;
 	}
+	
+	function toggleColor(object, colorFrom, colorTo) {
+		//console.log("Changing color!");
+		for (var i = 0; i < object.geometry.faces.length; i++) {
+			var f = object.geometry.faces[i];
+			//console.log("face color=" + f.original_color.toString(16) + " vs " + colorFrom.toString(16) + " eq=" + (f.original_color == colorFrom));
+			if (f.original_color == colorFrom) {
+				var c = new _three2.default.Color(colorTo);
+				c.multiplyScalar(f.light_mod);
+				f.color.setRGB(c.r, c.g, c.b);
+				f.original_color = colorTo;
+			}
+		}
+		object.material.needsUpdate = true;
+		object.geometry.needsUpdate = true;
+		object.geometry.colorsNeedUpdate = true;
+		object.geometry.elementsNeedUpdate = true;
+		object.needsUpdate = true;
+	}
 
 /***/ },
 /* 5 */
@@ -36995,7 +37038,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * jQuery JavaScript Library v2.2.0
+	 * jQuery JavaScript Library v2.2.1
 	 * http://jquery.com/
 	 *
 	 * Includes Sizzle.js
@@ -37005,7 +37048,7 @@
 	 * Released under the MIT license
 	 * http://jquery.org/license
 	 *
-	 * Date: 2016-01-08T20:02Z
+	 * Date: 2016-02-22T19:11Z
 	 */
 	
 	(function( global, factory ) {
@@ -37061,7 +37104,7 @@
 	
 	
 	var
-		version = "2.2.0",
+		version = "2.2.1",
 	
 		// Define a local copy of jQuery
 		jQuery = function( selector, context ) {
@@ -41475,7 +41518,7 @@
 		if ( fn === false ) {
 			fn = returnFalse;
 		} else if ( !fn ) {
-			return this;
+			return elem;
 		}
 	
 		if ( one === 1 ) {
@@ -42124,14 +42167,14 @@
 		rscriptTypeMasked = /^true\/(.*)/,
 		rcleanScript = /^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g;
 	
+	// Manipulating tables requires a tbody
 	function manipulationTarget( elem, content ) {
-		if ( jQuery.nodeName( elem, "table" ) &&
-			jQuery.nodeName( content.nodeType !== 11 ? content : content.firstChild, "tr" ) ) {
+		return jQuery.nodeName( elem, "table" ) &&
+			jQuery.nodeName( content.nodeType !== 11 ? content : content.firstChild, "tr" ) ?
 	
-			return elem.getElementsByTagName( "tbody" )[ 0 ] || elem;
-		}
-	
-		return elem;
+			elem.getElementsByTagName( "tbody" )[ 0 ] ||
+				elem.appendChild( elem.ownerDocument.createElement( "tbody" ) ) :
+			elem;
 	}
 	
 	// Replace/restore the type attribute of script elements for safe DOM manipulation
@@ -42638,7 +42681,7 @@
 			// FF meanwhile throws on frame elements through "defaultView.getComputedStyle"
 			var view = elem.ownerDocument.defaultView;
 	
-			if ( !view.opener ) {
+			if ( !view || !view.opener ) {
 				view = window;
 			}
 	
@@ -42787,15 +42830,18 @@
 			style = elem.style;
 	
 		computed = computed || getStyles( elem );
+		ret = computed ? computed.getPropertyValue( name ) || computed[ name ] : undefined;
+	
+		// Support: Opera 12.1x only
+		// Fall back to style even without computed
+		// computed is undefined for elems on document fragments
+		if ( ( ret === "" || ret === undefined ) && !jQuery.contains( elem.ownerDocument, elem ) ) {
+			ret = jQuery.style( elem, name );
+		}
 	
 		// Support: IE9
 		// getPropertyValue is only needed for .css('filter') (#12537)
 		if ( computed ) {
-			ret = computed.getPropertyValue( name ) || computed[ name ];
-	
-			if ( ret === "" && !jQuery.contains( elem.ownerDocument, elem ) ) {
-				ret = jQuery.style( elem, name );
-			}
 	
 			// A tribute to the "awesome hack by Dean Edwards"
 			// Android Browser returns percentage for some values,
@@ -44845,7 +44891,7 @@
 					// But now, this "simulate" function is used only for events
 					// for which stopPropagation() is noop, so there is no need for that anymore.
 					//
-					// For the compat branch though, guard for "click" and "submit"
+					// For the 1.x branch though, guard for "click" and "submit"
 					// events is still used, but was moved to jQuery.event.stopPropagation function
 					// because `originalEvent` should point to the original event for the constancy
 					// with other events and for more focused logic
@@ -46615,11 +46661,8 @@
 				}
 	
 				// Add offsetParent borders
-				// Subtract offsetParent scroll positions
-				parentOffset.top += jQuery.css( offsetParent[ 0 ], "borderTopWidth", true ) -
-					offsetParent.scrollTop();
-				parentOffset.left += jQuery.css( offsetParent[ 0 ], "borderLeftWidth", true ) -
-					offsetParent.scrollLeft();
+				parentOffset.top += jQuery.css( offsetParent[ 0 ], "borderTopWidth", true );
+				parentOffset.left += jQuery.css( offsetParent[ 0 ], "borderLeftWidth", true );
 			}
 	
 			// Subtract parent offsets and element margins
@@ -46833,6 +46876,11 @@
 
 	'use strict';
 	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Movement = exports.ROOM_DEPTH = exports.DEFAULT_Z = undefined;
+	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
@@ -46840,10 +46888,6 @@
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * view-source:http://mrdoob.github.io/three.js/examples/misc_controls_pointerlock.html
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
 	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports.Movement = exports.ROOM_DEPTH = exports.DEFAULT_Z = undefined;
 	
 	var _three = __webpack_require__(1);
 	
@@ -47178,7 +47222,7 @@
 			key: 'pickup',
 			value: function pickup() {
 				if (this.pickupObject) {
-					var handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase());
+					var handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase(), this.pickupObject);
 	
 					if (!handled) {
 						this.inventory.push(this.pickupObject.model.name);
@@ -47257,26 +47301,24 @@
 				var _this3 = this;
 	
 				if (this.enterMode == ENTER_BASE) {
-					(function () {
-						console.log("Entering alien base.");
+					console.log("Entering alien base.");
+					compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], function (level) {
+						_this3.level = level;
 						_this3.sectorX = ALIEN_BASE_POS[0];
 						_this3.sectorY = ALIEN_BASE_POS[1];
 						var offsetX = _this3.player.position.x;
 						var offsetY = _this3.player.position.y;
-						compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
-							_this3.level = level;
-							if (_this3.level) {
-								_this3.teleportDir = 1;
-								_this3.teleportTime = Date.now() + TELEPORT_TIME;
-								_this3.baseMove = 1;
-								_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models);
-							}
-						});
-					})();
+						if (_this3.level) {
+							_this3.teleportDir = 1;
+							_this3.teleportTime = Date.now() + TELEPORT_TIME;
+							_this3.baseMove = 1;
+							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models);
+						}
+					});
 				} else {
-					var _ret2 = function () {
+					var _ret = function () {
 						if (_this3.vehicle || _this3.liftDirection || _this3.teleportDir) return {
-								v: undefined
+								v: void 0
 							};
 	
 						var offsetX = _this3.player.position.x;
@@ -47317,7 +47359,7 @@
 						}
 					}();
 	
-					if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+					if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 				}
 			}
 		}, {
@@ -47544,7 +47586,7 @@
 		}, {
 			key: 'updateTeleporter',
 			value: function updateTeleporter(delta, time) {
-				var p = undefined;
+				var p = void 0;
 				if (this.teleportDir == 1) {
 					if (time < this.teleportTime) {
 						p = 1 - (this.teleportTime - time) / TELEPORT_TIME;
@@ -47756,7 +47798,6 @@
 				}).length == 0) {
 					// key needed
 					this.noise.play("denied");
-					return;
 				}
 				//this.level.makeCave(door.door);
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
@@ -47831,6 +47872,9 @@
 	
 				var blocked = false;
 				if (closest) {
+					// doors are blocking: meaning we don't slide off of them
+					if (closest.object.type == "door") blocked = true;
+	
 					if (closest.object.type == "door" && closest.object["moving"] == null) {
 						this.openDoor(closest.object);
 					}
@@ -48009,7 +48053,11 @@
 				this.events.checkPosition(this.player.position, this.vehicle);
 	
 				this.checkNoise();
-				this.events.update(this.sectorX, this.sectorY);
+				this.events.update(this.sectorX, this.sectorY, time);
+	
+				if (this.events.getAllitusTTL() <= 0) {
+					// todo: kaboom - game over
+				}
 			}
 		}, {
 			key: 'getDistanceToAlienBase',
@@ -48046,12 +48094,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Vehicle = exports.Model = exports.Models = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _three = __webpack_require__(1);
 	
@@ -48079,7 +48127,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
@@ -48103,8 +48151,13 @@
 		},
 		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 			onEnter: function onEnter(movement) {
-				// todo: this should return true when game is completed
-				movement.main.benson.addMessage("Your ship is locked.");
+				if (movement.events.state["allitus_control"]) {
+					movement.main.benson.addMessage("Until you complete");
+					movement.main.benson.addMessage("your mission, your");
+					movement.main.benson.addMessage("ship remains locked.");
+				} else {
+					// todo: begin takeoff sequence
+				}
 				return false;
 			}
 		},
@@ -48135,7 +48188,8 @@
 		"ufo": 20,
 		"allitus": 15,
 		"xenterm": 8,
-		"trans": 10
+		"trans": 10,
+		"control": 10
 	};
 	
 	var DESCRIPTIONS = {
@@ -48183,7 +48237,7 @@
 				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 					var name = _step.value;
 	
-					var model = undefined;
+					var model = void 0;
 					if (name in VEHICLES) {
 						model = new Vehicle(name, VEHICLES[name]);
 					} else {
@@ -48304,12 +48358,12 @@
 
 	"use strict";
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Noise = exports.SOUND_ENABLED = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _util = __webpack_require__(4);
 	
@@ -48341,7 +48395,8 @@
 			};
 			this.sounds = {
 				denied: new DeniedSound(),
-				base: new AlienBaseSound()
+				base: new AlienBaseSound(),
+				control: new ControlSound()
 			};
 		}
 	
@@ -48484,6 +48539,44 @@
 		return DeniedSound;
 	}();
 	
+	var ControlSound = function () {
+		function ControlSound() {
+			_classCallCheck(this, ControlSound);
+	
+			this.playing = false;
+		}
+	
+		_createClass(ControlSound, [{
+			key: "play",
+			value: function play(level) {
+				var _this2 = this;
+	
+				if (this.playing) return;
+				this.playing = true;
+	
+				var voice1 = new Voice(globalContext, 0.2, 700);
+				var voice2 = new Voice(globalContext, 0.2, 650);
+				voice1.start();
+				voice2.start();
+				setTimeout(function () {
+					voice1.stop();
+					voice2.stop();
+					voice1 = new Voice(globalContext, 0.2, 500);
+					voice2 = new Voice(globalContext, 0.2, 450);
+					voice1.start();
+					voice2.start();
+					setTimeout(function () {
+						voice1.stop();
+						voice2.stop();
+						_this2.playing = false;
+					}, 100);
+				}, 100);
+			}
+		}]);
+	
+		return ControlSound;
+	}();
+	
 	var AlienBaseSound = function () {
 		function AlienBaseSound() {
 			_classCallCheck(this, AlienBaseSound);
@@ -48494,7 +48587,7 @@
 		_createClass(AlienBaseSound, [{
 			key: "play",
 			value: function play(level) {
-				var _this2 = this;
+				var _this3 = this;
 	
 				if (this.playing) return;
 				this.playing = true;
@@ -48509,7 +48602,7 @@
 					voice1.stop();
 					voice2.stop();
 					voice3.stop();
-					_this2.playing = false;
+					_this3.playing = false;
 				}, 150);
 			}
 		}]);
@@ -48620,6 +48713,7 @@
 	}();
 	
 	// credit: http://blog.chrislowis.co.uk/demos/polyphonic_synthesis/demo2/synth.js
+	
 	
 	var Voice = function () {
 		function Voice(context, volume, frequency) {
@@ -49031,12 +49125,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Level = exports.Room = exports.Door = exports.CAVE_RAND_FACTOR = exports.WALL_SEGMENTS = exports.LIGHT = exports.DOOR_THICKNESS = exports.WALL_THICKNESS = exports.DOOR_HEIGHT = exports.DOOR_WIDTH = exports.ROOM_SIZE = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _movement = __webpack_require__(7);
 	
@@ -49339,8 +49433,8 @@
 					}
 				}
 	
-				var t = undefined,
-				    t2 = undefined;t = Date.now();
+				var t = void 0,
+				    t2 = void 0;t = Date.now();
 	
 				// actual doors
 				var _iteratorNormalCompletion6 = true;
@@ -49350,6 +49444,7 @@
 				try {
 					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
 						var door = _step6.value;
+	
 	
 						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
 						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
@@ -49394,11 +49489,11 @@
 	
 						var m = models.models[object.object];
 						var mesh = m.createObject();
-						var dx = (object.x + .5) * ROOM_SIZE;
-						var dy = (object.y + .5) * ROOM_SIZE;
-						var dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+						var _dx = (object.x + .5) * ROOM_SIZE;
+						var _dy = (object.y + .5) * ROOM_SIZE;
+						var _dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
 						mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-						mesh.position.set(dx, dy, dz);
+						mesh.position.set(_dx, _dy, _dz);
 						this.targetMesh.add(mesh);
 					}
 				} catch (err) {
@@ -49510,13 +49605,15 @@
 
 	'use strict';
 	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; }; /*
 	                                                                                                                                                                                                                                                  Credit: https://raw.githubusercontent.com/chandlerprall/ThreeCSG/master/ThreeCSG.js
 	                                                                                                                                                                                                                                                  */
 	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
+	
 	exports.ThreeBSP = ThreeBSP;
 	
 	var _three = __webpack_require__(1);
@@ -50133,7 +50230,7 @@
 		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
 	
 		// xeno base
-		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 28, "y": 26, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 37, "y": 26, "w": 4, "h": 2, "color": "#cccccc", "cave": false }, { "x": 41, "y": 25, "w": 4, "h": 4, "color": "#ff8866", "cave": false }, { "x": 77, "y": 26, "w": 3, "h": 3, "color": "#ff8866", "cave": false }, { "x": 73, "y": 24, "w": 4, "h": 7, "color": "#ffccff", "cave": false }, { "x": 70, "y": 25, "w": 3, "h": 2, "color": "#ccffff", "cave": false }, { "x": 70, "y": 28, "w": 3, "h": 2, "color": "#ffcc88", "cave": false }, { "x": 74, "y": 22, "w": 2, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 69, "y": 51, "w": 2, "h": 2, "color": "#ccffcc", "cave": false }, { "x": 68, "y": 46, "w": 4, "h": 5, "color": "#ccccff", "cave": false }, { "x": 65, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 72, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 69, "y": 35, "w": 1, "h": 11, "color": "#cccccc", "cave": false }, { "x": 66, "y": 36, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 70, "y": 36, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 66, "y": 40, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 70, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 68, "y": 32, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 33, "y": 30, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 32, "y": 20, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 45, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 52, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 54, "y": 25, "w": 8, "h": 4, "color": "#ff8866", "cave": false }], "doors": [{ "x": 31, "y": 27, "dir": "w", "roomA": 0, "roomB": 1, "key": "" }, { "x": 36, "y": 27, "dir": "e", "roomA": 0, "roomB": 2, "key": "" }, { "x": 34, "y": 29, "dir": "s", "roomA": 0, "roomB": 19, "key": "" }, { "x": 34, "y": 24, "dir": "n", "roomA": 0, "roomB": 20, "key": "" }, { "x": 40, "y": 27, "dir": "e", "roomA": 2, "roomB": 3, "key": "" }, { "x": 44, "y": 27, "dir": "e", "roomA": 3, "roomB": 21, "key": "" }, { "x": 77, "y": 27, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 73, "y": 26, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 73, "y": 29, "dir": "w", "roomA": 5, "roomB": 7, "key": "" }, { "x": 75, "y": 24, "dir": "n", "roomA": 5, "roomB": 8, "key": "" }, { "x": 70, "y": 51, "dir": "n", "roomA": 9, "roomB": 10, "key": "" }, { "x": 68, "y": 48, "dir": "w", "roomA": 10, "roomB": 11, "key": "" }, { "x": 71, "y": 48, "dir": "e", "roomA": 10, "roomB": 12, "key": "" }, { "x": 69, "y": 46, "dir": "n", "roomA": 10, "roomB": 13, "key": "" }, { "x": 69, "y": 37, "dir": "w", "roomA": 13, "roomB": 14, "key": "" }, { "x": 69, "y": 37, "dir": "e", "roomA": 13, "roomB": 15, "key": "" }, { "x": 69, "y": 41, "dir": "w", "roomA": 13, "roomB": 16, "key": "" }, { "x": 69, "y": 41, "dir": "e", "roomA": 13, "roomB": 17, "key": "" }, { "x": 69, "y": 35, "dir": "n", "roomA": 13, "roomB": 18, "key": "" }, { "x": 53, "y": 27, "dir": "e", "roomA": 22, "roomB": 23, "key": "" }], "objects": [{ "x": 33, "y": 20, "object": "xenterm", "room": 20, "rot": null }, { "x": 42, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 43, "y": 25, "object": "xenterm", "room": 3, "rot": null }], "teleporters": [{ "roomA": 4, "roomB": 1 }, { "roomA": 8, "roomB": 9 }, { "roomA": 19, "roomB": 18 }, { "roomA": 21, "roomB": 22 }] }
+		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 28, "y": 26, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 37, "y": 26, "w": 4, "h": 2, "color": "#cccccc", "cave": false }, { "x": 41, "y": 25, "w": 4, "h": 4, "color": "#ff8866", "cave": false }, { "x": 77, "y": 26, "w": 3, "h": 3, "color": "#ff8866", "cave": false }, { "x": 73, "y": 24, "w": 4, "h": 7, "color": "#ffccff", "cave": false }, { "x": 70, "y": 25, "w": 3, "h": 2, "color": "#ccffff", "cave": false }, { "x": 70, "y": 28, "w": 3, "h": 2, "color": "#ffcc88", "cave": false }, { "x": 74, "y": 22, "w": 2, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 69, "y": 51, "w": 2, "h": 2, "color": "#ccffcc", "cave": false }, { "x": 68, "y": 46, "w": 4, "h": 5, "color": "#ccccff", "cave": false }, { "x": 65, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 72, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 69, "y": 35, "w": 1, "h": 11, "color": "#cccccc", "cave": false }, { "x": 66, "y": 36, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 70, "y": 36, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 66, "y": 40, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 70, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 68, "y": 32, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 33, "y": 30, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 32, "y": 20, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 45, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 52, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 54, "y": 25, "w": 8, "h": 4, "color": "#ff8866", "cave": false }], "doors": [{ "x": 31, "y": 27, "dir": "w", "roomA": 0, "roomB": 1, "key": "" }, { "x": 36, "y": 27, "dir": "e", "roomA": 0, "roomB": 2, "key": "" }, { "x": 34, "y": 29, "dir": "s", "roomA": 0, "roomB": 19, "key": "" }, { "x": 34, "y": 24, "dir": "n", "roomA": 0, "roomB": 20, "key": "" }, { "x": 40, "y": 27, "dir": "e", "roomA": 2, "roomB": 3, "key": "" }, { "x": 44, "y": 27, "dir": "e", "roomA": 3, "roomB": 21, "key": "" }, { "x": 77, "y": 27, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 73, "y": 26, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 73, "y": 29, "dir": "w", "roomA": 5, "roomB": 7, "key": "" }, { "x": 75, "y": 24, "dir": "n", "roomA": 5, "roomB": 8, "key": "" }, { "x": 70, "y": 51, "dir": "n", "roomA": 9, "roomB": 10, "key": "" }, { "x": 68, "y": 48, "dir": "w", "roomA": 10, "roomB": 11, "key": "" }, { "x": 71, "y": 48, "dir": "e", "roomA": 10, "roomB": 12, "key": "" }, { "x": 69, "y": 46, "dir": "n", "roomA": 10, "roomB": 13, "key": "" }, { "x": 69, "y": 37, "dir": "w", "roomA": 13, "roomB": 14, "key": "" }, { "x": 69, "y": 37, "dir": "e", "roomA": 13, "roomB": 15, "key": "" }, { "x": 69, "y": 41, "dir": "w", "roomA": 13, "roomB": 16, "key": "" }, { "x": 69, "y": 41, "dir": "e", "roomA": 13, "roomB": 17, "key": "" }, { "x": 69, "y": 35, "dir": "n", "roomA": 13, "roomB": 18, "key": "" }, { "x": 53, "y": 27, "dir": "e", "roomA": 22, "roomB": 23, "key": "" }], "objects": [{ "x": 33, "y": 20, "object": "xenterm", "room": 20, "rot": null }, { "x": 42, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 43, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 67, "y": 36, "object": "control", "room": 14, "rot": null }], "teleporters": [{ "roomA": 4, "roomB": 1 }, { "roomA": 8, "roomB": 9 }, { "roomA": 19, "roomB": 18 }, { "roomA": 21, "roomB": 22 }] }
 	};
 	
 	function loadLevel(sectorX, sectorY, onload) {
@@ -50215,7 +50312,7 @@
 			console.log("Uploading...");
 			_jquery2.default.ajax({
 				type: 'POST',
-				url: "http://localhost:9000/cgi-bin/upload.py",
+				url: "http://localhost:9090/cgi-bin/upload.py",
 				data: "name=" + util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + "&file=" + s,
 				success: function success() {
 					console.log("Success!");
@@ -50235,12 +50332,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.CompoundGenerator = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _movement = __webpack_require__(7);
 	
@@ -50262,9 +50359,9 @@
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
-	var _room = __webpack_require__(10);
+	var _room3 = __webpack_require__(10);
 	
-	var constants = _interopRequireWildcard(_room);
+	var constants = _interopRequireWildcard(_room3);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -50287,8 +50384,8 @@
 		_createClass(CompoundGenerator, [{
 			key: 'generate',
 			value: function generate() {
-				var t = undefined,
-				    t2 = undefined;
+				var t = void 0,
+				    t2 = void 0;
 				t = Date.now();
 	
 				var level_geometry = new _three2.default.CubeGeometry(this.w * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, this.h * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, constants.ROOM_SIZE);
@@ -50352,7 +50449,7 @@
 						var dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
 						var dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
 	
-						var shell_mesh = undefined;
+						var shell_mesh = void 0;
 						if (door.key == "") {
 							var shell_geo = new _three2.default.CubeGeometry(constants.DOOR_WIDTH, constants.DOOR_WIDTH, constants.DOOR_HEIGHT);
 							shell_mesh = new _three2.default.Mesh(shell_geo);
@@ -50362,8 +50459,8 @@
 							shell_mesh.geometry = shell_mesh.geometry.clone();
 	
 							// sizing and position by trial-and-error...
-							var w = undefined,
-							    h = undefined;
+							var w = void 0,
+							    h = void 0;
 							if (door.dir == "n" || door.dir == "s") {
 								shell_mesh.geometry.rotateZ(Math.PI / 2);
 								w = keyModel.bbox.size().x / door.h * 1.25;
@@ -50434,9 +50531,9 @@
 						p.x += this.w * constants.ROOM_SIZE * .5;
 						p.y += this.h * constants.ROOM_SIZE * .5;
 						p.z += movement.ROOM_DEPTH;
-						var room = this.getRoomAtPos(p);
-						if (room) {
-							face.color = room.color.clone();
+						var _room = this.getRoomAtPos(p);
+						if (_room) {
+							face.color = _room.color.clone();
 						}
 					}
 				} catch (err) {
@@ -50463,9 +50560,9 @@
 	
 				try {
 					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-						var room = _step4.value;
+						var _room2 = _step4.value;
 	
-						this.makeCaveRoom(room);
+						this.makeCaveRoom(_room2);
 					}
 				} catch (err) {
 					_didIteratorError4 = true;
@@ -61941,12 +62038,12 @@
 
 	"use strict";
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Events = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _util = __webpack_require__(4);
 	
@@ -61960,7 +62057,21 @@
 	
 	var XENO_FILES = [["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."], ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."], ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."], ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."]];
 	
+	var GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
+	//const GAME_DAY = 15 * 1000; // 15 mins = 1 game day
+	
 	var Events = exports.Events = function () {
+		_createClass(Events, null, [{
+			key: "getStartState",
+			value: function getStartState() {
+				return {
+					"allitus-ttl": 10,
+					"next-game-day": Date.now() + GAME_DAY * 0.65,
+					"allitus_control": true
+				};
+			}
+		}]);
+	
 		function Events(movement) {
 			var _this = this;
 	
@@ -61969,9 +62080,8 @@
 			this.xFileIndex = 0;
 			this.xenoFileIndex = 0;
 			this.movement = movement;
-			this.state = {
-				"allitus-ttl": 10
-			};
+			this.hourOfDay = 0;
+			this.state = Events.getStartState();
 			this.EVENTS = {
 				"09,02": function _() {
 					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
@@ -62121,6 +62231,12 @@
 				},
 				"36,c9,FF8866": function c9FF8866() {
 					_this.movement.main.benson.addMessage("Feels cool to the touch.");
+					if (_this.state["allitus_control"]) {
+						_this.movement.main.benson.addMessage("An ominous buzzing");
+						_this.movement.main.benson.addMessage("sound is emitted.");
+					} else {
+						_this.movement.main.benson.addMessage("Total silence reigns.");
+					}
 					return true;
 				},
 				"f8,c9,CCFFFF": function f8C9CCFFFF() {
@@ -62129,6 +62245,20 @@
 				},
 				"f8,c9,FF8866": function f8C9FF8866() {
 					_this.xenoTerm();
+					return true;
+				},
+				"f8,c9,FFCCCC": function f8C9FFCCCC(object) {
+					_this.state["allitus_control"] = !_this.state["allitus_control"];
+					if (_this.state["allitus_control"]) {
+						util.toggleColor(object, 0x02C40C, 0xC4000C);
+					} else {
+						util.toggleColor(object, 0xC4000C, 0x02C40C);
+						util.toggleColor(object, 0xc5020d, 0x02C40C); // I... no idea why
+					}
+					_this.movement.noise.play("control");
+					setTimeout(function () {
+						_this.movement.main.benson.addMessage("Allitus is " + (_this.state["allitus_control"] ? "ARMED" : "disarmed"));
+					}, 500);
 					return true;
 				}
 			};
@@ -62215,17 +62345,23 @@
 			}
 		}, {
 			key: "update",
-			value: function update(sectorX, sectorY) {
+			value: function update(sectorX, sectorY, now) {
 				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
 				if (this.EVENTS[key]) this.EVENTS[key]();
+	
+				if (now > this.state["next-game-day"]) {
+					this.state["allitus-ttl"] -= 1;
+					this.state["next-game-day"] = now + GAME_DAY;
+				}
+				this.hourOfDay = 24 - (this.state["next-game-day"] - now) / GAME_DAY * 24 | 0;
 			}
 		}, {
 			key: "pickup",
-			value: function pickup(modelName, sectorX, sectorY, roomColor) {
+			value: function pickup(modelName, sectorX, sectorY, roomColor, object) {
 				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2) + "," + roomColor;
 				console.log("key=" + key);
 				if (this.PICKUP_EVENTS[key]) {
-					return this.PICKUP_EVENTS[key]();
+					return this.PICKUP_EVENTS[key](object);
 				}
 				return false;
 			}
@@ -62242,6 +62378,11 @@
 					}
 					this.state["xeno-base-notification"] = now + Math.max(500, 5000 * d | 0);
 				}
+			}
+		}, {
+			key: "getAllitusTTL",
+			value: function getAllitusTTL() {
+				return this.state["allitus-ttl"];
 			}
 		}]);
 	
@@ -62305,12 +62446,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Horizon = exports.Compass = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _jquery = __webpack_require__(6);
 	
@@ -62418,12 +62559,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Benson = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _jquery = __webpack_require__(6);
 	
@@ -62523,12 +62664,12 @@
 
 	'use strict';
 	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
 	exports.Space = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _three = __webpack_require__(1);
 	
@@ -62577,16 +62718,16 @@
 			}
 			this.scene.add(this.obj);
 	
-			for (var i = 0; i < 5000; i++) {
+			for (var _i = 0; _i < 5000; _i++) {
 				var _iteratorNormalCompletion = true;
 				var _didIteratorError = false;
 				var _iteratorError = undefined;
 	
 				try {
 					for (var _iterator = this.obj.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						var mesh = _step.value;
+						var _mesh = _step.value;
 	
-						Space.moveStar(mesh, MAX_SPEED);
+						Space.moveStar(_mesh, MAX_SPEED);
 					}
 				} catch (err) {
 					_didIteratorError = true;

@@ -287,7 +287,7 @@ export class Movement {
 
 	pickup() {
 		if(this.pickupObject) {
-			let handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase());
+			let handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase(), this.pickupObject);
 
 			if(!handled) {
 				this.inventory.push(this.pickupObject.model.name);
@@ -339,12 +339,12 @@ export class Movement {
 	useElevator() {
 		if(this.enterMode == ENTER_BASE) {
 			console.log("Entering alien base.");
-			this.sectorX = ALIEN_BASE_POS[0];
-			this.sectorY = ALIEN_BASE_POS[1];
-			let offsetX = this.player.position.x;
-			let offsetY = this.player.position.y;
-			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
+			compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], (level)=> {
 				this.level = level;
+				this.sectorX = ALIEN_BASE_POS[0];
+				this.sectorY = ALIEN_BASE_POS[1];
+				let offsetX = this.player.position.x;
+				let offsetY = this.player.position.y;
 				if (this.level) {
 					this.teleportDir = 1;
 					this.teleportTime = Date.now() + TELEPORT_TIME;
@@ -757,7 +757,6 @@ export class Movement {
 		if(door.door.key != "" && this.inventory.filter((o)=>door.door.key == o).length == 0) {
 			// key needed
 			this.noise.play("denied");
-			return;
 		}
 		//this.level.makeCave(door.door);
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
@@ -823,6 +822,9 @@ export class Movement {
 
 		let blocked = false;
 		if(closest) {
+			// doors are blocking: meaning we don't slide off of them
+			if(closest.object.type == "door") blocked = true;
+
 			if(closest.object.type == "door" && closest.object["moving"] == null) {
 				this.openDoor(closest.object);
 			}
@@ -976,7 +978,11 @@ export class Movement {
 		this.events.checkPosition(this.player.position, this.vehicle);
 
 		this.checkNoise();
-		this.events.update(this.sectorX, this.sectorY);
+		this.events.update(this.sectorX, this.sectorY, time);
+
+		if(this.events.getAllitusTTL() <= 0) {
+			// todo: kaboom - game over
+		}
 	}
 
 	getDistanceToAlienBase() {

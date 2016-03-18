@@ -8,6 +8,7 @@ import * as model from 'model'
 import * as compass from 'compass'
 import * as benson from 'benson'
 import * as space from 'space'
+import * as events from 'events'
 
 const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
@@ -21,6 +22,7 @@ const VERSION = 0.1; // todo: git hook this
 class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
+		this.hourOfDay = 0;
 		window.cb = "" + Date.now();
 		new model.Models((models)=>this.init(models))
 	}
@@ -116,17 +118,17 @@ class Merc {
 
 		// hack: start in a room
 		this.movement.loadGame({
-			//sectorX: 0xf8, sectorY: 0xc9,
-			sectorX: 0xc8, sectorY: 0xf0,
-			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+			sectorX: 0xf8, sectorY: 0xc9,
+			//sectorX: 0xc8, sectorY: 0xf0,
+			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
 			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
-			state: {
+			state: Object.assign(events.Events.getStartState(), {
 				"lightcar-keys": true,
 				"allitus-ttl": 10,
 				"override-17a": true
-			}
+			})
 		});
 	}
 
@@ -186,8 +188,15 @@ class Merc {
 	animate() {
 		this.benson.update();
 		if(this.movement) {
-			this.game_map.update();
 			this.movement.update();
+
+			// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
+			if(this.movement.events.hourOfDay != this.hourOfDay) {
+				this.hourOfDay = this.movement.events.hourOfDay;
+				let p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+				console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
+				//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
+			}
 		} else if(this.space) {
 			this.space.update();
 		}
@@ -208,6 +217,7 @@ class Merc {
 			$("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
 			$("#alt .value").text("" + z);
 			$("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
+			$("#time .value").text("" + (11 - this.movement.events.state["allitus-ttl"]) + "-" + this.getAMPMHour());
 			this.compass.update(this.movement.getHeadingAngle());
 			this.horizon.update(this.movement.getPitchAngle());
 		} else if(this.space) {
@@ -220,6 +230,16 @@ class Merc {
 			}, 1000/FPS_LIMITS[this.fpsLimitIndex]);
 		} else {
 			requestAnimationFrame(util.bind(this, this.animate));
+		}
+	}
+
+	getAMPMHour() {
+		if(this.movement.events.hourOfDay >= 0 && this.movement.events.hourOfDay < 12) {
+			return this.movement.events.hourOfDay + "AM";
+		} else if(this.movement.events.hourOfDay == 12) {
+			return this.movement.events.hourOfDay + "PM";
+		} else {
+			return (this.movement.events.hourOfDay - 12) + "PM";
 		}
 	}
 }

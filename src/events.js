@@ -70,14 +70,24 @@ const XENO_FILES = [
 	]
 ];
 
+const GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
+//const GAME_DAY = 15 * 1000; // 15 mins = 1 game day
+
 export class Events {
+	static getStartState() {
+		return {
+			"allitus-ttl": 10,
+			"next-game-day": Date.now() + GAME_DAY * 0.65,
+			"allitus_control": true
+		};
+	}
+
 	constructor(movement) {
 		this.xFileIndex = 0;
 		this.xenoFileIndex = 0;
 		this.movement = movement;
-		this.state = {
-			"allitus-ttl": 10
-		};
+		this.hourOfDay = 0;
+		this.state = Events.getStartState();
 		this.EVENTS = {
 			"09,02": ()=> {
 				if (!this.state["lift-9-2"] && this.movement.getElevator()) {
@@ -227,6 +237,12 @@ export class Events {
 			},
 			"36,c9,FF8866": () => {
 				this.movement.main.benson.addMessage("Feels cool to the touch.");
+				if(this.state["allitus_control"]) {
+					this.movement.main.benson.addMessage("An ominous buzzing");
+					this.movement.main.benson.addMessage("sound is emitted.");
+				} else {
+					this.movement.main.benson.addMessage("Total silence reigns.");
+				}
 				return true;
 			},
 			"f8,c9,CCFFFF": () => {
@@ -235,6 +251,20 @@ export class Events {
 			},
 			"f8,c9,FF8866": () => {
 				this.xenoTerm();
+				return true;
+			},
+			"f8,c9,FFCCCC": (object) => {
+				this.state["allitus_control"] = !this.state["allitus_control"];
+				if(this.state["allitus_control"]) {
+					util.toggleColor(object, 0x02C40C, 0xC4000C);
+				} else {
+					util.toggleColor(object, 0xC4000C, 0x02C40C);
+					util.toggleColor(object, 0xc5020d, 0x02C40C); // I... no idea why
+				}
+				this.movement.noise.play("control");
+				setTimeout(()=> {
+					this.movement.main.benson.addMessage("Allitus is " + (this.state["allitus_control"] ? "ARMED" : "disarmed"));
+				}, 500);
 				return true;
 			}
 		}
@@ -272,16 +302,22 @@ export class Events {
 		this.movement.main.benson.addMessage("System health: OK");
 	}
 
-	update(sectorX, sectorY) {
+	update(sectorX, sectorY, now) {
 		let key = "" + util.toHex(sectorX,2) + "," + util.toHex(sectorY,2);
 		if (this.EVENTS[key]) this.EVENTS[key]();
+
+		if(now > this.state["next-game-day"]) {
+			this.state["allitus-ttl"] -= 1;
+			this.state["next-game-day"] = now + GAME_DAY;
+		}
+		this.hourOfDay = 24 - ((this.state["next-game-day"] - now)/GAME_DAY * 24)|0;
 	}
 
-	pickup(modelName, sectorX, sectorY, roomColor) {
+	pickup(modelName, sectorX, sectorY, roomColor, object) {
 		let key = "" + util.toHex(sectorX,2) + "," + util.toHex(sectorY,2) + "," + roomColor;
 		console.log("key=" + key);
 		if (this.PICKUP_EVENTS[key]) {
-			return this.PICKUP_EVENTS[key]();
+			return this.PICKUP_EVENTS[key](object);
 		}
 		return false;
 	}
@@ -300,4 +336,7 @@ export class Events {
 		}
 	}
 
+	getAllitusTTL() {
+		return this.state["allitus-ttl"];
+	}
 }
