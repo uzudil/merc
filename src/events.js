@@ -78,7 +78,8 @@ export class Events {
 		return {
 			"allitus-ttl": 10,
 			"next-game-day": Date.now() + GAME_DAY * 0.65,
-			"allitus_control": true
+			"allitus_control": true,
+			"xeno_base_depart": false
 		};
 	}
 
@@ -253,6 +254,20 @@ export class Events {
 				this.xenoTerm();
 				return true;
 			},
+			"f8,c9,CCCCCC": () => {
+				if(this.movement.inInventory("core")) {
+					this.movement.main.benson.addMessage("The drives now have");
+					this.movement.main.benson.addMessage("plasma cores installed.");
+					this.movement.main.benson.addMessage("The xeno ship prepares");
+					this.movement.main.benson.addMessage("to depart from Targ.");
+					this.state["xeno_base_depart"] = true;
+				} else {
+					this.movement.main.benson.addMessage("These xeno drives need");
+					this.movement.main.benson.addMessage("new plasma cores to");
+					this.movement.main.benson.addMessage("operate again.");
+				}
+				return true;
+			},
 			"f8,c9,FFCCCC": (object) => {
 				this.state["allitus_control"] = !this.state["allitus_control"];
 				if(this.state["allitus_control"]) {
@@ -264,6 +279,13 @@ export class Events {
 				this.movement.noise.play("control");
 				setTimeout(()=> {
 					this.movement.main.benson.addMessage("Allitus is " + (this.state["allitus_control"] ? "ARMED" : "disarmed"));
+					if(!this.state["allitus_control"]) {
+						this.movement.main.benson.addMessage("The Targ city council is");
+						this.movement.main.benson.addMessage("eternally grateful for");
+						this.movement.main.benson.addMessage("disabling the alien threat.");
+						this.movement.main.benson.addMessage("20000 credits have been");
+						this.movement.main.benson.addMessage("added to your account.");
+					}
 				}, 500);
 				return true;
 			}
@@ -326,6 +348,7 @@ export class Events {
 		// "sonar" to alien base
 		let now = Date.now();
 		if(pos.z >= 10000 && vehicle.model.name == "ufo" &&
+			!this.state["xeno_base_depart"] &&
 			(!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
 			let d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
 			// stop beeping when really close

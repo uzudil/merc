@@ -11,7 +11,7 @@ const MODELS = [
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
 	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno",
-	"xenterm", "trans", "control"
+	"xenterm", "trans", "control", "engine", "core"
 ];
 
 const VEHICLES = {
@@ -74,7 +74,9 @@ const SCALE = {
 	"allitus": 15,
 	"xenterm": 8,
 	"trans": 10,
-	"control": 10
+	"control": 10,
+	"engine": 15,
+	"core": 10
 };
 
 const DESCRIPTIONS = {
@@ -90,7 +92,8 @@ const DESCRIPTIONS = {
 	"art": "Xeno artifact",
 	"art2": "Xeno artifact",
 	"ufo": "Alien craft A3",
-	"trans": "Xeno translator chip"
+	"trans": "Xeno translator chip",
+	"core": "Plasma drive core"
 };
 
 const LIFTS = {

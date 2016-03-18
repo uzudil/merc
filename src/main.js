@@ -123,7 +123,7 @@ class Merc {
 			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
-			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans"],
+			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 			state: Object.assign(events.Events.getStartState(), {
 				"lightcar-keys": true,
 				"allitus-ttl": 10,

@@ -430,7 +430,7 @@ export class Movement {
 					this.stop();
 
 					// the alien base is only visible from the ufo
-					this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo";
+					this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo" && !this.events.state["xeno_base_depart"];
 				} else {
 					this.noise.play("denied");
 				}
@@ -590,7 +590,7 @@ export class Movement {
 					// moving out of the base
 					this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
 					this.vehicle = this.main.models.models["ufo"].createObject();
-					this.main.game_map.xenoBase.visible = true;
+					this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 					this.level.destroy();
 					this.level = null;
 				} else if(this.baseMove == 1) {
