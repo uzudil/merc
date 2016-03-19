@@ -10,6 +10,7 @@ var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 export class GameMap {
 	constructor(scene, models, player, maxAnisotropy) {
+		this.models = models;
 		this.player = player;
 		this.land = new THREE.Object3D();
 		this.sectors = {};
@@ -197,5 +198,14 @@ export class GameMap {
 			if(sectorY >= this.maxSector.y) this.maxSector.y = sectorY;
 		}
 		return this.sectors[k];
+	}
+
+	addShip(x, y, zrot) {
+		this.addModelAt(
+			x + 100,
+			y + 100,
+			0,
+			this.models.models["ship"],
+			zrot);
 	}
 }

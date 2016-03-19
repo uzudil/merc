@@ -92,6 +92,10 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
+	var _constants = __webpack_require__(63);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -101,9 +105,6 @@
 	var FPS_LIMITS = [0, 30, 15];
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
-	var START_X = 0x33;
-	var START_Y = 0x66;
-	var START_Z = 50000;
 	
 	var VERSION = 0.1; // todo: git hook this
 	
@@ -207,7 +208,7 @@
 				console.log("game starting");
 				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
-				this.movement.player.position.set(game_map.SECTOR_SIZE * START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * START_Y, skipLanding ? movement.DEFAULT_Z : START_Z);
+				this.movement.player.position.set(game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 				//movement.DEFAULT_Z);
 				if (!skipLanding) this.movement.startLanding();
 	
@@ -217,16 +218,18 @@
 	
 				// hack: start in a room
 				this.movement.loadGame({
-					sectorX: 0xf8, sectorY: 0xc9,
-					//sectorX: 0xc8, sectorY: 0xf0,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.ROOM_DEPTH,
-					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+					//sectorX: 0xf8, sectorY: 0xc9,
+					sectorX: 0x33, sectorY: 0x66,
+					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
 					vehicle: null,
 					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 					state: Object.assign(events.Events.getStartState(), {
 						"lightcar-keys": true,
 						"allitus-ttl": 10,
-						"override-17a": true
+						"override-17a": true,
+						"allitus_control": false,
+						"xeno_base_depart": true
 					})
 				});
 			}
@@ -298,7 +301,7 @@
 					if (this.movement.events.hourOfDay != this.hourOfDay) {
 						this.hourOfDay = this.movement.events.hourOfDay;
 						var p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
-						console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
+						//console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
 						//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
 					}
 				} else if (this.space) {
@@ -36612,6 +36615,7 @@
 		function GameMap(scene, models, player, maxAnisotropy) {
 			_classCallCheck(this, GameMap);
 	
+			this.models = models;
 			this.player = player;
 			this.land = new _three2.default.Object3D();
 			this.sectors = {};
@@ -36895,6 +36899,11 @@
 					if (sectorY >= this.maxSector.y) this.maxSector.y = sectorY;
 				}
 				return this.sectors[k];
+			}
+		}, {
+			key: 'addShip',
+			value: function addShip(x, y, zrot) {
+				this.addModelAt(x + 100, y + 100, 0, this.models.models["ship"], zrot);
 			}
 		}]);
 	
@@ -46925,6 +46934,10 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
+	var _constants = __webpack_require__(63);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -46982,6 +46995,8 @@
 			this.liftDirection = 0;
 			this.teleportDir = 0;
 			this.teleportTime = 0;
+			this.explosion = false;
+			this.gameover = false;
 			this.baseMove = 0;
 			this.sectorX = 0;
 			this.sectorY = 0;
@@ -47027,11 +47042,13 @@
 			this.movementY = 0.0;
 	
 			this.landing = 0;
+			this.takeoff = 0;
 	
 			this.events = new events.Events(this);
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
-				if (_this.landing != 0) return;
+				if (_this.landing != 0 || _this.takeoff != 0) return;
+				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 	
 				_this.movementX = event.originalEvent.movementX;
 				_this.movementY = event.originalEvent.movementY;
@@ -47064,6 +47081,7 @@
 			});
 	
 			(0, _jquery2.default)(document).keydown(function (event) {
+				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
 					case 87:
 						_this.fw = true;break;
@@ -47078,6 +47096,7 @@
 	
 			(0, _jquery2.default)(document).keyup(function (event) {
 				//console.log(event.keyCode);
+				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
 					case 27 && _this.landing != 0:
 						_this.noise.stop("pink");
@@ -47164,6 +47183,7 @@
 				this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
+				this.main.game_map.addShip(constants.START_X * game_map.SECTOR_SIZE + 100, constants.START_Y * game_map.SECTOR_SIZE + 100, 0);
 				if (this.player.position.z == ROOM_DEPTH) {
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
 						_this2.level = level;
@@ -47540,7 +47560,7 @@
 			key: 'getSpeed',
 			value: function getSpeed() {
 				var walking_movement = this.fw || this.bw || this.left || this.right;
-				if (this.landing) {
+				if (this.landing || this.takeoff) {
 					return this.player.position.z / (LANDING_ALT + DEFAULT_Z) * 100000;
 				} else if (this.vehicle) {
 					if (this.vehicle.model.exp) {
@@ -47592,23 +47612,27 @@
 						p = 1 - (this.teleportTime - time) / TELEPORT_TIME;
 						this.teleporter.material.opacity = p;
 						this.teleporter.material.needsUpdate = true;
-						this.noise.setLevel("teleport", p);
+						if (!this.explosion) this.noise.setLevel("teleport", p);
 					} else {
-						this.teleportDir = -1;
-						this.teleportTime = time + TELEPORT_TIME;
-						if (this.baseMove == -1) {
-							// moving out of the base
-							this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-							this.vehicle = this.main.models.models["ufo"].createObject();
-							this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
-							this.level.destroy();
-							this.level = null;
-						} else if (this.baseMove == 1) {
-							// moving into the base
-							this.vehicle = null;
-							this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
-						} else if (this.room != null && this.room.teleportToRoom != null) {
-							this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
+						if (this.explosion) {
+							this.runGameover("explosion_gameover");
+						} else {
+							this.teleportDir = -1;
+							this.teleportTime = time + TELEPORT_TIME;
+							if (this.baseMove == -1) {
+								// moving out of the base
+								this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
+								this.vehicle = this.main.models.models["ufo"].createObject();
+								this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
+								this.level.destroy();
+								this.level = null;
+							} else if (this.baseMove == 1) {
+								// moving into the base
+								this.vehicle = null;
+								this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+							} else if (this.room != null && this.room.teleportToRoom != null) {
+								this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
+							}
 						}
 					}
 				} else {
@@ -47961,7 +47985,7 @@
 			key: 'checkNoise',
 			value: function checkNoise() {
 				// adjust noise
-				if (this.landing != 0) return;
+				if (this.takeoff != 0 || this.landing != 0 || this.explosion) return;
 	
 				if (this.liftDirection != 0 || this.doorsUp.length > 0) {
 					// pass: set in updateLift, etc
@@ -47997,7 +48021,7 @@
 					this.power = 0;
 	
 					// add ship behind player
-					this.main.game_map.addModelAt(this.player.position.x + 100, this.player.position.y + 100, 0, this.main.models.models["ship"], this.player.rotation.z);
+					this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 	
 					this.main.benson.addMessage("Welcome to Targ.");
 					this.main.benson.addMessage("Please take the jet");
@@ -48008,8 +48032,30 @@
 				}
 			}
 		}, {
+			key: 'updateTakeoff',
+			value: function updateTakeoff(time, delta) {
+				if (this.takeoff > time) {
+					var p = 1 - (this.takeoff - time) / LANDING_TIME;
+					this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
+				} else {
+					var gameoverId = void 0;
+					if (!this.events.state["allitus_control"] && this.events.state["xeno_base_depart"]) {
+						gameoverId = "targSavedAndXenoDepart";
+					} else if (!this.events.state["allitus_control"]) {
+						gameoverId = "targSaved";
+					} else {
+						gameoverId = "xenoDepart";
+					}
+					this.runGameover(gameoverId);
+				}
+			}
+		}, {
 			key: 'update',
 			value: function update() {
+				if (this.gameover) {
+					return;
+				}
+	
 				var time = Date.now();
 				var delta = (time - this.prevTime) / 1000;
 				this.prevTime = time;
@@ -48023,30 +48069,30 @@
 	
 				if (this.landing) {
 					this.updateLanding(time, delta);
+				} else if (this.takeoff) {
+					this.updateTakeoff(time, delta);
+				} else if (this.liftDirection != 0) {
+					this.updateLift(delta);
+				} else if (this.teleportDir != 0) {
+					this.updateTeleporter(delta, time);
 				} else {
-					if (this.liftDirection != 0) {
-						this.updateLift(delta);
-					} else if (this.teleportDir != 0) {
-						this.updateTeleporter(delta, time);
+					var dx = this.getSpeed() / 20 * delta;
+					if (this.vehicle) {
+						this.updateVehicle(dx, delta);
 					} else {
-						var dx = this.getSpeed() / 20 * delta;
-						if (this.vehicle) {
-							this.updateVehicle(dx, delta);
-						} else {
-							this.updateWalking(dx, delta);
-						}
-						this.checkBoundingBox();
-						this.checkPickup();
+						this.updateWalking(dx, delta);
+					}
+					this.checkBoundingBox();
+					this.checkPickup();
 	
-						if (!window.loadingComplex) {
-							(0, _jquery2.default)("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
-							(0, _jquery2.default)("#exit").toggle(this.enterMode == EXIT_COMPOUND);
-							(0, _jquery2.default)("#vehicle").toggle(this.intersections.filter(function (o) {
-								return o.model instanceof models.Vehicle;
-							}).length > 0);
-							(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
-							(0, _jquery2.default)("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
-						}
+					if (!window.loadingComplex) {
+						(0, _jquery2.default)("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+						(0, _jquery2.default)("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+						(0, _jquery2.default)("#vehicle").toggle(this.intersections.filter(function (o) {
+							return o.model instanceof models.Vehicle;
+						}).length > 0);
+						(0, _jquery2.default)("#pickup").toggle(this.pickupObject != null);
+						(0, _jquery2.default)("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
 					}
 				}
 	
@@ -48055,8 +48101,12 @@
 				this.checkNoise();
 				this.events.update(this.sectorX, this.sectorY, time);
 	
-				if (this.events.getAllitusTTL() <= 0) {
-					// todo: kaboom - game over
+				if (this.events.getAllitusTTL() <= 0 && !this.explosion) {
+					console.log("BOOM!");
+					// kaboom - game over
+					this.explosion = true;
+					this.teleportDir = 1;
+					this.teleportTime = Date.now() + TELEPORT_TIME * 4;
 				}
 			}
 		}, {
@@ -48071,6 +48121,22 @@
 				this.landing = Date.now() + LANDING_TIME;
 				this.pitch.rotation.x = 0;
 				this.noise.setLevel("pink", 0);
+			}
+		}, {
+			key: 'startTakeoff',
+			value: function startTakeoff() {
+				console.log("starting takeoff");
+				this.takeoff = Date.now() + LANDING_TIME;
+				//this.pitch.rotation.x = 0;
+				this.noise.setLevel("pink", 1);
+			}
+		}, {
+			key: 'runGameover',
+			value: function runGameover(gameoverId) {
+				this.gameover = true;
+				this.noise.stopAll();
+				(0, _jquery2.default)("#" + gameoverId).fadeIn();
+				document.exitPointerLock();
 			}
 		}], [{
 			key: 'makeCrossHair',
@@ -48151,14 +48217,28 @@
 		},
 		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 			onEnter: function onEnter(movement) {
-				if (movement.events.state["allitus_control"]) {
+				// can't depart until either: allitus is stopped, or the xeno base left
+				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
+					setTimeout(function () {
+						movement.main.benson.addMessage("Preparing for takeoff...", function () {
+							movement.main.benson.addMessage("3...", function () {
+								movement.main.benson.addMessage("2...", function () {
+									movement.main.benson.addMessage("1...", function () {
+										movement.main.benson.addMessage("Blastoff!", function () {
+											movement.startTakeoff();
+										});
+									});
+								});
+							});
+						});
+					}, 500);
+					return true;
+				} else {
 					movement.main.benson.addMessage("Until you complete");
 					movement.main.benson.addMessage("your mission, your");
 					movement.main.benson.addMessage("ship remains locked.");
-				} else {
-					// todo: begin takeoff sequence
+					return false;
 				}
-				return false;
 			}
 		},
 		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
@@ -48404,6 +48484,13 @@
 		}
 	
 		_createClass(Noise, [{
+			key: "stopAll",
+			value: function stopAll() {
+				for (var n in this.noises) {
+					this.noises[n].stop();
+				}
+			}
+		}, {
 			key: "stop",
 			value: function stop(name) {
 				this.noises[name].stop();
@@ -62061,7 +62148,7 @@
 	var XENO_FILES = [["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."], ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."], ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."], ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."]];
 	
 	var GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-	//const GAME_DAY = 15 * 1000; // 15 mins = 1 game day
+	//const GAME_DAY = 5 * 1000; // 15 mins = 1 game day
 	
 	var Events = exports.Events = function () {
 		_createClass(Events, null, [{
@@ -62407,7 +62494,7 @@
 		}, {
 			key: "getAllitusTTL",
 			value: function getAllitusTTL() {
-				return this.state["allitus-ttl"];
+				return this.state["allitus_control"] ? this.state["allitus-ttl"] : 10;
 			}
 		}]);
 	
@@ -62905,6 +62992,19 @@
 	
 		return Space;
 	}();
+
+/***/ },
+/* 63 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var START_X = exports.START_X = 0x33;
+	var START_Y = exports.START_Y = 0x66;
+	var START_Z = exports.START_Z = 50000;
 
 /***/ }
 /******/ ]);

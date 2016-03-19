@@ -36,14 +36,30 @@ const VEHICLES = {
 	},
 	"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
 		onEnter: (movement)=> {
-			if(movement.events.state["allitus_control"]) {
+			// can't depart until either: allitus is stopped, or the xeno base left
+			if(!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
+				setTimeout(()=> {
+					movement.main.benson.addMessage("Preparing for takeoff...", ()=> {
+						movement.main.benson.addMessage("3...", ()=> {
+							movement.main.benson.addMessage("2...", ()=> {
+								movement.main.benson.addMessage("1...", ()=> {
+									movement.main.benson.addMessage("Blastoff!", ()=> {
+										movement.startTakeoff();
+									});
+								});
+							});
+						});
+					});
+				}, 500);
+				return true;
+			} else {
 				movement.main.benson.addMessage("Until you complete");
 				movement.main.benson.addMessage("your mission, your");
 				movement.main.benson.addMessage("ship remains locked.");
-			} else {
-				// todo: begin takeoff sequence
+				return false;
+
 			}
-			return false;
+
 		}
 	},
 	"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,

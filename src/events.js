@@ -71,7 +71,7 @@ const XENO_FILES = [
 ];
 
 const GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-//const GAME_DAY = 15 * 1000; // 15 mins = 1 game day
+//const GAME_DAY = 5 * 1000; // 15 mins = 1 game day
 
 export class Events {
 	static getStartState() {
@@ -360,6 +360,6 @@ export class Events {
 	}
 
 	getAllitusTTL() {
-		return this.state["allitus-ttl"];
+		return this.state["allitus_control"] ? this.state["allitus-ttl"] : 10;
 	}
 }

@@ -9,13 +9,11 @@ import * as compass from 'compass'
 import * as benson from 'benson'
 import * as space from 'space'
 import * as events from 'events'
+import * as constants from 'constants'
 
 const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
-const START_X = 0x33;
-const START_Y = 0x66;
-const START_Z = 50000;
 
 const VERSION = 0.1; // todo: git hook this
 
@@ -106,9 +104,9 @@ class Merc {
 		this.renderer.setClearColor(game_map.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 		this.movement.player.position.set(
-			game_map.SECTOR_SIZE * START_X + game_map.SECTOR_SIZE/2,
-			game_map.SECTOR_SIZE * START_Y,
-			skipLanding ? movement.DEFAULT_Z : START_Z);
+			game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE/2,
+			game_map.SECTOR_SIZE * constants.START_Y,
+			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 			//movement.DEFAULT_Z);
 		if(!skipLanding) this.movement.startLanding();
 
@@ -118,16 +116,18 @@ class Merc {
 
 		// hack: start in a room
 		this.movement.loadGame({
-			sectorX: 0xf8, sectorY: 0xc9,
-			//sectorX: 0xc8, sectorY: 0xf0,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+			//sectorX: 0xf8, sectorY: 0xc9,
+			sectorX: 0x33, sectorY: 0x66,
+			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
 			vehicle: null,
 			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 			state: Object.assign(events.Events.getStartState(), {
 				"lightcar-keys": true,
 				"allitus-ttl": 10,
-				"override-17a": true
+				"override-17a": true,
+				"allitus_control": false,
+				"xeno_base_depart": true
 			})
 		});
 	}
@@ -194,7 +194,7 @@ class Merc {
 			if(this.movement.events.hourOfDay != this.hourOfDay) {
 				this.hourOfDay = this.movement.events.hourOfDay;
 				let p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
-				console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
+				//console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
 				//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
 			}
 		} else if(this.space) {

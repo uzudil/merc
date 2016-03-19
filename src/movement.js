@@ -11,6 +11,7 @@ import * as room_package from 'room'
 import * as compounds from 'compounds'
 import * as game_map from 'game_map'
 import * as events from 'events'
+import * as constants from 'constants'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
@@ -59,6 +60,8 @@ export class Movement {
 		this.liftDirection = 0;
 		this.teleportDir = 0;
 		this.teleportTime = 0;
+		this.explosion = false;
+		this.gameover = false;
 		this.baseMove = 0;
 		this.sectorX = 0;
 		this.sectorY = 0;
@@ -104,11 +107,13 @@ export class Movement {
 		this.movementY = 0.0;
 
 		this.landing = 0;
+		this.takeoff = 0;
 
 		this.events = new events.Events(this);
 
 		$(document).mousemove((event) => {
-			if(this.landing != 0) return;
+			if(this.landing != 0 || this.takeoff != 0) return;
+			if(this.vehicle && this.vehicle.model.name == "ship") return;
 
 			this.movementX = event.originalEvent.movementX;
 			this.movementY = event.originalEvent.movementY;
@@ -141,6 +146,7 @@ export class Movement {
 		});
 
 		$(document).keydown(( event ) => {
+			if(this.vehicle && this.vehicle.model.name == "ship") return;
 			switch ( event.keyCode ) {
 				case 87: this.fw = true; break;
 				case 83: this.bw = true; break;
@@ -151,6 +157,7 @@ export class Movement {
 
 		$(document).keyup(( event ) => {
 			//console.log(event.keyCode);
+			if(this.vehicle && this.vehicle.model.name == "ship") return;
 			switch( event.keyCode ) {
 				case 27 && this.landing != 0:
 					this.noise.stop("pink");
@@ -216,6 +223,9 @@ export class Movement {
 		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
 		this.events.state = gameState.state;
+		this.main.game_map.addShip(constants.START_X * game_map.SECTOR_SIZE + 100,
+			constants.START_Y * game_map.SECTOR_SIZE + 100,
+			0);
 		if(this.player.position.z == ROOM_DEPTH) {
 			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
 				this.level = level;
@@ -533,7 +543,7 @@ export class Movement {
 
 	getSpeed() {
 		let walking_movement = this.fw || this.bw || this.left || this.right;
-		if(this.landing) {
+		if(this.landing || this.takeoff) {
 			return (this.player.position.z/(LANDING_ALT + DEFAULT_Z)) * 100000;
 		} else if(this.vehicle) {
 			if(this.vehicle.model.exp) {
@@ -582,23 +592,27 @@ export class Movement {
 				p = 1 - (this.teleportTime - time)/TELEPORT_TIME;
 				this.teleporter.material.opacity = p;
 				this.teleporter.material.needsUpdate = true;
-				this.noise.setLevel("teleport", p);
+				if(!this.explosion) this.noise.setLevel("teleport", p);
 			} else {
-				this.teleportDir = -1;
-				this.teleportTime = time + TELEPORT_TIME;
-				if(this.baseMove == -1) {
-					// moving out of the base
-					this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-					this.vehicle = this.main.models.models["ufo"].createObject();
-					this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
-					this.level.destroy();
-					this.level = null;
-				} else if(this.baseMove == 1) {
-					// moving into the base
-					this.vehicle = null;
-					this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
-				} else if(this.room != null && this.room.teleportToRoom != null) {
-					this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
+				if(this.explosion) {
+					this.runGameover("explosion_gameover");
+				} else {
+					this.teleportDir = -1;
+					this.teleportTime = time + TELEPORT_TIME;
+					if (this.baseMove == -1) {
+						// moving out of the base
+						this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
+						this.vehicle = this.main.models.models["ufo"].createObject();
+						this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
+						this.level.destroy();
+						this.level = null;
+					} else if (this.baseMove == 1) {
+						// moving into the base
+						this.vehicle = null;
+						this.player.position.set(this.player.position.x, this.player.position.y, ROOM_DEPTH);
+					} else if (this.room != null && this.room.teleportToRoom != null) {
+						this.level.moveToRoom(this.room.teleportToRoom, this.player.position);
+					}
 				}
 			}
 		} else {
@@ -884,7 +898,7 @@ export class Movement {
 
 	checkNoise() {
 		// adjust noise
-		if(this.landing != 0) return;
+		if(this.takeoff != 0 || this.landing != 0 || this.explosion) return;
 
 		if(this.liftDirection != 0 || this.doorsUp.length > 0) {
 			// pass: set in updateLift, etc
@@ -920,12 +934,7 @@ export class Movement {
 			this.power = 0;
 
 			// add ship behind player
-			this.main.game_map.addModelAt(
-				this.player.position.x + 100,
-				this.player.position.y + 100,
-				0,
-				this.main.models.models["ship"],
-				this.player.rotation.z);
+			this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 
 			this.main.benson.addMessage("Welcome to Targ.");
 			this.main.benson.addMessage("Please take the jet");
@@ -936,7 +945,28 @@ export class Movement {
 		}
 	}
 
+	updateTakeoff(time, delta) {
+		if(this.takeoff > time) {
+			let p = 1 - ((this.takeoff - time)/LANDING_TIME);
+			this.player.position.z = Math.pow(p, 3) * LANDING_ALT + DEFAULT_Z;
+		} else {
+			let gameoverId;
+			if(!this.events.state["allitus_control"] && this.events.state["xeno_base_depart"]) {
+				gameoverId = "targSavedAndXenoDepart";
+			} else if(!this.events.state["allitus_control"]) {
+				gameoverId = "targSaved";
+			} else {
+				gameoverId = "xenoDepart";
+			}
+			this.runGameover(gameoverId);
+		}
+	}
+
 	update() {
+		if(this.gameover) {
+			return;
+		}
+
 		var time = Date.now();
 		var delta = ( time - this.prevTime ) / 1000;
 		this.prevTime = time;
@@ -950,28 +980,28 @@ export class Movement {
 
 		if(this.landing) {
 			this.updateLanding(time, delta);
+		} else if(this.takeoff) {
+			this.updateTakeoff(time, delta);
+		} else if (this.liftDirection != 0) {
+			this.updateLift(delta);
+		} else if(this.teleportDir != 0) {
+			this.updateTeleporter(delta, time);
 		} else {
-			if (this.liftDirection != 0) {
-				this.updateLift(delta);
-			} else if(this.teleportDir != 0) {
-				this.updateTeleporter(delta, time);
+			var dx = this.getSpeed() / 20 * delta;
+			if (this.vehicle) {
+				this.updateVehicle(dx, delta);
 			} else {
-				var dx = this.getSpeed() / 20 * delta;
-				if (this.vehicle) {
-					this.updateVehicle(dx, delta);
-				} else {
-					this.updateWalking(dx, delta);
-				}
-				this.checkBoundingBox();
-				this.checkPickup();
+				this.updateWalking(dx, delta);
+			}
+			this.checkBoundingBox();
+			this.checkPickup();
 
-				if(!window.loadingComplex) {
-					$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
-					$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
-					$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
-					$("#pickup").toggle(this.pickupObject != null);
-					$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
-				}
+			if(!window.loadingComplex) {
+				$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+				$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
+				$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
+				$("#pickup").toggle(this.pickupObject != null);
+				$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
 			}
 		}
 
@@ -980,8 +1010,12 @@ export class Movement {
 		this.checkNoise();
 		this.events.update(this.sectorX, this.sectorY, time);
 
-		if(this.events.getAllitusTTL() <= 0) {
-			// todo: kaboom - game over
+		if(this.events.getAllitusTTL() <= 0 && !this.explosion) {
+			console.log("BOOM!");
+			// kaboom - game over
+			this.explosion = true;
+			this.teleportDir = 1;
+			this.teleportTime = Date.now() + TELEPORT_TIME * 4;
 		}
 	}
 
@@ -995,5 +1029,19 @@ export class Movement {
 		this.landing = Date.now() + LANDING_TIME;
 		this.pitch.rotation.x = 0;
 		this.noise.setLevel("pink", 0);
+	}
+
+	startTakeoff() {
+		console.log("starting takeoff");
+		this.takeoff = Date.now() + LANDING_TIME;
+		//this.pitch.rotation.x = 0;
+		this.noise.setLevel("pink", 1);
+	}
+
+	runGameover(gameoverId) {
+		this.gameover = true;
+		this.noise.stopAll();
+		$("#" + gameoverId).fadeIn();
+		document.exitPointerLock();
 	}
 }

@@ -25,6 +25,12 @@ export class Noise {
 		}
 	}
 
+	stopAll() {
+		for(let n in this.noises) {
+			this.noises[n].stop();
+		}
+	}
+
 	static toggleSound() {
 		SOUND_ENABLED = !SOUND_ENABLED;
 	}

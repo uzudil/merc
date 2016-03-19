@@ -213,6 +213,32 @@
 			background: #44f;
 			height: 20px;
 		}
+
+		.gameover {
+			display: none;
+			position: absolute;
+			top: 0; left: 0;
+			width: 100%; height: 100%;
+			z-index: 1000;
+		}
+
+		.whiteGameover {
+			background: #fff;
+			color: #000;
+		}
+
+		.blackGameover {
+			background: #000;
+			color: #fff;
+		}
+
+		.gameover_message {
+			position: relative;
+			top: 50%; left: 50%;
+			width: 50%; height: 200px;
+			margin-left: -25%;
+			margin-top: -100px;
+		}
 	</style>
 </head>
 <body>
@@ -237,7 +263,7 @@
 			<td rowspan="3"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
 		</tr>
 		<tr>
-			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
+			<td colspan="3" valign="middle"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
 		</tr>
 		<tr><td valign="top"><div id="time" class="uibox"><label>DAY-TIME</label><div class="value"></div></div></td></tr>
 	</table>
@@ -261,6 +287,41 @@
 			Press H again to hide<br>
 			this panel.
 		</p>
+	</div>
+	<div id="explosion_gameover" class="gameover whiteGameover">
+		<div class="gameover_message">
+			<p>Despite your best efforts, you could not stop Allitus from destroying Targ. Better luck next time!</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Try Again</button>
+		</div>
+	</div>
+	<div id="targSavedAndXenoDepart" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>Leaving feels good with an extra 20,000 credits in the bank.
+				Plus, having saved both Targ and the alien base makes this a special day.</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
+	</div>
+	<div id="targSaved" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>Leaving feels good with an extra 20,000 credits in the bank.
+			You feel great that Targ is saved but wonder what fate the aliens suffered...</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
+	</div>
+	<div id="xenoDepart" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>You don't bother to look back to see what happened to Targ. The planet may be lost but at least
+				the alien ship escaped to safety. You shrug and proceed to your next adventure.</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
 	</div>
 </body>
 </html>
