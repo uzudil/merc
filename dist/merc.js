@@ -208,30 +208,35 @@
 				console.log("game starting");
 				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
-				this.movement.player.position.set(game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-				//movement.DEFAULT_Z);
-				if (!skipLanding) this.movement.startLanding();
 	
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
+				this.movement.player.position.set(game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+				//movement.DEFAULT_Z);
+				if (skipLanding) {
+					this.movement.endLanding();
+				} else {
+					this.movement.startLanding();
+				}
+	
 				// hack: start in a room
-				this.movement.loadGame({
-					//sectorX: 0xf8, sectorY: 0xc9,
-					sectorX: 0x33, sectorY: 0x66,
-					//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-					x: game_map.SECTOR_SIZE / 2, y: game_map.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
-					vehicle: null,
-					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-					state: Object.assign(events.Events.getStartState(), {
-						"lightcar-keys": true,
-						"allitus-ttl": 10,
-						"override-17a": true,
-						"allitus_control": false,
-						"xeno_base_depart": true
-					})
-				});
+				//this.movement.loadGame({
+				//	//sectorX: 0xf8, sectorY: 0xc9,
+				//	sectorX: 0x33, sectorY: 0x66,
+				//	//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+				//	vehicle: null,
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"allitus-ttl": 10,
+				//		"override-17a": true,
+				//		"allitus_control": false,
+				//		"xeno_base_depart": true
+				//	})
+				//});
 			}
 		}, {
 			key: 'setupUI',
@@ -47183,7 +47188,6 @@
 				this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
-				this.main.game_map.addShip(constants.START_X * game_map.SECTOR_SIZE + 100, constants.START_Y * game_map.SECTOR_SIZE + 100, 0);
 				if (this.player.position.z == ROOM_DEPTH) {
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
 						_this2.level = level;
@@ -47822,6 +47826,7 @@
 				}).length == 0) {
 					// key needed
 					this.noise.play("denied");
+					return;
 				}
 				//this.level.makeCave(door.door);
 				if (door["original_z"] == null) door["original_z"] = door.position.z;
@@ -48012,23 +48017,7 @@
 						this.pitch.rotation.x = Math.PI / 2;
 					}
 				} else {
-					console.log("landing ending");
-					this.player.position.z = DEFAULT_Z;
-					//this.player.rotation.z = 0;
-					this.pitch.rotation.x = Math.PI / 2;
-					this.landing = false;
-					this.noise.stop("pink");
-					this.power = 0;
-	
-					// add ship behind player
-					this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
-	
-					this.main.benson.addMessage("Welcome to Targ.");
-					this.main.benson.addMessage("Please take the jet");
-					this.main.benson.addMessage("and proceed to 9-2.");
-					this.main.benson.addMessage("[SPACE] to use the jet.");
-					this.main.benson.addMessage("[1]-[0] for power.");
-					this.main.benson.addMessage("[SPACE] to get out again.");
+					this.endLanding();
 				}
 			}
 		}, {
@@ -48121,6 +48110,27 @@
 				this.landing = Date.now() + LANDING_TIME;
 				this.pitch.rotation.x = 0;
 				this.noise.setLevel("pink", 0);
+			}
+		}, {
+			key: 'endLanding',
+			value: function endLanding() {
+				console.log("landing ending");
+				this.player.position.z = DEFAULT_Z;
+				//this.player.rotation.z = 0;
+				this.pitch.rotation.x = Math.PI / 2;
+				this.landing = false;
+				this.noise.stop("pink");
+				this.power = 0;
+	
+				// add ship behind player
+				this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
+	
+				this.main.benson.addMessage("Welcome to Targ.");
+				this.main.benson.addMessage("Please take the jet");
+				this.main.benson.addMessage("and proceed to 9-2.");
+				this.main.benson.addMessage("[SPACE] to use the jet.");
+				this.main.benson.addMessage("[1]-[0] for power.");
+				this.main.benson.addMessage("[SPACE] to get out again.");
 			}
 		}, {
 			key: 'startTakeoff',
@@ -62482,7 +62492,7 @@
 			value: function checkPosition(pos, vehicle) {
 				// "sonar" to alien base
 				var now = Date.now();
-				if (pos.z >= 10000 && vehicle.model.name == "ufo" && !this.state["xeno_base_depart"] && (!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
+				if (pos.z >= 10000 && vehicle && vehicle.model.name == "ufo" && !this.state["xeno_base_depart"] && (!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
 					var d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
 					// stop beeping when really close
 					if (d > 0.01) {

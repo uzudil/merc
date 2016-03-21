@@ -223,9 +223,6 @@ export class Movement {
 		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
 		this.events.state = gameState.state;
-		this.main.game_map.addShip(constants.START_X * game_map.SECTOR_SIZE + 100,
-			constants.START_Y * game_map.SECTOR_SIZE + 100,
-			0);
 		if(this.player.position.z == ROOM_DEPTH) {
 			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
 				this.level = level;
@@ -771,6 +768,7 @@ export class Movement {
 		if(door.door.key != "" && this.inventory.filter((o)=>door.door.key == o).length == 0) {
 			// key needed
 			this.noise.play("denied");
+			return;
 		}
 		//this.level.makeCave(door.door);
 		if(door["original_z"] == null) door["original_z"] = door.position.z;
@@ -925,23 +923,7 @@ export class Movement {
 				this.pitch.rotation.x = Math.PI/2;
 			}
 		} else {
-			console.log("landing ending");
-			this.player.position.z = DEFAULT_Z;
-			//this.player.rotation.z = 0;
-			this.pitch.rotation.x = Math.PI/2;
-			this.landing = false;
-			this.noise.stop("pink");
-			this.power = 0;
-
-			// add ship behind player
-			this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
-
-			this.main.benson.addMessage("Welcome to Targ.");
-			this.main.benson.addMessage("Please take the jet");
-			this.main.benson.addMessage("and proceed to 9-2.");
-			this.main.benson.addMessage("[SPACE] to use the jet.");
-			this.main.benson.addMessage("[1]-[0] for power.");
-			this.main.benson.addMessage("[SPACE] to get out again.");
+			this.endLanding();
 		}
 	}
 
@@ -1029,6 +1011,26 @@ export class Movement {
 		this.landing = Date.now() + LANDING_TIME;
 		this.pitch.rotation.x = 0;
 		this.noise.setLevel("pink", 0);
+	}
+
+	endLanding() {
+		console.log("landing ending");
+		this.player.position.z = DEFAULT_Z;
+		//this.player.rotation.z = 0;
+		this.pitch.rotation.x = Math.PI/2;
+		this.landing = false;
+		this.noise.stop("pink");
+		this.power = 0;
+
+		// add ship behind player
+		this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
+
+		this.main.benson.addMessage("Welcome to Targ.");
+		this.main.benson.addMessage("Please take the jet");
+		this.main.benson.addMessage("and proceed to 9-2.");
+		this.main.benson.addMessage("[SPACE] to use the jet.");
+		this.main.benson.addMessage("[1]-[0] for power.");
+		this.main.benson.addMessage("[SPACE] to get out again.");
 	}
 
 	startTakeoff() {

@@ -103,33 +103,38 @@ class Merc {
 		console.log("game starting");
 		this.renderer.setClearColor(game_map.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
-		this.movement.player.position.set(
-			game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE/2,
-			game_map.SECTOR_SIZE * constants.START_Y,
-			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-			//movement.DEFAULT_Z);
-		if(!skipLanding) this.movement.startLanding();
 
 		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
 		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 
+		this.movement.player.position.set(
+			game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE/2,
+			game_map.SECTOR_SIZE * constants.START_Y,
+			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+		//movement.DEFAULT_Z);
+		if(skipLanding) {
+			this.movement.endLanding();
+		} else {
+			this.movement.startLanding();
+		}
+
 		// hack: start in a room
-		this.movement.loadGame({
-			//sectorX: 0xf8, sectorY: 0xc9,
-			sectorX: 0x33, sectorY: 0x66,
-			//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-			x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
-			vehicle: null,
-			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-			state: Object.assign(events.Events.getStartState(), {
-				"lightcar-keys": true,
-				"allitus-ttl": 10,
-				"override-17a": true,
-				"allitus_control": false,
-				"xeno_base_depart": true
-			})
-		});
+		//this.movement.loadGame({
+		//	//sectorX: 0xf8, sectorY: 0xc9,
+		//	sectorX: 0x33, sectorY: 0x66,
+		//	//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
+		//	vehicle: null,
+		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+		//	state: Object.assign(events.Events.getStartState(), {
+		//		"lightcar-keys": true,
+		//		"allitus-ttl": 10,
+		//		"override-17a": true,
+		//		"allitus_control": false,
+		//		"xeno_base_depart": true
+		//	})
+		//});
 	}
 
 	setupUI() {

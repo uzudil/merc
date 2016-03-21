@@ -347,7 +347,7 @@ export class Events {
 	checkPosition(pos, vehicle) {
 		// "sonar" to alien base
 		let now = Date.now();
-		if(pos.z >= 10000 && vehicle.model.name == "ufo" &&
+		if(pos.z >= 10000 && vehicle && vehicle.model.name == "ufo" &&
 			!this.state["xeno_base_depart"] &&
 			(!this.state["xeno-base-notification"] || now > this.state["xeno-base-notification"])) {
 			let d = Math.min(1, this.movement.getDistanceToAlienBase() / 0xff);
