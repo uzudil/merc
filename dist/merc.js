@@ -214,7 +214,6 @@
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
 				this.movement.player.position.set(game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-				//movement.DEFAULT_Z);
 				if (skipLanding) {
 					this.movement.endLanding();
 				} else {
