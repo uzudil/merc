@@ -209,6 +209,7 @@
 				this.renderer.setClearColor(game_map.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 	
+				// maybe use real planet movement instead
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
