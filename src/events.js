@@ -1,4 +1,5 @@
 import * as util from 'util'
+import * as constants from 'constants'
 
 const X_FILES = [
 	[
@@ -70,14 +71,11 @@ const XENO_FILES = [
 	]
 ];
 
-const GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-//const GAME_DAY = 5 * 1000; // 15 mins = 1 game day
-
 export class Events {
 	static getStartState() {
 		return {
 			"allitus-ttl": 10,
-			"next-game-day": Date.now() + GAME_DAY * 0.65,
+			"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
 			"allitus_control": true,
 			"xeno_base_depart": false
 		};
@@ -330,9 +328,9 @@ export class Events {
 
 		if(now > this.state["next-game-day"]) {
 			this.state["allitus-ttl"] -= 1;
-			this.state["next-game-day"] = now + GAME_DAY;
+			this.state["next-game-day"] = now + constants.GAME_DAY;
 		}
-		this.hourOfDay = 24 - ((this.state["next-game-day"] - now)/GAME_DAY * 24)|0;
+		this.hourOfDay = 24 - ((this.state["next-game-day"] - now)/constants.GAME_DAY * 24)|0;
 	}
 
 	pickup(modelName, sectorX, sectorY, roomColor, object) {

@@ -225,6 +225,12 @@ export class Level {
 		this.scene.add( this.lift_mesh );
 	}
 
+	setElevatorLightPercent(percent) {
+		if(this.lift_mesh) {
+			util.setLightPercent(this.lift_mesh, LIGHT, percent);
+		}
+	}
+
 	setPosition(x, y) {
 		this.mesh.position.x = x;
 		this.mesh.position.y = y;

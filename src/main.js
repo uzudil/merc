@@ -21,6 +21,7 @@ class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
 		this.hourOfDay = 0;
+		this.lastLightPercent = 0;
 		window.cb = "" + Date.now();
 		new model.Models((models)=>this.init(models))
 	}
@@ -101,7 +102,16 @@ class Merc {
 
 	startGame(skipLanding=false) {
 		console.log("game starting");
-		this.renderer.setClearColor(game_map.GRASS_COLOR);
+		// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
+		// lights
+		this.ambientLight = new THREE.AmbientLight( 0x404040 );
+		this.scene.add(this.ambientLight);
+
+		this.dirLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
+		this.dirLight1.position.set( 0, 0, 1 );
+		this.scene.add( this.dirLight1 );
+
+		this.renderer.setClearColor(constants.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 
 		// maybe use real planet movement instead
@@ -110,8 +120,8 @@ class Merc {
 		this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 
 		this.movement.player.position.set(
-			game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE/2,
-			game_map.SECTOR_SIZE * constants.START_Y,
+			constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE/2,
+			constants.SECTOR_SIZE * constants.START_Y,
 			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 		if(skipLanding) {
 			this.movement.endLanding();
@@ -121,18 +131,16 @@ class Merc {
 
 		// hack: start in a room
 		//this.movement.loadGame({
-		//	//sectorX: 0xf8, sectorY: 0xc9,
-		//	sectorX: 0x33, sectorY: 0x66,
-		//	//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-		//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
-		//	vehicle: null,
+		//	sectorX: 0xf8, sectorY: 0xc9,
+		//	//sectorX: 9, sectorY: 2,
+		//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
+		//	vehicle: this.models.models["ufo"].createObject(),
 		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 		//	state: Object.assign(events.Events.getStartState(), {
 		//		"lightcar-keys": true,
-		//		"allitus-ttl": 10,
 		//		"override-17a": true,
-		//		"allitus_control": false,
-		//		"xeno_base_depart": true
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
 		//	})
 		//});
 	}
@@ -190,6 +198,29 @@ class Merc {
 		console.log("FPS LIMIT at: ", FPS_LIMITS[this.fpsLimitIndex]);
 	}
 
+	setLightPercent() {
+		let percent = this.movement.level == null ? this.calculateOutsideLightPercent() : 1;
+		this.setLightPercentWorld(percent);
+	}
+
+	calculateOutsideLightPercent() {
+		// todo: less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise?)
+		return Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+	}
+
+	setLightPercentWorld(percent) {
+		if(percent != this.lastLightPercent) {
+			this.lastLightPercent = percent;
+			console.log("SETTING LIGHT: Hour of day=" + this.hourOfDay + " percent=" + percent);
+			this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
+			this.skybox.setLightPercent(percent);
+			this.models.setLightPercent(percent);
+			if(this.movement.level) {
+				this.movement.level.setElevatorLightPercent(percent);
+			}
+		}
+	}
+
 	animate() {
 		this.benson.update();
 		if(this.movement) {
@@ -198,9 +229,7 @@ class Merc {
 			// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
 			if(this.movement.events.hourOfDay != this.hourOfDay) {
 				this.hourOfDay = this.movement.events.hourOfDay;
-				let p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
-				//console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
-				//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
+				this.setLightPercent();
 			}
 		} else if(this.space) {
 			this.space.update();
@@ -213,8 +242,8 @@ class Merc {
 				x = this.movement.sectorX;
 				y = this.movement.sectorY;
 			} else {
-				x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
-				y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+				x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
+				y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
 				x = Math.min(Math.max(x, 0), 0xff);
 				y = Math.min(Math.max(y, 0), 0xff);
 			}

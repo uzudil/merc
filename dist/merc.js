@@ -68,7 +68,7 @@
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(59);
+	var _skybox = __webpack_require__(60);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
@@ -76,15 +76,15 @@
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(60);
+	var _compass = __webpack_require__(61);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(61);
+	var _benson = __webpack_require__(62);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(62);
+	var _space = __webpack_require__(63);
 	
 	var space = _interopRequireWildcard(_space);
 	
@@ -92,7 +92,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(63);
+	var _constants = __webpack_require__(59);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -116,6 +116,7 @@
 	
 			console.log('Merc (c) 2016 v' + VERSION);
 			this.hourOfDay = 0;
+			this.lastLightPercent = 0;
 			window.cb = "" + Date.now();
 			new model.Models(function (models) {
 				return _this.init(models);
@@ -206,7 +207,16 @@
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
 	
 				console.log("game starting");
-				this.renderer.setClearColor(game_map.GRASS_COLOR);
+				// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
+				// lights
+				this.ambientLight = new _three2.default.AmbientLight(0x404040);
+				this.scene.add(this.ambientLight);
+	
+				this.dirLight1 = new _three2.default.DirectionalLight(0xffffff, 0.5);
+				this.dirLight1.position.set(0, 0, 1);
+				this.scene.add(this.dirLight1);
+	
+				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 	
 				// maybe use real planet movement instead
@@ -214,7 +224,7 @@
 	
 				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
-				this.movement.player.position.set(game_map.SECTOR_SIZE * constants.START_X + game_map.SECTOR_SIZE / 2, game_map.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+				this.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 				if (skipLanding) {
 					this.movement.endLanding();
 				} else {
@@ -223,18 +233,16 @@
 	
 				// hack: start in a room
 				//this.movement.loadGame({
-				//	//sectorX: 0xf8, sectorY: 0xc9,
-				//	sectorX: 0x33, sectorY: 0x66,
-				//	//x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	x: game_map.SECTOR_SIZE/2, y: game_map.SECTOR_SIZE/2, z: movement.DEFAULT_Z,
-				//	vehicle: null,
+				//	sectorX: 0xf8, sectorY: 0xc9,
+				//	//sectorX: 9, sectorY: 2,
+				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
+				//	vehicle: this.models.models["ufo"].createObject(),
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 				//	state: Object.assign(events.Events.getStartState(), {
 				//		"lightcar-keys": true,
-				//		"allitus-ttl": 10,
 				//		"override-17a": true,
-				//		"allitus_control": false,
-				//		"xeno_base_depart": true
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
 				//	})
 				//});
 			}
@@ -294,6 +302,32 @@
 				console.log("FPS LIMIT at: ", FPS_LIMITS[this.fpsLimitIndex]);
 			}
 		}, {
+			key: 'setLightPercent',
+			value: function setLightPercent() {
+				var percent = this.movement.level == null ? this.calculateOutsideLightPercent() : 1;
+				this.setLightPercentWorld(percent);
+			}
+		}, {
+			key: 'calculateOutsideLightPercent',
+			value: function calculateOutsideLightPercent() {
+				// todo: less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise?)
+				return Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+			}
+		}, {
+			key: 'setLightPercentWorld',
+			value: function setLightPercentWorld(percent) {
+				if (percent != this.lastLightPercent) {
+					this.lastLightPercent = percent;
+					console.log("SETTING LIGHT: Hour of day=" + this.hourOfDay + " percent=" + percent);
+					this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
+					this.skybox.setLightPercent(percent);
+					this.models.setLightPercent(percent);
+					if (this.movement.level) {
+						this.movement.level.setElevatorLightPercent(percent);
+					}
+				}
+			}
+		}, {
 			key: 'animate',
 			value: function animate() {
 				var _this3 = this;
@@ -305,13 +339,11 @@
 					// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
 					if (this.movement.events.hourOfDay != this.hourOfDay) {
 						this.hourOfDay = this.movement.events.hourOfDay;
-						var p = Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
-						//console.log("Hour of day=" + this.hourOfDay + " percent=" + p);
-						//this.renderer.setClearColor(game_map.GRASS_COLOR.clone().multiplyScalar(p));
+						this.setLightPercent();
 					}
 				} else if (this.space) {
-						this.space.update();
-					}
+					this.space.update();
+				}
 				this.renderer.render(this.scene, this.camera);
 	
 				if (this.movement) {
@@ -320,8 +352,8 @@
 						x = this.movement.sectorX;
 						y = this.movement.sectorY;
 					} else {
-						x = Math.round(this.movement.player.position.x / game_map.SECTOR_SIZE);
-						y = Math.round(this.movement.player.position.y / game_map.SECTOR_SIZE);
+						x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
+						y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
 						x = Math.min(Math.max(x, 0), 0xff);
 						y = Math.min(Math.max(y, 0), 0xff);
 					}
@@ -36584,7 +36616,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.GameMap = exports.GRASS_COLOR = exports.SECTOR_SIZE = undefined;
+	exports.GameMap = undefined;
 	
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 	
@@ -36602,15 +36634,15 @@
 	
 	var world = _interopRequireWildcard(_world);
 	
+	var _constants = __webpack_require__(59);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
-	
-	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
 	
 	var key = function key(sectorX, sectorY) {
 		return sectorX + '.' + sectorY;
@@ -36776,13 +36808,13 @@
 						var lineGeo = new _three2.default.Geometry();
 						lineGeo.vertices.push(new _three2.default.Vector3(0, 0, 0));
 						if (_road[2] > 0) {
-							geo = new _three2.default.PlaneGeometry(_road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
-							lineGeo.vertices.push(new _three2.default.Vector3(_road[2] * SECTOR_SIZE, 0, 0));
-							geo.translate(_road[2] * SECTOR_SIZE * .5, 0, 0);
+							geo = new _three2.default.PlaneGeometry(_road[2] * constants.SECTOR_SIZE, constants.SECTOR_SIZE * .5);
+							lineGeo.vertices.push(new _three2.default.Vector3(_road[2] * constants.SECTOR_SIZE, 0, 0));
+							geo.translate(_road[2] * constants.SECTOR_SIZE * .5, 0, 0);
 						} else {
-							geo = new _three2.default.PlaneGeometry(SECTOR_SIZE * .5, _road[3] * SECTOR_SIZE);
-							lineGeo.vertices.push(new _three2.default.Vector3(0, _road[3] * SECTOR_SIZE, 0));
-							geo.translate(0, _road[3] * SECTOR_SIZE * .5, 0);
+							geo = new _three2.default.PlaneGeometry(constants.SECTOR_SIZE * .5, _road[3] * constants.SECTOR_SIZE);
+							lineGeo.vertices.push(new _three2.default.Vector3(0, _road[3] * constants.SECTOR_SIZE, 0));
+							geo.translate(0, _road[3] * constants.SECTOR_SIZE * .5, 0);
 						}
 	
 						for (var i = 0; i < geo.faceVertexUvs[0].length; i++) {
@@ -36801,13 +36833,13 @@
 						}
 	
 						var mesh = new _three2.default.Mesh(geo);
-						mesh.position.set(_road[0] * SECTOR_SIZE, _road[1] * SECTOR_SIZE, 0);
+						mesh.position.set(_road[0] * constants.SECTOR_SIZE, _road[1] * constants.SECTOR_SIZE, 0);
 						mesh.updateMatrix();
 						roadQ.merge(geo, mesh.matrix);
 						mesh.frustumCulled = false;
 	
 						var lines = new _three2.default.LineSegments(lineGeo);
-						lines.position.set(_road[0] * SECTOR_SIZE, _road[1] * SECTOR_SIZE, 0);
+						lines.position.set(_road[0] * constants.SECTOR_SIZE, _road[1] * constants.SECTOR_SIZE, 0);
 						lines.updateMatrix();
 						roadL.merge(lineGeo, lines.matrix);
 					}
@@ -36863,19 +36895,19 @@
 				var bb = model.getBoundingBox();
 				var sectorX = pos[0];
 				var sectorY = pos[1];
-				var dx = pos.length > 2 && pos[2] != 0 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
-				var dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+				var dx = pos.length > 2 && pos[2] != 0 ? pos[2] * constants.SECTOR_SIZE : (constants.SECTOR_SIZE - bb.size().x) / 2;
+				var dy = pos.length > 3 && pos[3] != 0 ? pos[3] * constants.SECTOR_SIZE : (constants.SECTOR_SIZE - bb.size().y) / 2;
 				var dz = zpos || 0;
 				var zrot = pos.length > 4 ? pos[4] : 0;
-				return this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
+				return this.addModelAt(sectorX * constants.SECTOR_SIZE + dx, sectorY * constants.SECTOR_SIZE + dy, dz, model, zrot);
 			}
 		}, {
 			key: 'addModelAt',
 			value: function addModelAt(x, y, z, model, zRot) {
-				var sx = x / SECTOR_SIZE | 0;
-				var sy = y / SECTOR_SIZE | 0;
-				var ox = x % SECTOR_SIZE;
-				var oy = y % SECTOR_SIZE;
+				var sx = x / constants.SECTOR_SIZE | 0;
+				var sy = y / constants.SECTOR_SIZE | 0;
+				var ox = x % constants.SECTOR_SIZE;
+				var oy = y % constants.SECTOR_SIZE;
 	
 				var object = model.createObject();
 				this.structures.push(object);
@@ -36895,7 +36927,7 @@
 				if (this.sectors[k] == null) {
 					var o = new _three2.default.Object3D();
 					o["road"] = [0, 0];
-					o.position.set(sectorX * SECTOR_SIZE, sectorY * SECTOR_SIZE, 0);
+					o.position.set(sectorX * constants.SECTOR_SIZE, sectorY * constants.SECTOR_SIZE, 0);
 					this.sectors[k] = o;
 					this.land.add(o);
 					if (sectorX <= this.minSector.x) this.minSector.x = sectorX;
@@ -36928,10 +36960,12 @@
 	exports.rad2angle = rad2angle;
 	exports.angle2rad = angle2rad;
 	exports.shadeGeo = shadeGeo;
+	exports.setLightPercent = setLightPercent;
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
 	exports.toHex = toHex;
 	exports.toggleColor = toggleColor;
+	exports.updateColors = updateColors;
 	
 	var _three = __webpack_require__(1);
 	
@@ -36972,6 +37006,17 @@
 			// do not use vertex colors
 			f.vertexColors = [];
 		}
+	}
+	
+	function setLightPercent(mesh, light, percent) {
+		var geo = mesh.geometry;
+		for (var i = 0; i < geo.faces.length; i++) {
+			var f = geo.faces[i];
+			var a = 0.75 * percent + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
+			f.color.setHex(f["original_color"]);
+			f.color.multiplyScalar(a);
+		}
+		updateColors(mesh);
 	}
 	
 	function getOppositeDir(dir) {
@@ -37029,11 +37074,15 @@
 				f.original_color = colorTo;
 			}
 		}
-		object.material.needsUpdate = true;
-		object.geometry.needsUpdate = true;
-		object.geometry.colorsNeedUpdate = true;
-		object.geometry.elementsNeedUpdate = true;
-		object.needsUpdate = true;
+		updateColors(object);
+	}
+	
+	function updateColors(mesh) {
+		mesh.material.needsUpdate = true;
+		mesh.geometry.needsUpdate = true;
+		mesh.geometry.colorsNeedUpdate = true;
+		mesh.geometry.elementsNeedUpdate = true;
+		mesh.needsUpdate = true;
 	}
 
 /***/ },
@@ -46939,7 +46988,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(63);
+	var _constants = __webpack_require__(59);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -46998,6 +47047,7 @@
 			this.doorsUp = [];
 			this.doorsDown = [];
 			this.liftDirection = 0;
+			this.lastLiftLightChange = 0;
 			this.teleportDir = 0;
 			this.teleportTime = 0;
 			this.explosion = false;
@@ -47181,16 +47231,18 @@
 			value: function loadGame(gameState) {
 				var _this2 = this;
 	
-				this.player.position.set(gameState.sectorX * game_map.SECTOR_SIZE + gameState.x, gameState.sectorY * game_map.SECTOR_SIZE + gameState.y, gameState.z);
+				this.player.position.set(gameState.sectorX * constants.SECTOR_SIZE + gameState.x, gameState.sectorY * constants.SECTOR_SIZE + gameState.y, gameState.z);
 				this.inventory = gameState.inventory;
 				this.vehicle = gameState.vehicle;
-				this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
-				this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
+				this.sectorX = this.player.position.x / constants.SECTOR_SIZE | 0;
+				this.sectorY = this.player.position.y / constants.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
+				this.main.setLightPercent();
 				if (this.player.position.z == ROOM_DEPTH) {
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
 						_this2.level = level;
+						_this2.main.setLightPercent();
 						if (_this2.level) {
 							var offsetX = _this2.player.position.x;
 							var offsetY = _this2.player.position.y;
@@ -47328,6 +47380,7 @@
 					console.log("Entering alien base.");
 					compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], function (level) {
 						_this3.level = level;
+						_this3.main.setLightPercent();
 						_this3.sectorX = ALIEN_BASE_POS[0];
 						_this3.sectorY = ALIEN_BASE_POS[1];
 						var offsetX = _this3.player.position.x;
@@ -47372,6 +47425,7 @@
 									// down
 									compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
 										_this3.level = level;
+										// this.main.setLightPercent();
 										if (_this3.level) {
 											_this3.liftDirection = -1;
 											var liftPos = elevator.getWorldPosition();
@@ -47589,22 +47643,31 @@
 			}
 		}, {
 			key: 'updateLift',
-			value: function updateLift(delta) {
-				var room_z = ROOM_DEPTH;
-				var pz = this.player.position.z / room_z;
+			value: function updateLift(time, delta) {
+				var pz = this.player.position.z / ROOM_DEPTH;
 				var liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
 				this.noise.setLevel("lift", liftSpeed / 150);
 				this.player.position.z += this.liftDirection * delta * liftSpeed;
-				if (this.liftDirection < 0 && this.player.position.z <= room_z) {
-					this.player.position.z = room_z;
+	
+				// update light in lift
+				if (time - this.lastLiftLightChange > 100) {
+					this.lastLiftLightChange = time;
+					var outsideLightPercent = this.main.calculateOutsideLightPercent();
+					this.main.setLightPercentWorld(outsideLightPercent + (1 - outsideLightPercent) * pz);
+				}
+	
+				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
+					this.player.position.z = ROOM_DEPTH;
 					this.liftDirection = 0;
 					this.noise.stop("lift");
+					this.main.setLightPercent();
 				} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 					this.player.position.z = DEFAULT_Z;
 					this.liftDirection = 0;
 					this.level.destroy();
 					this.level = null;
 					this.noise.stop("lift");
+					this.main.setLightPercent();
 				}
 			}
 		}, {
@@ -47630,6 +47693,7 @@
 								this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 								this.level.destroy();
 								this.level = null;
+								this.main.setLightPercent();
 							} else if (this.baseMove == 1) {
 								// moving into the base
 								this.vehicle = null;
@@ -48050,8 +48114,8 @@
 				this.prevTime = time;
 	
 				if (!this.level) {
-					this.sectorX = this.player.position.x / game_map.SECTOR_SIZE | 0;
-					this.sectorY = this.player.position.y / game_map.SECTOR_SIZE | 0;
+					this.sectorX = this.player.position.x / constants.SECTOR_SIZE | 0;
+					this.sectorY = this.player.position.y / constants.SECTOR_SIZE | 0;
 				}
 	
 				this.enterMode = this.checkEnter();
@@ -48061,7 +48125,7 @@
 				} else if (this.takeoff) {
 					this.updateTakeoff(time, delta);
 				} else if (this.liftDirection != 0) {
-					this.updateLift(delta);
+					this.updateLift(time, delta);
 				} else if (this.teleportDir != 0) {
 					this.updateTeleporter(delta, time);
 				} else {
@@ -48365,6 +48429,13 @@
 					this.onLoad(this);
 				}
 			}
+		}, {
+			key: 'setLightPercent',
+			value: function setLightPercent(percent) {
+				for (var m in this.models) {
+					this.models[m].setLightPercent(percent);
+				}
+			}
 		}]);
 	
 		return Models;
@@ -48401,6 +48472,11 @@
 					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
 					onLoad(_this2);
 				});
+			}
+		}, {
+			key: 'setLightPercent',
+			value: function setLightPercent(percent) {
+				util.setLightPercent(this.mesh, LIGHT, percent);
 			}
 		}, {
 			key: 'getBoundingBox',
@@ -49649,6 +49725,13 @@
 				this.lift_mesh.position.set(x, y, -z / 2);
 	
 				this.scene.add(this.lift_mesh);
+			}
+		}, {
+			key: 'setElevatorLightPercent',
+			value: function setElevatorLightPercent(percent) {
+				if (this.lift_mesh) {
+					util.setLightPercent(this.lift_mesh, LIGHT, percent);
+				}
 			}
 		}, {
 			key: 'setPosition',
@@ -62136,7 +62219,7 @@
 /* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
@@ -62149,6 +62232,10 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
+	var _constants = __webpack_require__(59);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -62157,16 +62244,13 @@
 	
 	var XENO_FILES = [["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."], ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."], ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."], ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."]];
 	
-	var GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-	//const GAME_DAY = 5 * 1000; // 15 mins = 1 game day
-	
 	var Events = exports.Events = function () {
 		_createClass(Events, null, [{
-			key: "getStartState",
+			key: 'getStartState',
 			value: function getStartState() {
 				return {
 					"allitus-ttl": 10,
-					"next-game-day": Date.now() + GAME_DAY * 0.65,
+					"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
 					"allitus_control": true,
 					"xeno_base_depart": false
 				};
@@ -62387,7 +62471,7 @@
 		}
 	
 		_createClass(Events, [{
-			key: "xFileTerm",
+			key: 'xFileTerm',
 			value: function xFileTerm() {
 				if (this.state["override-17a"]) {
 					var _iteratorNormalCompletion = true;
@@ -62423,7 +62507,7 @@
 				return true;
 			}
 		}, {
-			key: "xenoTerm",
+			key: 'xenoTerm',
 			value: function xenoTerm() {
 				if (this.movement.inInventory("trans")) {
 					var _iteratorNormalCompletion2 = true;
@@ -62459,26 +62543,26 @@
 				return true;
 			}
 		}, {
-			key: "okReport",
+			key: 'okReport',
 			value: function okReport() {
 				this.movement.main.benson.addMessage("Memory scan: OK");
 				this.movement.main.benson.addMessage("Disk scan: OK");
 				this.movement.main.benson.addMessage("System health: OK");
 			}
 		}, {
-			key: "update",
+			key: 'update',
 			value: function update(sectorX, sectorY, now) {
 				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
 				if (this.EVENTS[key]) this.EVENTS[key]();
 	
 				if (now > this.state["next-game-day"]) {
 					this.state["allitus-ttl"] -= 1;
-					this.state["next-game-day"] = now + GAME_DAY;
+					this.state["next-game-day"] = now + constants.GAME_DAY;
 				}
-				this.hourOfDay = 24 - (this.state["next-game-day"] - now) / GAME_DAY * 24 | 0;
+				this.hourOfDay = 24 - (this.state["next-game-day"] - now) / constants.GAME_DAY * 24 | 0;
 			}
 		}, {
-			key: "pickup",
+			key: 'pickup',
 			value: function pickup(modelName, sectorX, sectorY, roomColor, object) {
 				var key = "" + util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2) + "," + roomColor;
 				console.log("key=" + key);
@@ -62488,7 +62572,7 @@
 				return false;
 			}
 		}, {
-			key: "checkPosition",
+			key: 'checkPosition',
 			value: function checkPosition(pos, vehicle) {
 				// "sonar" to alien base
 				var now = Date.now();
@@ -62502,7 +62586,7 @@
 				}
 			}
 		}, {
-			key: "getAllitusTTL",
+			key: 'getAllitusTTL',
 			value: function getAllitusTTL() {
 				return this.state["allitus_control"] ? this.state["allitus-ttl"] : 10;
 			}
@@ -62515,12 +62599,12 @@
 /* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
-		value: true
+	  value: true
 	});
-	exports.Skybox = undefined;
+	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
 	
 	var _three = __webpack_require__(1);
 	
@@ -62528,42 +62612,98 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var Skybox = exports.Skybox = function Skybox(scene, far_dist) {
-		_classCallCheck(this, Skybox);
-	
-		var path = "images/sky-";
-		var format = '.png';
-		var urls = [path + 'xpos' + format, path + 'xneg' + format, path + 'ypos' + format, path + 'yneg' + format, path + 'zpos' + format, path + 'zneg' + format];
-	
-		var textureCube = _three2.default.ImageUtils.loadTextureCube(urls, _three2.default.CubeRefractionMapping);
-	
-		var shader = _three2.default.ShaderLib["cube"];
-		shader.uniforms["tCube"].value = textureCube;
-	
-		var material = new _three2.default.ShaderMaterial({
-			fragmentShader: shader.fragmentShader,
-			vertexShader: shader.vertexShader,
-			uniforms: shader.uniforms,
-			depthWrite: false,
-			side: _three2.default.BackSide
-		});
-		var box = new _three2.default.BoxGeometry(far_dist, far_dist, far_dist / 2);
-		// remove bottom face
-		for (var i = 0; i < box.faces.length; i++) {
-			if (box.faces[i].normal.z == -1) {
-				box.faces.splice(i, 1);
-				break;
-			}
-		}
-		var mesh = new _three2.default.Mesh(box, material);
-		mesh.position.z = far_dist / 4;
-		scene.add(mesh);
-	};
+	var START_X = exports.START_X = 0x33;
+	var START_Y = exports.START_Y = 0x66;
+	var START_Z = exports.START_Z = 50000;
+	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
+	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
+	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
+	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
+	//export const GAME_DAY = 5 * 1000;
 
 /***/ },
 /* 60 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Skybox = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _constants = __webpack_require__(59);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
+	var _util = __webpack_require__(4);
+	
+	var util = _interopRequireWildcard(_util);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Skybox = exports.Skybox = function () {
+		function Skybox(scene, far_dist) {
+			_classCallCheck(this, Skybox);
+	
+			/*
+	  var path = "images/sky-";
+	  var format = '.png';
+	  var urls = [
+	  	path + 'xpos' + format, path + 'xneg' + format,
+	  	path + 'ypos' + format, path + 'yneg' + format,
+	  	path + 'zpos' + format, path + 'zneg' + format
+	  ];
+	  	var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
+	  	var shader = THREE.ShaderLib[ "cube" ];
+	  shader.uniforms[ "tCube" ].value = textureCube;
+	  	var material = new THREE.ShaderMaterial( {
+	  	fragmentShader: shader.fragmentShader,
+	  	vertexShader: shader.vertexShader,
+	  	uniforms: shader.uniforms,
+	  	depthWrite: false,
+	  	side: THREE.BackSide
+	  } );
+	  */
+	
+			this.material = new _three2.default.MeshBasicMaterial({ color: constants.SKY_COLOR, side: _three2.default.BackSide });
+			var box = new _three2.default.BoxGeometry(far_dist, far_dist, far_dist / 2);
+			// remove bottom face
+			for (var i = 0; i < box.faces.length; i++) {
+				if (box.faces[i].normal.z == -1) {
+					box.faces.splice(i, 1);
+					break;
+				}
+			}
+			this.mesh = new _three2.default.Mesh(box, this.material);
+			this.mesh.position.z = far_dist / 4;
+			scene.add(this.mesh);
+		}
+	
+		_createClass(Skybox, [{
+			key: 'setLightPercent',
+			value: function setLightPercent(percent) {
+				// todo: show stars at night - sun during day
+				this.material.color = constants.SKY_COLOR.clone().multiplyScalar(percent);
+				util.updateColors(this.mesh);
+			}
+		}]);
+	
+		return Skybox;
+	}();
+
+/***/ },
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62676,7 +62816,7 @@
 	}();
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62783,7 +62923,7 @@
 	}();
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63002,19 +63142,6 @@
 	
 		return Space;
 	}();
-
-/***/ },
-/* 63 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var START_X = exports.START_X = 0x33;
-	var START_Y = exports.START_Y = 0x66;
-	var START_Z = exports.START_Z = 50000;
 
 /***/ }
 /******/ ]);

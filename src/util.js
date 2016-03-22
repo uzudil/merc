@@ -36,6 +36,17 @@ export function shadeGeo(geo, light, color) {
 	}
 }
 
+export function setLightPercent(mesh, light, percent) {
+	let geo = mesh.geometry;
+	for (var i = 0; i < geo.faces.length; i++) {
+		let f = geo.faces[i];
+		let a = 0.75 * percent + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
+		f.color.setHex(f["original_color"]);
+		f.color.multiplyScalar(a);
+	}
+	updateColors(mesh);
+}
+
 export function getOppositeDir(dir) {
 	switch(dir) {
 		case "n": return "s";
@@ -83,9 +94,13 @@ export function toggleColor(object, colorFrom, colorTo) {
 			f.original_color = colorTo;
 		}
 	}
-	object.material.needsUpdate = true;
-	object.geometry.needsUpdate = true;
-	object.geometry.colorsNeedUpdate = true;
-	object.geometry.elementsNeedUpdate = true;
-	object.needsUpdate = true;
+	updateColors(object);
+}
+
+export function updateColors(mesh) {
+	mesh.material.needsUpdate = true;
+	mesh.geometry.needsUpdate = true;
+	mesh.geometry.colorsNeedUpdate = true;
+	mesh.geometry.elementsNeedUpdate = true;
+	mesh.needsUpdate = true;
 }

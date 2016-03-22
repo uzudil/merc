@@ -1,10 +1,7 @@
 import THREE from 'three.js'
 import * as util from 'util'
 import * as world from 'world'
-
-export const SECTOR_SIZE = 512.0;
-
-export const GRASS_COLOR = new THREE.Color("rgb(39,79,6)");
+import * as constants from 'constants'
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
@@ -89,13 +86,13 @@ export class GameMap {
 			let lineGeo = new THREE.Geometry();
 			lineGeo.vertices.push(new THREE.Vector3(0, 0, 0));
 			if(road[2] > 0) {
-				geo = new THREE.PlaneGeometry(road[2] * SECTOR_SIZE, SECTOR_SIZE * .5);
-				lineGeo.vertices.push(new THREE.Vector3(road[2] * SECTOR_SIZE, 0, 0));
-				geo.translate(road[2] * SECTOR_SIZE * .5, 0, 0);
+				geo = new THREE.PlaneGeometry(road[2] * constants.SECTOR_SIZE, constants.SECTOR_SIZE * .5);
+				lineGeo.vertices.push(new THREE.Vector3(road[2] * constants.SECTOR_SIZE, 0, 0));
+				geo.translate(road[2] * constants.SECTOR_SIZE * .5, 0, 0);
 			} else {
-				geo = new THREE.PlaneGeometry(SECTOR_SIZE * .5, road[3] * SECTOR_SIZE);
-				lineGeo.vertices.push(new THREE.Vector3(0, road[3] * SECTOR_SIZE, 0));
-				geo.translate(0, road[3] * SECTOR_SIZE * .5, 0);
+				geo = new THREE.PlaneGeometry(constants.SECTOR_SIZE * .5, road[3] * constants.SECTOR_SIZE);
+				lineGeo.vertices.push(new THREE.Vector3(0, road[3] * constants.SECTOR_SIZE, 0));
+				geo.translate(0, road[3] * constants.SECTOR_SIZE * .5, 0);
 			}
 
 			for(let i = 0; i < geo.faceVertexUvs[0].length; i++) {
@@ -112,13 +109,13 @@ export class GameMap {
 			}
 
 			let mesh = new THREE.Mesh(geo);
-			mesh.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+			mesh.position.set(road[0] * constants.SECTOR_SIZE, road[1] * constants.SECTOR_SIZE, 0);
 			mesh.updateMatrix();
 			roadQ.merge(geo, mesh.matrix);
 			mesh.frustumCulled = false;
 
 			let lines = new THREE.LineSegments(lineGeo);
-			lines.position.set(road[0] * SECTOR_SIZE, road[1] * SECTOR_SIZE, 0);
+			lines.position.set(road[0] * constants.SECTOR_SIZE, road[1] * constants.SECTOR_SIZE, 0);
 			lines.updateMatrix();
 			roadL.merge(lineGeo, lines.matrix);
 		}
@@ -159,18 +156,18 @@ export class GameMap {
 		var bb = model.getBoundingBox();
 		let sectorX = pos[0];
 		let sectorY = pos[1];
-		let dx = pos.length > 2 && pos[2] != 0 ? pos[2] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().x) / 2;
-		let dy = pos.length > 3 && pos[3] != 0 ? pos[3] * SECTOR_SIZE : (SECTOR_SIZE - bb.size().y) / 2;
+		let dx = pos.length > 2 && pos[2] != 0 ? pos[2] * constants.SECTOR_SIZE : (constants.SECTOR_SIZE - bb.size().x) / 2;
+		let dy = pos.length > 3 && pos[3] != 0 ? pos[3] * constants.SECTOR_SIZE : (constants.SECTOR_SIZE - bb.size().y) / 2;
 		let dz = zpos || 0;
 		let zrot = pos.length > 4 ? pos[4] : 0;
-		return this.addModelAt(sectorX * SECTOR_SIZE + dx, sectorY * SECTOR_SIZE + dy, dz, model, zrot);
+		return this.addModelAt(sectorX * constants.SECTOR_SIZE + dx, sectorY * constants.SECTOR_SIZE + dy, dz, model, zrot);
 	}
 
 	addModelAt(x, y, z, model, zRot) {
-		var sx = (x/SECTOR_SIZE)|0;
-		var sy = (y/SECTOR_SIZE)|0;
-		var ox = x % SECTOR_SIZE;
-		var oy = y % SECTOR_SIZE;
+		var sx = (x/constants.SECTOR_SIZE)|0;
+		var sy = (y/constants.SECTOR_SIZE)|0;
+		var ox = x % constants.SECTOR_SIZE;
+		var oy = y % constants.SECTOR_SIZE;
 
 		var object = model.createObject();
 		this.structures.push(object);
@@ -189,7 +186,7 @@ export class GameMap {
 		if(this.sectors[k] == null) {
 			let o = new THREE.Object3D();
 			o["road"] = [0, 0];
-			o.position.set(sectorX * SECTOR_SIZE, sectorY * SECTOR_SIZE, 0);
+			o.position.set(sectorX * constants.SECTOR_SIZE, sectorY * constants.SECTOR_SIZE, 0);
 			this.sectors[k] = o;
 			this.land.add(o);
 			if(sectorX <= this.minSector.x) this.minSector.x = sectorX;

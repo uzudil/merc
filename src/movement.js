@@ -58,6 +58,7 @@ export class Movement {
 		this.doorsUp = [];
 		this.doorsDown = [];
 		this.liftDirection = 0;
+		this.lastLiftLightChange = 0;
 		this.teleportDir = 0;
 		this.teleportTime = 0;
 		this.explosion = false;
@@ -213,19 +214,21 @@ export class Movement {
 
 	loadGame(gameState) {
 		this.player.position.set(
-			gameState.sectorX * game_map.SECTOR_SIZE + gameState.x,
-			gameState.sectorY * game_map.SECTOR_SIZE + gameState.y,
+			gameState.sectorX * constants.SECTOR_SIZE + gameState.x,
+			gameState.sectorY * constants.SECTOR_SIZE + gameState.y,
 			gameState.z
 		);
 		this.inventory = gameState.inventory;
 		this.vehicle = gameState.vehicle;
-		this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
-		this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
+		this.sectorX = (this.player.position.x / constants.SECTOR_SIZE) | 0;
+		this.sectorY = (this.player.position.y / constants.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
 		this.events.state = gameState.state;
+		this.main.setLightPercent();
 		if(this.player.position.z == ROOM_DEPTH) {
 			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
 				this.level = level;
+				this.main.setLightPercent();
 				if(this.level) {
 					var offsetX = this.player.position.x;
 					var offsetY = this.player.position.y;
@@ -348,6 +351,7 @@ export class Movement {
 			console.log("Entering alien base.");
 			compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], (level)=> {
 				this.level = level;
+				this.main.setLightPercent();
 				this.sectorX = ALIEN_BASE_POS[0];
 				this.sectorY = ALIEN_BASE_POS[1];
 				let offsetX = this.player.position.x;
@@ -388,6 +392,7 @@ export class Movement {
 					// down
 					compounds.loadLevel(this.sectorX, this.sectorY, (level) => {
 						this.level = level;
+						// this.main.setLightPercent();
 						if (this.level) {
 							this.liftDirection = -1;
 							let liftPos = elevator.getWorldPosition();
@@ -563,22 +568,31 @@ export class Movement {
 		this.fw = this.bw = this.left = this.right = false;
 	}
 
-	updateLift(delta) {
-		let room_z = ROOM_DEPTH;
-		let pz = this.player.position.z / room_z;
+	updateLift(time, delta) {
+		let pz = this.player.position.z / ROOM_DEPTH;
 		let liftSpeed = 5 + Math.abs(Math.sin(Math.PI * pz)) * 100;
 		this.noise.setLevel("lift", liftSpeed / 150);
 		this.player.position.z += this.liftDirection * delta * liftSpeed;
-		if (this.liftDirection < 0 && this.player.position.z <= room_z) {
-			this.player.position.z = room_z;
+
+		// update light in lift
+		if(time - this.lastLiftLightChange > 100) {
+			this.lastLiftLightChange = time;
+			let outsideLightPercent = this.main.calculateOutsideLightPercent();
+			this.main.setLightPercentWorld(outsideLightPercent + (1 - outsideLightPercent) * pz);
+		}
+
+		if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
+			this.player.position.z = ROOM_DEPTH;
 			this.liftDirection = 0;
 			this.noise.stop("lift");
+			this.main.setLightPercent();
 		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 			this.player.position.z = DEFAULT_Z;
 			this.liftDirection = 0;
 			this.level.destroy();
 			this.level = null;
 			this.noise.stop("lift");
+			this.main.setLightPercent();
 		}
 	}
 
@@ -603,6 +617,7 @@ export class Movement {
 						this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 						this.level.destroy();
 						this.level = null;
+						this.main.setLightPercent();
 					} else if (this.baseMove == 1) {
 						// moving into the base
 						this.vehicle = null;
@@ -954,8 +969,8 @@ export class Movement {
 		this.prevTime = time;
 
 		if(!this.level) {
-			this.sectorX = (this.player.position.x / game_map.SECTOR_SIZE) | 0;
-			this.sectorY = (this.player.position.y / game_map.SECTOR_SIZE) | 0;
+			this.sectorX = (this.player.position.x / constants.SECTOR_SIZE) | 0;
+			this.sectorY = (this.player.position.y / constants.SECTOR_SIZE) | 0;
 		}
 
 		this.enterMode = this.checkEnter();
@@ -965,7 +980,7 @@ export class Movement {
 		} else if(this.takeoff) {
 			this.updateTakeoff(time, delta);
 		} else if (this.liftDirection != 0) {
-			this.updateLift(delta);
+			this.updateLift(time, delta);
 		} else if(this.teleportDir != 0) {
 			this.updateTeleporter(delta, time);
 		} else {

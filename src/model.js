@@ -147,6 +147,12 @@ export class Models {
 			this.onLoad(this);
 		}
 	}
+
+	setLightPercent(percent) {
+		for(let m in this.models) {
+			this.models[m].setLightPercent(percent);
+		}
+	}
 }
 
 export class Model {
@@ -174,6 +180,10 @@ export class Model {
 			this.bbox = new THREE.Box3().setFromObject(this.mesh);
 			onLoad(this);
 		});
+	}
+
+	setLightPercent(percent) {
+		util.setLightPercent(this.mesh, LIGHT, percent);
 	}
 
 	getBoundingBox() {
