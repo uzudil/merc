@@ -109,7 +109,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.1; // todo: git hook this
+	var VERSION = 0.2; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
