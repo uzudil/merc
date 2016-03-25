@@ -381,7 +381,7 @@ export class Movement {
 					let dy = this.player.position.y - this.level.liftY;
 					this.player.position.set(this.level.liftX, this.level.liftY, this.player.position.z);
 					this.level.setPosition(this.level.mesh.position.x - dx, this.level.mesh.position.y - dy);
-
+					this.main.updateLight = false;
 					this.liftDirection = 1;
 				}
 				this.noise.stop("door");
@@ -392,6 +392,7 @@ export class Movement {
 					// down
 					compounds.loadLevel(this.sectorX, this.sectorY, (level) => {
 						this.level = level;
+						this.main.updateLight = false;
 						// this.main.setLightPercent();
 						if (this.level) {
 							this.liftDirection = -1;
@@ -577,14 +578,17 @@ export class Movement {
 		// update light in lift
 		if(time - this.lastLiftLightChange > 100) {
 			this.lastLiftLightChange = time;
-			let outsideLightPercent = this.main.calculateOutsideLightPercent();
-			this.main.setLightPercentWorld(outsideLightPercent + (1 - outsideLightPercent) * pz);
+			let outside = this.main.calculateOutsideLightPercent();
+			let percent = outside + (1 - outside) * pz;
+			//console.log("outside=" + outside + " pz=" + pz + " final=" + percent);
+			this.main.setLightPercentWorld(percent);
 		}
 
 		if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
 			this.player.position.z = ROOM_DEPTH;
 			this.liftDirection = 0;
 			this.noise.stop("lift");
+			this.main.updateLight = true;
 			this.main.setLightPercent();
 		} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 			this.player.position.z = DEFAULT_Z;
@@ -592,6 +596,7 @@ export class Movement {
 			this.level.destroy();
 			this.level = null;
 			this.noise.stop("lift");
+			this.main.updateLight = true;
 			this.main.setLightPercent();
 		}
 	}

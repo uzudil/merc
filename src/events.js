@@ -330,7 +330,7 @@ export class Events {
 			this.state["allitus-ttl"] -= 1;
 			this.state["next-game-day"] = now + constants.GAME_DAY;
 		}
-		this.hourOfDay = 24 - ((this.state["next-game-day"] - now)/constants.GAME_DAY * 24)|0;
+		this.hourOfDay = 24 - (this.state["next-game-day"] - now)/constants.GAME_DAY * 24;
 	}
 
 	pickup(modelName, sectorX, sectorY, roomColor, object) {

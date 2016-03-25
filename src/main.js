@@ -14,14 +14,17 @@ import * as constants from 'constants'
 const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
 const FAR_DIST = 100000;
+const MORNING = 4;
+const EVENING = 17;
+const LIGHT_CHANGE_HOURS = 3;
 
 const VERSION = 0.1; // todo: git hook this
 
 class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
-		this.hourOfDay = 0;
 		this.lastLightPercent = 0;
+		this.updateLight = true;
 		window.cb = "" + Date.now();
 		new model.Models((models)=>this.init(models))
 	}
@@ -130,12 +133,27 @@ class Merc {
 		}
 
 		// hack: start in a room
+		// by the xeno base
 		//this.movement.loadGame({
 		//	sectorX: 0xf8, sectorY: 0xc9,
 		//	//sectorX: 9, sectorY: 2,
 		//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
 		//	vehicle: this.models.models["ufo"].createObject(),
+		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+		//	state: Object.assign(events.Events.getStartState(), {
+		//		"lightcar-keys": true,
+		//		"override-17a": true,
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+		//	})
+		//});
+
+		// by a base
+		//this.movement.loadGame({
+		//	//sectorX: 0xf8, sectorY: 0xc9,
+		//	sectorX: 9, sectorY: 2,
+		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+		//	vehicle: null,
 		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 		//	state: Object.assign(events.Events.getStartState(), {
 		//		"lightcar-keys": true,
@@ -204,14 +222,27 @@ class Merc {
 	}
 
 	calculateOutsideLightPercent() {
-		// todo: less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise?)
-		return Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+		// less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise)
+		let hour = this.movement.events.hourOfDay;
+		let p;
+		if(hour >= MORNING && hour <= MORNING + LIGHT_CHANGE_HOURS) {
+			p = (hour - MORNING)/(LIGHT_CHANGE_HOURS);
+		} else if(hour >= EVENING && hour <= EVENING + LIGHT_CHANGE_HOURS) {
+			p = 1 - ((hour - EVENING) / (LIGHT_CHANGE_HOURS));
+		} else if(hour > MORNING + LIGHT_CHANGE_HOURS && hour < EVENING) {
+			p = 1;
+		} else if(hour > EVENING + LIGHT_CHANGE_HOURS || hour < MORNING) {
+			p = 0
+		} else {
+			console.log("+++ unhandled hour: " + hour);
+		}
+		return Math.max(0.15, p);
 	}
 
 	setLightPercentWorld(percent) {
-		if(percent != this.lastLightPercent) {
+		if(((percent * 100)|0) !== ((this.lastLightPercent * 100)|0)) {
 			this.lastLightPercent = percent;
-			console.log("SETTING LIGHT: Hour of day=" + this.hourOfDay + " percent=" + percent);
+			//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 			this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 			this.skybox.setLightPercent(percent);
 			this.models.setLightPercent(percent);
@@ -225,12 +256,13 @@ class Merc {
 		this.benson.update();
 		if(this.movement) {
 			this.movement.update();
+			this.skybox.update(this.movement.player.rotation.z);
 
 			// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
-			if(this.movement.events.hourOfDay != this.hourOfDay) {
-				this.hourOfDay = this.movement.events.hourOfDay;
+			if(this.updateLight) {
 				this.setLightPercent();
 			}
+
 		} else if(this.space) {
 			this.space.update();
 		}
@@ -268,12 +300,13 @@ class Merc {
 	}
 
 	getAMPMHour() {
-		if(this.movement.events.hourOfDay >= 0 && this.movement.events.hourOfDay < 12) {
-			return this.movement.events.hourOfDay + "AM";
-		} else if(this.movement.events.hourOfDay == 12) {
-			return this.movement.events.hourOfDay + "PM";
+		let hour = (this.movement.events.hourOfDay)|0;
+		if(hour >= 0 && hour < 12) {
+			return hour + "AM";
+		} else if(hour == 12) {
+			return hour + "PM";
 		} else {
-			return (this.movement.events.hourOfDay - 12) + "PM";
+			return (hour - 12) + "PM";
 		}
 	}
 }

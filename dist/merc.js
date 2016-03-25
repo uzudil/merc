@@ -56,7 +56,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _jquery = __webpack_require__(6);
+	var _jquery = __webpack_require__(7);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -64,7 +64,7 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(7);
+	var _movement = __webpack_require__(8);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -72,7 +72,7 @@
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
-	var _model = __webpack_require__(8);
+	var _model = __webpack_require__(9);
 	
 	var model = _interopRequireWildcard(_model);
 	
@@ -88,11 +88,11 @@
 	
 	var space = _interopRequireWildcard(_space);
 	
-	var _events = __webpack_require__(58);
+	var _events = __webpack_require__(59);
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(59);
+	var _constants = __webpack_require__(6);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -105,6 +105,9 @@
 	var FPS_LIMITS = [0, 30, 15];
 	var ASPECT_RATIO = 320 / 200;
 	var FAR_DIST = 100000;
+	var MORNING = 4;
+	var EVENING = 17;
+	var LIGHT_CHANGE_HOURS = 3;
 	
 	var VERSION = 0.1; // todo: git hook this
 	
@@ -115,8 +118,8 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
-			this.hourOfDay = 0;
 			this.lastLightPercent = 0;
+			this.updateLight = true;
 			window.cb = "" + Date.now();
 			new model.Models(function (models) {
 				return _this.init(models);
@@ -232,12 +235,27 @@
 				}
 	
 				// hack: start in a room
+				// by the xeno base
 				//this.movement.loadGame({
 				//	sectorX: 0xf8, sectorY: 0xc9,
 				//	//sectorX: 9, sectorY: 2,
 				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
 				//	vehicle: this.models.models["ufo"].createObject(),
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"override-17a": true,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+				//	})
+				//});
+	
+				// by a base
+				//this.movement.loadGame({
+				//	//sectorX: 0xf8, sectorY: 0xc9,
+				//	sectorX: 9, sectorY: 2,
+				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+				//	vehicle: null,
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 				//	state: Object.assign(events.Events.getStartState(), {
 				//		"lightcar-keys": true,
@@ -310,15 +328,28 @@
 		}, {
 			key: 'calculateOutsideLightPercent',
 			value: function calculateOutsideLightPercent() {
-				// todo: less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise?)
-				return Math.max(0.15, this.hourOfDay > 12 ? 1 - (this.hourOfDay - 12) / 12 : this.hourOfDay / 12);
+				// less linear daylight function... (dark: 8pm-4am, light: 7am-5pm, transitions otherwise)
+				var hour = this.movement.events.hourOfDay;
+				var p = void 0;
+				if (hour >= MORNING && hour <= MORNING + LIGHT_CHANGE_HOURS) {
+					p = (hour - MORNING) / LIGHT_CHANGE_HOURS;
+				} else if (hour >= EVENING && hour <= EVENING + LIGHT_CHANGE_HOURS) {
+					p = 1 - (hour - EVENING) / LIGHT_CHANGE_HOURS;
+				} else if (hour > MORNING + LIGHT_CHANGE_HOURS && hour < EVENING) {
+					p = 1;
+				} else if (hour > EVENING + LIGHT_CHANGE_HOURS || hour < MORNING) {
+					p = 0;
+				} else {
+					console.log("+++ unhandled hour: " + hour);
+				}
+				return Math.max(0.15, p);
 			}
 		}, {
 			key: 'setLightPercentWorld',
 			value: function setLightPercentWorld(percent) {
-				if (percent != this.lastLightPercent) {
+				if ((percent * 100 | 0) !== (this.lastLightPercent * 100 | 0)) {
 					this.lastLightPercent = percent;
-					console.log("SETTING LIGHT: Hour of day=" + this.hourOfDay + " percent=" + percent);
+					//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 					this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 					this.skybox.setLightPercent(percent);
 					this.models.setLightPercent(percent);
@@ -335,10 +366,10 @@
 				this.benson.update();
 				if (this.movement) {
 					this.movement.update();
+					this.skybox.update(this.movement.player.rotation.z);
 	
 					// update skybox/sun/moon/stars position darkness via this.movement.events.hourOfDay
-					if (this.movement.events.hourOfDay != this.hourOfDay) {
-						this.hourOfDay = this.movement.events.hourOfDay;
+					if (this.updateLight) {
 						this.setLightPercent();
 					}
 				} else if (this.space) {
@@ -379,12 +410,13 @@
 		}, {
 			key: 'getAMPMHour',
 			value: function getAMPMHour() {
-				if (this.movement.events.hourOfDay >= 0 && this.movement.events.hourOfDay < 12) {
-					return this.movement.events.hourOfDay + "AM";
-				} else if (this.movement.events.hourOfDay == 12) {
-					return this.movement.events.hourOfDay + "PM";
+				var hour = this.movement.events.hourOfDay | 0;
+				if (hour >= 0 && hour < 12) {
+					return hour + "AM";
+				} else if (hour == 12) {
+					return hour + "PM";
 				} else {
-					return this.movement.events.hourOfDay - 12 + "PM";
+					return hour - 12 + "PM";
 				}
 			}
 		}]);
@@ -36634,7 +36666,7 @@
 	
 	var world = _interopRequireWildcard(_world);
 	
-	var _constants = __webpack_require__(59);
+	var _constants = __webpack_require__(6);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -37098,6 +37130,32 @@
 
 /***/ },
 /* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var START_X = exports.START_X = 0x33;
+	var START_Y = exports.START_Y = 0x66;
+	var START_Z = exports.START_Z = 50000;
+	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
+	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
+	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
+	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
+	//export const GAME_DAY = 1 * 40 * 1000; // 15 mins = 1 game day
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -46934,7 +46992,7 @@
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -46956,11 +47014,11 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jquery = __webpack_require__(6);
+	var _jquery = __webpack_require__(7);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _model = __webpack_require__(8);
+	var _model = __webpack_require__(9);
 	
 	var models = _interopRequireWildcard(_model);
 	
@@ -46968,15 +47026,15 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _noise = __webpack_require__(9);
+	var _noise = __webpack_require__(10);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
-	var _room = __webpack_require__(10);
+	var _room = __webpack_require__(11);
 	
 	var room_package = _interopRequireWildcard(_room);
 	
-	var _compounds = __webpack_require__(12);
+	var _compounds = __webpack_require__(13);
 	
 	var compounds = _interopRequireWildcard(_compounds);
 	
@@ -46984,11 +47042,11 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(58);
+	var _events = __webpack_require__(59);
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(59);
+	var _constants = __webpack_require__(6);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -47413,7 +47471,7 @@
 								var dy = _this3.player.position.y - _this3.level.liftY;
 								_this3.player.position.set(_this3.level.liftX, _this3.level.liftY, _this3.player.position.z);
 								_this3.level.setPosition(_this3.level.mesh.position.x - dx, _this3.level.mesh.position.y - dy);
-	
+								_this3.main.updateLight = false;
 								_this3.liftDirection = 1;
 							}
 							_this3.noise.stop("door");
@@ -47425,6 +47483,7 @@
 									// down
 									compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
 										_this3.level = level;
+										_this3.main.updateLight = false;
 										// this.main.setLightPercent();
 										if (_this3.level) {
 											_this3.liftDirection = -1;
@@ -47652,14 +47711,17 @@
 				// update light in lift
 				if (time - this.lastLiftLightChange > 100) {
 					this.lastLiftLightChange = time;
-					var outsideLightPercent = this.main.calculateOutsideLightPercent();
-					this.main.setLightPercentWorld(outsideLightPercent + (1 - outsideLightPercent) * pz);
+					var outside = this.main.calculateOutsideLightPercent();
+					var percent = outside + (1 - outside) * pz;
+					//console.log("outside=" + outside + " pz=" + pz + " final=" + percent);
+					this.main.setLightPercentWorld(percent);
 				}
 	
 				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
 					this.player.position.z = ROOM_DEPTH;
 					this.liftDirection = 0;
 					this.noise.stop("lift");
+					this.main.updateLight = true;
 					this.main.setLightPercent();
 				} else if (this.liftDirection > 0 && this.player.position.z >= DEFAULT_Z) {
 					this.player.position.z = DEFAULT_Z;
@@ -47667,6 +47729,7 @@
 					this.level.destroy();
 					this.level = null;
 					this.noise.stop("lift");
+					this.main.updateLight = true;
 					this.main.setLightPercent();
 				}
 			}
@@ -48229,7 +48292,7 @@
 	}();
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48522,7 +48585,7 @@
 	}(Model);
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -49296,7 +49359,7 @@
 	}();
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49308,7 +49371,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(7);
+	var _movement = __webpack_require__(8);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -49324,7 +49387,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(11);
+	var _ThreeCSG = __webpack_require__(12);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -49783,7 +49846,7 @@
 	}();
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50355,7 +50418,7 @@
 	};
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50366,11 +50429,11 @@
 	exports.LEVELS = undefined;
 	exports.loadLevel = loadLevel;
 	
-	var _room = __webpack_require__(10);
+	var _room = __webpack_require__(11);
 	
 	var room = _interopRequireWildcard(_room);
 	
-	var _compound_generator = __webpack_require__(13);
+	var _compound_generator = __webpack_require__(14);
 	
 	var generator = _interopRequireWildcard(_compound_generator);
 	
@@ -50378,7 +50441,7 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _jquery = __webpack_require__(6);
+	var _jquery = __webpack_require__(7);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -50386,11 +50449,11 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jszip = __webpack_require__(14);
+	var _jszip = __webpack_require__(15);
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
-	var _jszipUtils = __webpack_require__(57);
+	var _jszipUtils = __webpack_require__(58);
 	
 	var _jszipUtils2 = _interopRequireDefault(_jszipUtils);
 	
@@ -50510,7 +50573,7 @@
 	};
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50522,7 +50585,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(7);
+	var _movement = __webpack_require__(8);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -50538,11 +50601,11 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(11);
+	var _ThreeCSG = __webpack_require__(12);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
-	var _room3 = __webpack_require__(10);
+	var _room3 = __webpack_require__(11);
 	
 	var constants = _interopRequireWildcard(_room3);
 	
@@ -50960,12 +51023,12 @@
 	}();
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(15);
+	var base64 = __webpack_require__(16);
 	
 	/**
 	Usage:
@@ -51013,16 +51076,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(16);
-	JSZip.prototype.load = __webpack_require__(49);
-	JSZip.support = __webpack_require__(17);
-	JSZip.defaults = __webpack_require__(44);
+	JSZip.prototype = __webpack_require__(17);
+	JSZip.prototype.load = __webpack_require__(50);
+	JSZip.support = __webpack_require__(18);
+	JSZip.defaults = __webpack_require__(45);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(56);
+	JSZip.utils = __webpack_require__(57);
 	
 	JSZip.base64 = {
 	    /**
@@ -51040,12 +51103,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(23);
+	JSZip.compressions = __webpack_require__(24);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -51121,22 +51184,22 @@
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(17);
-	var utils = __webpack_require__(22);
-	var crc32 = __webpack_require__(42);
-	var signature = __webpack_require__(43);
-	var defaults = __webpack_require__(44);
-	var base64 = __webpack_require__(15);
-	var compressions = __webpack_require__(23);
-	var CompressedObject = __webpack_require__(45);
-	var nodeBuffer = __webpack_require__(41);
-	var utf8 = __webpack_require__(46);
-	var StringWriter = __webpack_require__(47);
-	var Uint8ArrayWriter = __webpack_require__(48);
+	var support = __webpack_require__(18);
+	var utils = __webpack_require__(23);
+	var crc32 = __webpack_require__(43);
+	var signature = __webpack_require__(44);
+	var defaults = __webpack_require__(45);
+	var base64 = __webpack_require__(16);
+	var compressions = __webpack_require__(24);
+	var CompressedObject = __webpack_require__(46);
+	var nodeBuffer = __webpack_require__(42);
+	var utf8 = __webpack_require__(47);
+	var StringWriter = __webpack_require__(48);
+	var Uint8ArrayWriter = __webpack_require__(49);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -52010,7 +52073,7 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -52048,10 +52111,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -52064,9 +52127,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(19)
-	var ieee754 = __webpack_require__(20)
-	var isArray = __webpack_require__(21)
+	var base64 = __webpack_require__(20)
+	var ieee754 = __webpack_require__(21)
+	var isArray = __webpack_require__(22)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -53603,10 +53666,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -53736,7 +53799,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -53826,7 +53889,7 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -53837,13 +53900,13 @@
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(17);
-	var compressions = __webpack_require__(23);
-	var nodeBuffer = __webpack_require__(41);
+	var support = __webpack_require__(18);
+	var compressions = __webpack_require__(24);
+	var nodeBuffer = __webpack_require__(42);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -54169,7 +54232,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54184,17 +54247,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(24);
+	exports.DEFLATE = __webpack_require__(25);
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(25);
+	var pako = __webpack_require__(26);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -54210,17 +54273,17 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(26).assign;
+	var assign    = __webpack_require__(27).assign;
 	
-	var deflate   = __webpack_require__(27);
-	var inflate   = __webpack_require__(35);
-	var constants = __webpack_require__(39);
+	var deflate   = __webpack_require__(28);
+	var inflate   = __webpack_require__(36);
+	var constants = __webpack_require__(40);
 	
 	var pako = {};
 	
@@ -54230,7 +54293,7 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -54338,17 +54401,17 @@
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(28);
-	var utils = __webpack_require__(26);
-	var strings = __webpack_require__(33);
-	var msg = __webpack_require__(32);
-	var zstream = __webpack_require__(34);
+	var zlib_deflate = __webpack_require__(29);
+	var utils = __webpack_require__(27);
+	var strings = __webpack_require__(34);
+	var msg = __webpack_require__(33);
+	var zstream = __webpack_require__(35);
 	
 	var toString = Object.prototype.toString;
 	
@@ -54720,16 +54783,16 @@
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(26);
-	var trees   = __webpack_require__(29);
-	var adler32 = __webpack_require__(30);
-	var crc32   = __webpack_require__(31);
-	var msg   = __webpack_require__(32);
+	var utils   = __webpack_require__(27);
+	var trees   = __webpack_require__(30);
+	var adler32 = __webpack_require__(31);
+	var crc32   = __webpack_require__(32);
+	var msg   = __webpack_require__(33);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -56491,13 +56554,13 @@
 
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(27);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -57696,7 +57759,7 @@
 
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57734,7 +57797,7 @@
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57781,7 +57844,7 @@
 
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57800,14 +57863,14 @@
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(27);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -57991,7 +58054,7 @@
 
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58026,19 +58089,19 @@
 
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(36);
-	var utils = __webpack_require__(26);
-	var strings = __webpack_require__(33);
-	var c = __webpack_require__(39);
-	var msg = __webpack_require__(32);
-	var zstream = __webpack_require__(34);
-	var gzheader = __webpack_require__(40);
+	var zlib_inflate = __webpack_require__(37);
+	var utils = __webpack_require__(27);
+	var strings = __webpack_require__(34);
+	var c = __webpack_require__(40);
+	var msg = __webpack_require__(33);
+	var zstream = __webpack_require__(35);
+	var gzheader = __webpack_require__(41);
 	
 	var toString = Object.prototype.toString;
 	
@@ -58432,17 +58495,17 @@
 
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(26);
-	var adler32 = __webpack_require__(30);
-	var crc32   = __webpack_require__(31);
-	var inflate_fast = __webpack_require__(37);
-	var inflate_table = __webpack_require__(38);
+	var utils = __webpack_require__(27);
+	var adler32 = __webpack_require__(31);
+	var crc32   = __webpack_require__(32);
+	var inflate_fast = __webpack_require__(38);
+	var inflate_table = __webpack_require__(39);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -59941,7 +60004,7 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60273,13 +60336,13 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(27);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -60606,7 +60669,7 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -60659,7 +60722,7 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60705,7 +60768,7 @@
 
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -60716,15 +60779,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(18).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(22);
+	var utils = __webpack_require__(23);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -60827,7 +60890,7 @@
 
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60840,7 +60903,7 @@
 
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60857,7 +60920,7 @@
 
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60891,14 +60954,14 @@
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(22);
-	var support = __webpack_require__(17);
-	var nodeBuffer = __webpack_require__(41);
+	var utils = __webpack_require__(23);
+	var support = __webpack_require__(18);
+	var nodeBuffer = __webpack_require__(42);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -61104,12 +61167,12 @@
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(22);
+	var utils = __webpack_require__(23);
 	
 	/**
 	 * An object to write any content to a string.
@@ -61140,12 +61203,12 @@
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(22);
+	var utils = __webpack_require__(23);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -61182,12 +61245,12 @@
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(15);
-	var ZipEntries = __webpack_require__(50);
+	var base64 = __webpack_require__(16);
+	var ZipEntries = __webpack_require__(51);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -61219,18 +61282,18 @@
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(51);
-	var NodeBufferReader = __webpack_require__(53);
-	var Uint8ArrayReader = __webpack_require__(54);
-	var utils = __webpack_require__(22);
-	var sig = __webpack_require__(43);
-	var ZipEntry = __webpack_require__(55);
-	var support = __webpack_require__(17);
-	var jszipProto = __webpack_require__(16);
+	var StringReader = __webpack_require__(52);
+	var NodeBufferReader = __webpack_require__(54);
+	var Uint8ArrayReader = __webpack_require__(55);
+	var utils = __webpack_require__(23);
+	var sig = __webpack_require__(44);
+	var ZipEntry = __webpack_require__(56);
+	var support = __webpack_require__(18);
+	var jszipProto = __webpack_require__(17);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -61446,12 +61509,12 @@
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(52);
-	var utils = __webpack_require__(22);
+	var DataReader = __webpack_require__(53);
+	var utils = __webpack_require__(23);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -61488,11 +61551,11 @@
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(22);
+	var utils = __webpack_require__(23);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -61601,11 +61664,11 @@
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(54);
+	var Uint8ArrayReader = __webpack_require__(55);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -61627,11 +61690,11 @@
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(52);
+	var DataReader = __webpack_require__(53);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -61680,14 +61743,14 @@
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(51);
-	var utils = __webpack_require__(22);
-	var CompressedObject = __webpack_require__(45);
-	var jszipProto = __webpack_require__(16);
+	var StringReader = __webpack_require__(52);
+	var utils = __webpack_require__(23);
+	var CompressedObject = __webpack_require__(46);
+	var jszipProto = __webpack_require__(17);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -61996,11 +62059,11 @@
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(22);
+	var utils = __webpack_require__(23);
 	
 	/**
 	 * @deprecated
@@ -62107,7 +62170,7 @@
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -62216,7 +62279,7 @@
 
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62232,7 +62295,7 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _constants = __webpack_require__(59);
+	var _constants = __webpack_require__(6);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -62559,7 +62622,7 @@
 					this.state["allitus-ttl"] -= 1;
 					this.state["next-game-day"] = now + constants.GAME_DAY;
 				}
-				this.hourOfDay = 24 - (this.state["next-game-day"] - now) / constants.GAME_DAY * 24 | 0;
+				this.hourOfDay = 24 - (this.state["next-game-day"] - now) / constants.GAME_DAY * 24;
 			}
 		}, {
 			key: 'pickup',
@@ -62596,32 +62659,6 @@
 	}();
 
 /***/ },
-/* 59 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	var START_X = exports.START_X = 0x33;
-	var START_Y = exports.START_Y = 0x66;
-	var START_Z = exports.START_Z = 50000;
-	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
-	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
-	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
-	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-	//export const GAME_DAY = 5 * 1000;
-
-/***/ },
 /* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -62638,7 +62675,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _constants = __webpack_require__(59);
+	var _constants = __webpack_require__(6);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -62653,28 +62690,8 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var Skybox = exports.Skybox = function () {
-		function Skybox(scene, far_dist) {
+		function Skybox(player, far_dist) {
 			_classCallCheck(this, Skybox);
-	
-			/*
-	  var path = "images/sky-";
-	  var format = '.png';
-	  var urls = [
-	  	path + 'xpos' + format, path + 'xneg' + format,
-	  	path + 'ypos' + format, path + 'yneg' + format,
-	  	path + 'zpos' + format, path + 'zneg' + format
-	  ];
-	  	var textureCube = THREE.ImageUtils.loadTextureCube( urls, THREE.CubeRefractionMapping );
-	  	var shader = THREE.ShaderLib[ "cube" ];
-	  shader.uniforms[ "tCube" ].value = textureCube;
-	  	var material = new THREE.ShaderMaterial( {
-	  	fragmentShader: shader.fragmentShader,
-	  	vertexShader: shader.vertexShader,
-	  	uniforms: shader.uniforms,
-	  	depthWrite: false,
-	  	side: THREE.BackSide
-	  } );
-	  */
 	
 			this.material = new _three2.default.MeshBasicMaterial({ color: constants.SKY_COLOR, side: _three2.default.BackSide });
 			var box = new _three2.default.BoxGeometry(far_dist, far_dist, far_dist / 2);
@@ -62687,15 +62704,64 @@
 			}
 			this.mesh = new _three2.default.Mesh(box, this.material);
 			this.mesh.position.z = far_dist / 4;
-			scene.add(this.mesh);
+			player.add(this.mesh);
+	
+			// add some stars
+			this.stars = new _three2.default.Object3D();
+			this.starMaterial = new _three2.default.MeshBasicMaterial({ color: new _three2.default.Color("rgb(240,220,16)"), opacity: 0, transparent: true });
+			for (var _i = 0; _i < 1000; _i++) {
+				var r = far_dist * 0.35 + Math.random() * .1;
+				var a = Math.random() * Math.PI * 2;
+				var b = Math.random() * Math.PI / 2;
+				var x = r * Math.cos(a) * Math.sin(b);
+				var y = r * Math.sin(a) * Math.sin(b);
+				var z = r * Math.cos(b);
+				var size = Math.random() * 70 + 70;
+				var star = new _three2.default.Mesh(new _three2.default.BoxGeometry(size, size, size), this.starMaterial);
+				star.position.set(x, y, z);
+				this.stars.add(star);
+			}
+			player.add(this.stars);
+	
+			// todo: adding sun/moon is tricky since there is no 'ground'
 		}
 	
 		_createClass(Skybox, [{
+			key: 'update',
+			value: function update(zRot) {
+				this.stars.rotation.z = -zRot;
+			}
+		}, {
 			key: 'setLightPercent',
 			value: function setLightPercent(percent) {
-				// todo: show stars at night - sun during day
+				// show stars at night - sun during day
 				this.material.color = constants.SKY_COLOR.clone().multiplyScalar(percent);
 				util.updateColors(this.mesh);
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
+	
+				try {
+					for (var _iterator = this.stars.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var star = _step.value;
+	
+						star.material.opacity = 1 - percent;
+						util.updateColors(star);
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
+					}
+				}
 			}
 		}]);
 	
@@ -62715,7 +62781,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(6);
+	var _jquery = __webpack_require__(7);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -62828,11 +62894,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(6);
+	var _jquery = __webpack_require__(7);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _noise = __webpack_require__(9);
+	var _noise = __webpack_require__(10);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
@@ -62939,7 +63005,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _noise = __webpack_require__(9);
+	var _noise = __webpack_require__(10);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
