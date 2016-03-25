@@ -109,7 +109,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.2; // todo: git hook this
+	var VERSION = 0.27; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -118,6 +118,7 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
+			window.escapeUsed = false;
 			this.lastLightPercent = 0;
 			this.updateLight = true;
 			window.cb = "" + Date.now();
@@ -158,7 +159,8 @@
 	
 				var skipping = false;
 				(0, _jquery2.default)(document).keyup(function (event) {
-					if (event.keyCode == 27) {
+					if (event.keyCode == 27 && window.escapeUsed == false) {
+						window.escapeUsed = true; // only once
 						if (!skipping) {
 							skipping = true;
 							_this2.space.abort();
@@ -47211,7 +47213,8 @@
 				//console.log(event.keyCode);
 				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
-					case 27 && _this.landing:
+					case 27 && _this.landing && window.escapeUsed == false:
+						window.escapeUsed = true; // only once
 						_this.noise.stop("pink");
 						_this.landing = Date.now() - LANDING_TIME;
 						break;
