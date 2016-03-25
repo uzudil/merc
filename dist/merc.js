@@ -47211,7 +47211,7 @@
 				//console.log(event.keyCode);
 				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
-					case 27 && _this.landing != 0:
+					case 27 && _this.landing:
 						_this.noise.stop("pink");
 						_this.landing = Date.now() - LANDING_TIME;
 						break;
@@ -62908,7 +62908,7 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var SPEED_MULT = 1.2;
+	var SPEED_MULT = 2;
 	var PAUSE_DELAY = 1500;
 	
 	var Benson = exports.Benson = function () {
@@ -63179,7 +63179,7 @@
 			value: function startLanding() {
 				this.landing = true;
 				this.landingStart = Date.now();
-				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(1), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.DoubleSide, depthTest: false, depthWrite: false }));
+				this.targ = new _three2.default.Mesh(new _three2.default.SphereGeometry(1, 32, 32), new _three2.default.MeshBasicMaterial({ color: "rgb(39,79,6)", side: _three2.default.DoubleSide, depthTest: false, depthWrite: false }));
 				this.targ.position.z = -20;
 				this.scene.add(this.targ);
 			}

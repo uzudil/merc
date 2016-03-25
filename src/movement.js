@@ -160,7 +160,7 @@ export class Movement {
 			//console.log(event.keyCode);
 			if(this.vehicle && this.vehicle.model.name == "ship") return;
 			switch( event.keyCode ) {
-				case 27 && this.landing != 0:
+				case 27 && this.landing:
 					this.noise.stop("pink");
 					this.landing = Date.now() - LANDING_TIME;
 					break;

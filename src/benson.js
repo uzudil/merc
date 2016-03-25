@@ -1,7 +1,7 @@
 import $ from 'jquery'
 import * as noise from 'noise'
 
-const SPEED_MULT = 1.2;
+const SPEED_MULT = 2;
 const PAUSE_DELAY = 1500;
 
 export class Benson {

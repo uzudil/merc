@@ -135,7 +135,7 @@ export class Space {
 	startLanding() {
 		this.landing = true;
 		this.landingStart = Date.now();
-		this.targ = new THREE.Mesh(new THREE.SphereGeometry(1),
+		this.targ = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32),
 			new THREE.MeshBasicMaterial({color: "rgb(39,79,6)", side: THREE.DoubleSide, depthTest: false, depthWrite: false}));
 		this.targ.position.z = -20;
 		this.scene.add(this.targ);
