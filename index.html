@@ -101,6 +101,10 @@
 			background: brown;
 		}
 
+		#time {
+			background: darkcyan;
+		}
+
 		#message {
 			background: darkred;
 			position: relative;
@@ -185,29 +189,86 @@
 			margin-bottom: 5px;
 			margin-top: 5px;
 		}
+
+		#loading {
+			display: none;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 200px;
+			margin-left: -100px;
+			height: 40px;
+			margin-top: -20px;
+			background: #888;
+			z-index: 1000;
+		}
+
+		#progress {
+			position: relative;
+			top: 10px;
+			left: 10px;
+			width: 180px;
+			height: 20px;
+			border: 1px solid #444;
+		}
+
+		#progress-value {
+			background: #44f;
+			height: 20px;
+		}
+
+		.gameover {
+			display: none;
+			position: absolute;
+			top: 0; left: 0;
+			width: 100%; height: 100%;
+			z-index: 1000;
+		}
+
+		.whiteGameover {
+			background: #fff;
+			color: #000;
+		}
+
+		.blackGameover {
+			background: #000;
+			color: #fff;
+		}
+
+		.gameover_message {
+			position: relative;
+			top: 50%; left: 50%;
+			width: 50%; height: 200px;
+			margin-left: -25%;
+			margin-top: -100px;
+		}
 	</style>
 </head>
 <body>
 	<script src="dist/merc.js"></script>
+	<div id="loading"><div id="progress"><div id="progress-value"></div></div></div>
 	<div id="alert">
+		<div id="wait" class="alert">Loading complex...</div>
 		<div id="enter" class="alert">Press E to enter</div>
 		<div id="exit" class="alert">Press E to exit</div>
 		<div id="vehicle" class="alert">Press SPACE to drive</div>
 		<div id="pickup" class="alert">Press P to use</div>
+		<div id="teleport" class="alert">Press T to teleport</div>
 	</div>
 	<div id="ui">
 		<div class="title"><div class="text">Benson 5000: H for help</div></div>
 	<table>
 		<tr>
-			<td rowspan="2"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
+			<td rowspan="3"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
 			<td valign="bottom"><div id="loc" class="uibox"><label>LOC</label><div class="value"></div></div></td>
 			<td valign="bottom"><div id="alt" class="uibox"><label>ALT</label><div class="value"></div></div></td>
 			<td valign="bottom"><div id="speed" class="uibox"><label>SPEED</label><div class="value"></div></div></td>
-			<td rowspan="2"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
+			<td rowspan="3"><div id="comp" class="uibox"><div class="line_container"><div class="vert_line"></div></div><label>COMP</label><div class="value"><canvas id="comp_canvas"></canvas></div></div></td>
 		</tr>
 		<tr>
-			<td colspan="3" valign="top"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
+			<td colspan="3" valign="middle"><div id="message" class="uibox"><label>&nbsp;</label><div class="value"></div></div></td>
 		</tr>
+		<tr><td valign="top"><div id="time" class="uibox"><label>DAY-TIME</label><div class="value"></div></div></td></tr>
 	</table>
 	</div>
 	<div id="help">
@@ -222,12 +283,48 @@
 			Click for mouse lock.<br>
 			Toggle sound: Q<br>
 			Toggle FPS limits: F<br>
+			Teleport: T<br>
 			<br>
 		</p>
 		<p>
 			Press H again to hide<br>
 			this panel.
 		</p>
+	</div>
+	<div id="explosion_gameover" class="gameover whiteGameover">
+		<div class="gameover_message">
+			<p>Despite your best efforts, you could not stop Allitus from destroying Targ. Better luck next time!</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Try Again</button>
+		</div>
+	</div>
+	<div id="targSavedAndXenoDepart" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>Leaving feels good with an extra 20,000 credits in the bank.
+				Plus, having saved both Targ and the alien base makes this a special day.</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
+	</div>
+	<div id="targSaved" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>Leaving feels good with an extra 20,000 credits in the bank.
+			You feel great that Targ is saved but wonder what fate the aliens suffered...</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
+	</div>
+	<div id="xenoDepart" class="gameover blackGameover">
+		<div class="gameover_message">
+			<p>You don't bother to look back to see what happened to Targ. The planet may be lost but at least
+				the alien ship escaped to safety. You shrug and proceed to your next adventure.</p>
+			<br>
+			<br>
+			<button onclick="location.reload(); return false;">Play Again</button>
+		</div>
 	</div>
 </body>
 </html>
