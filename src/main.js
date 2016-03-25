@@ -18,11 +18,12 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.2; // todo: git hook this
+const VERSION = 0.27; // todo: git hook this
 
 class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
+		window.escapeUsed = false;
 		this.lastLightPercent = 0;
 		this.updateLight = true;
 		window.cb = "" + Date.now();
@@ -56,7 +57,8 @@ class Merc {
 	startIntro() {
 		let skipping = false;
 		$(document).keyup(( event ) => {
-			if(event.keyCode == 27) {
+			if(event.keyCode == 27 && window.escapeUsed == false) {
+				window.escapeUsed = true; // only once
 				if(!skipping) {
 					skipping = true;
 					this.space.abort();
