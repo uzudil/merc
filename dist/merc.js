@@ -56,7 +56,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _jquery = __webpack_require__(7);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -92,7 +92,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(6);
+	var _constants = __webpack_require__(7);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -109,7 +109,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.27; // todo: git hook this
+	var VERSION = 0.3; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -121,7 +121,8 @@
 			window.escapeUsed = false;
 			this.lastLightPercent = 0;
 			this.updateLight = true;
-			window.cb = "" + Date.now();
+			window.cb = "" + VERSION;
+			util.initBinaryLoader();
 			new model.Models(function (models) {
 				return _this.init(models);
 			});
@@ -254,8 +255,8 @@
 	
 				// by a base
 				//this.movement.loadGame({
-				//	//sectorX: 0xf8, sectorY: 0xc9,
-				//	sectorX: 9, sectorY: 2,
+				//	sectorX: 0xd9, sectorY: 0x42,
+				//	//sectorX: 9, sectorY: 2,
 				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
 				//	vehicle: null,
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
@@ -36664,11 +36665,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _world = __webpack_require__(5);
+	var _world = __webpack_require__(6);
 	
 	var world = _interopRequireWildcard(_world);
 	
-	var _constants = __webpack_require__(6);
+	var _constants = __webpack_require__(7);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -36985,7 +36986,7 @@
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 		value: true
@@ -37000,10 +37001,15 @@
 	exports.toHex = toHex;
 	exports.toggleColor = toggleColor;
 	exports.updateColors = updateColors;
+	exports.initBinaryLoader = initBinaryLoader;
 	
 	var _three = __webpack_require__(1);
 	
 	var _three2 = _interopRequireDefault(_three);
+	
+	var _jquery = __webpack_require__(5);
+	
+	var _jquery2 = _interopRequireDefault(_jquery);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -37118,50 +37124,66 @@
 		mesh.geometry.elementsNeedUpdate = true;
 		mesh.needsUpdate = true;
 	}
+	
+	// from http://www.henryalgus.com/reading-binary-files-using-jquery-ajax/
+	function initBinaryLoader() {
+		_jquery2.default.ajaxTransport("+binary", function (options, originalOptions, jqXHR) {
+			// check for conditions and support for blob / arraybuffer response type
+			if (window.FormData && (options.dataType && options.dataType == 'binary' || options.data && (window.ArrayBuffer && options.data instanceof ArrayBuffer || window.Blob && options.data instanceof Blob))) {
+				return {
+					// create new XMLHttpRequest
+					send: function send(headers, callback) {
+						// setup all variables
+						var xhr = new XMLHttpRequest(),
+						    url = options.url,
+						    type = options.type,
+						    async = options.async || true,
+	
+						// blob or arraybuffer. Default is blob
+						dataType = options.responseType || "blob",
+						    data = options.data || null,
+						    username = options.username || null,
+						    password = options.password || null;
+	
+						xhr.addEventListener('load', function () {
+							var data = {};
+							data[options.dataType] = xhr.response;
+							// make callback and send data
+							callback(xhr.status, xhr.statusText, data, xhr.getAllResponseHeaders());
+						});
+						if (options["progress"]) {
+							xhr.addEventListener("progress", function (evt) {
+								if (evt.lengthComputable) {
+									var percentComplete = evt.loaded / evt.total;
+									options.progress(percentComplete);
+								}
+							}, false);
+						}
+	
+						xhr.open(type, url, async, username, password);
+	
+						// setup custom headers
+						for (var i in headers) {
+							xhr.setRequestHeader(i, headers[i]);
+						}
+	
+						xhr.responseType = dataType;
+						xhr.send(data);
+					},
+					abort: function abort() {
+						jqXHR.abort();
+					}
+				};
+			}
+		});
+	}
 
 /***/ },
 /* 5 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, [[48, 90]]], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, [[105, 51], [140, 51], [190, 51]]], [67, 51, 0, 18, []], [84, 68, 0, 69, [[84, 131]]], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []], [15, 90, 70, 0, []], [136, 195, 68, 0, []], [186, 195, 0, 11, []], [186, 205, 18, 0, []], [203, 221, 53, 0, []], [223, 221, 0, 35, []], [105, 0, 0, 81, []], [84, 80, 22, 0, []], [140, 29, 0, 52, []], [105, 29, 36, 0, []], [151, 80, 0, 57, []], [140, 80, 12, 0, []], [84, 120, 20, 0, []], [103, 120, 0, 17, []], [219, 67, 0, 129, [[219, 106]]], [203, 195, 17, 0, []], [190, 0, 0, 81, []], [151, 106, 105, 0, []], [190, 80, 30, 0, []], [25, 90, 0, 81, [[25, 153]]], [25, 170, 32, 0, []], [40, 170, 0, 32, []], [40, 201, 14, 0, []], [53, 201, 0, 55, [[53, 232]]], [0, 232, 137, 0, []], [25, 131, 60, 0, []], [19, 210, 0, 23, []], [12, 210, 42, 0, []], [12, 153, 0, 58, []], [12, 153, 14, 0, []], [25, 153, 34, 0, []], [119, 100, 0, 5, []], [119, 104, 5, 0, []], [123, 100, 0, 5, []], [119, 100, 5, 0, []], [121, 91, 0, 10, []], [121, 91, 31, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180], [54, 201, 0, 0, 90]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0], [14, 90, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0], [26, 133, 0, 0, 180], [26, 135, 0, 0, 180], [26, 137, 0, 0, 180], [24, 137, 0, 0, 0], [24, 135, 0, 0, 0], [24, 133, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]], "plant": [[57, 170, 0, 0, 180]], "stadium": [[12, 152, 0, 0, -90]], "ufo": [[121, 102, 0, 0, 0]] } };
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	var START_X = exports.START_X = 0x33;
-	var START_Y = exports.START_Y = 0x66;
-	var START_Z = exports.START_Z = 50000;
-	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
-	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
-	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
-	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
-	//export const GAME_DAY = 1 * 40 * 1000; // 15 mins = 1 game day
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * jQuery JavaScript Library v2.2.1
+	 * jQuery JavaScript Library v2.2.2
 	 * http://jquery.com/
 	 *
 	 * Includes Sizzle.js
@@ -37171,7 +37193,7 @@
 	 * Released under the MIT license
 	 * http://jquery.org/license
 	 *
-	 * Date: 2016-02-22T19:11Z
+	 * Date: 2016-03-17T17:51Z
 	 */
 	
 	(function( global, factory ) {
@@ -37227,7 +37249,7 @@
 	
 	
 	var
-		version = "2.2.1",
+		version = "2.2.2",
 	
 		// Define a local copy of jQuery
 		jQuery = function( selector, context ) {
@@ -37438,6 +37460,7 @@
 		},
 	
 		isPlainObject: function( obj ) {
+			var key;
 	
 			// Not plain objects:
 			// - Any object or value whose internal [[Class]] property is not "[object Object]"
@@ -37447,14 +37470,18 @@
 				return false;
 			}
 	
+			// Not own constructor property must be Object
 			if ( obj.constructor &&
-					!hasOwn.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+					!hasOwn.call( obj, "constructor" ) &&
+					!hasOwn.call( obj.constructor.prototype || {}, "isPrototypeOf" ) ) {
 				return false;
 			}
 	
-			// If the function hasn't returned already, we're confident that
-			// |obj| is a plain object, created by {} or constructed with new Object
-			return true;
+			// Own properties are enumerated firstly, so to speed up,
+			// if last one is own, then all properties are own
+			for ( key in obj ) {}
+	
+			return key === undefined || hasOwn.call( obj, key );
 		},
 	
 		isEmptyObject: function( obj ) {
@@ -44487,6 +44514,12 @@
 		}
 	} );
 	
+	// Support: IE <=11 only
+	// Accessing the selectedIndex property
+	// forces the browser to respect setting selected
+	// on the option
+	// The getter ensures a default option is selected
+	// when in an optgroup
 	if ( !support.optSelected ) {
 		jQuery.propHooks.selected = {
 			get: function( elem ) {
@@ -44495,6 +44528,16 @@
 					parent.parentNode.selectedIndex;
 				}
 				return null;
+			},
+			set: function( elem ) {
+				var parent = elem.parentNode;
+				if ( parent ) {
+					parent.selectedIndex;
+	
+					if ( parent.parentNode ) {
+						parent.parentNode.selectedIndex;
+					}
+				}
 			}
 		};
 	}
@@ -44689,7 +44732,8 @@
 	
 	
 	
-	var rreturn = /\r/g;
+	var rreturn = /\r/g,
+		rspaces = /[\x20\t\r\n\f]+/g;
 	
 	jQuery.fn.extend( {
 		val: function( value ) {
@@ -44765,9 +44809,15 @@
 			option: {
 				get: function( elem ) {
 	
-					// Support: IE<11
-					// option.value not trimmed (#14858)
-					return jQuery.trim( elem.value );
+					var val = jQuery.find.attr( elem, "value" );
+					return val != null ?
+						val :
+	
+						// Support: IE10-11+
+						// option.text throws exceptions (#14686, #14858)
+						// Strip and collapse whitespace
+						// https://html.spec.whatwg.org/#strip-and-collapse-whitespace
+						jQuery.trim( jQuery.text( elem ) ).replace( rspaces, " " );
 				}
 			},
 			select: {
@@ -44820,7 +44870,7 @@
 					while ( i-- ) {
 						option = options[ i ];
 						if ( option.selected =
-								jQuery.inArray( jQuery.valHooks.option.get( option ), values ) > -1
+							jQuery.inArray( jQuery.valHooks.option.get( option ), values ) > -1
 						) {
 							optionSet = true;
 						}
@@ -46515,18 +46565,6 @@
 	
 	
 	
-	// Support: Safari 8+
-	// In Safari 8 documents created via document.implementation.createHTMLDocument
-	// collapse sibling forms: the second one becomes a child of the first one.
-	// Because of that, this security measure has to be disabled in Safari 8.
-	// https://bugs.webkit.org/show_bug.cgi?id=137337
-	support.createHTMLDocument = ( function() {
-		var body = document.implementation.createHTMLDocument( "" ).body;
-		body.innerHTML = "<form></form><form></form>";
-		return body.childNodes.length === 2;
-	} )();
-	
-	
 	// Argument "data" should be string of html
 	// context (optional): If specified, the fragment will be created in this context,
 	// defaults to document
@@ -46539,12 +46577,7 @@
 			keepScripts = context;
 			context = false;
 		}
-	
-		// Stop scripts or inline event handlers from being executed immediately
-		// by using document.implementation
-		context = context || ( support.createHTMLDocument ?
-			document.implementation.createHTMLDocument( "" ) :
-			document );
+		context = context || document;
 	
 		var parsed = rsingleTag.exec( data ),
 			scripts = !keepScripts && [];
@@ -46994,6 +47027,43 @@
 
 
 /***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, [[48, 90]]], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, [[105, 51], [140, 51], [190, 51]]], [67, 51, 0, 18, []], [84, 68, 0, 69, [[84, 131]]], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []], [15, 90, 70, 0, []], [136, 195, 68, 0, []], [186, 195, 0, 11, []], [186, 205, 18, 0, []], [203, 221, 53, 0, []], [223, 221, 0, 35, []], [105, 0, 0, 81, []], [84, 80, 22, 0, []], [140, 29, 0, 52, []], [105, 29, 36, 0, []], [151, 80, 0, 57, []], [140, 80, 12, 0, []], [84, 120, 20, 0, []], [103, 120, 0, 17, []], [219, 67, 0, 129, [[219, 106]]], [203, 195, 17, 0, []], [190, 0, 0, 81, []], [151, 106, 105, 0, []], [190, 80, 30, 0, []], [25, 90, 0, 81, [[25, 153]]], [25, 170, 32, 0, []], [40, 170, 0, 32, []], [40, 201, 14, 0, []], [53, 201, 0, 55, [[53, 232]]], [0, 232, 137, 0, []], [25, 131, 60, 0, []], [19, 210, 0, 23, []], [12, 210, 42, 0, []], [12, 153, 0, 58, []], [12, 153, 14, 0, []], [25, 153, 34, 0, []], [119, 100, 0, 5, []], [119, 104, 5, 0, []], [123, 100, 0, 5, []], [119, 100, 5, 0, []], [121, 91, 0, 10, []], [121, 91, 31, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180], [54, 201, 0, 0, 90]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0], [14, 90, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0], [26, 133, 0, 0, 180], [26, 135, 0, 0, 180], [26, 137, 0, 0, 180], [24, 137, 0, 0, 0], [24, 135, 0, 0, 0], [24, 133, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]], "plant": [[57, 170, 0, 0, 180]], "stadium": [[12, 152, 0, 0, -90]], "ufo": [[121, 102, 0, 0, 0]] } };
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var START_X = exports.START_X = 0x33;
+	var START_Y = exports.START_Y = 0x66;
+	var START_Z = exports.START_Z = 50000;
+	var SECTOR_SIZE = exports.SECTOR_SIZE = 512.0;
+	var GRASS_COLOR = exports.GRASS_COLOR = new _three2.default.Color("rgb(39,79,6)");
+	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
+	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
+	//export const GAME_DAY = 1 * 40 * 1000; // 15 mins = 1 game day
+
+/***/ },
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -47016,7 +47086,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jquery = __webpack_require__(7);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -47048,7 +47118,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(6);
+	var _constants = __webpack_require__(7);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -47099,6 +47169,7 @@
 			this.bbox = new _three2.default.Box3(new _three2.default.Vector3(-SIZE, -SIZE, -SIZE), new _three2.default.Vector3(SIZE, SIZE, SIZE));
 			this.model_bbox = new _three2.default.Box3();
 	
+			this.canMove = true;
 			this.inventory = [];
 			this.vehicle = null;
 			this.level = null;
@@ -47196,6 +47267,7 @@
 			});
 	
 			(0, _jquery2.default)(document).keydown(function (event) {
+				if (!_this.canMove) return;
 				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
 					case 87:
@@ -47301,7 +47373,9 @@
 				this.events.state = gameState.state;
 				this.main.setLightPercent();
 				if (this.player.position.z == ROOM_DEPTH) {
+					this.canMove = false;
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
+						_this2.canMove = true;
 						_this2.level = level;
 						_this2.main.setLightPercent();
 						if (_this2.level) {
@@ -47439,7 +47513,9 @@
 	
 				if (this.enterMode == ENTER_BASE) {
 					console.log("Entering alien base.");
+					this.canMove = false;
 					compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], function (level) {
+						_this3.canMove = true;
 						_this3.level = level;
 						_this3.main.setLightPercent();
 						_this3.sectorX = ALIEN_BASE_POS[0];
@@ -47484,7 +47560,9 @@
 								var elevator = _this3.getElevator();
 								if (elevator) {
 									// down
+									_this3.canMove = false;
 									compounds.loadLevel(_this3.sectorX, _this3.sectorY, function (level) {
+										_this3.canMove = true;
 										_this3.level = level;
 										_this3.main.updateLight = false;
 										// this.main.setLightPercent();
@@ -49660,6 +49738,10 @@
 	
 						c.geometry.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
 					}
+	
+					//let t, t2; t = Date.now();
+	
+					// actual doors
 				} catch (err) {
 					_didIteratorError5 = true;
 					_iteratorError5 = err;
@@ -49675,10 +49757,6 @@
 					}
 				}
 	
-				var t = void 0,
-				    t2 = void 0;t = Date.now();
-	
-				// actual doors
 				var _iteratorNormalCompletion6 = true;
 				var _didIteratorError6 = false;
 				var _iteratorError6 = undefined;
@@ -49703,6 +49781,9 @@
 	
 						this.targetMesh.add(door_mesh);
 					}
+					//t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
+	
+					// objects
 				} catch (err) {
 					_didIteratorError6 = true;
 					_iteratorError6 = err;
@@ -49718,9 +49799,6 @@
 					}
 				}
 	
-				t2 = Date.now();console.log("5. " + (t2 - t));t = t2;
-	
-				// objects
 				var _iteratorNormalCompletion7 = true;
 				var _didIteratorError7 = false;
 				var _iteratorError7 = undefined;
@@ -49738,6 +49816,7 @@
 						mesh.position.set(_dx, _dy, _dz);
 						this.targetMesh.add(mesh);
 					}
+					//t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
 				} catch (err) {
 					_didIteratorError7 = true;
 					_iteratorError7 = err;
@@ -49752,8 +49831,6 @@
 						}
 					}
 				}
-	
-				t2 = Date.now();console.log("6. " + (t2 - t));t = t2;
 	
 				this.makeElevator(x, y);
 	
@@ -50444,7 +50521,7 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _jquery = __webpack_require__(7);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -50490,32 +50567,43 @@
 			console.log("Loading model=" + name);
 	
 			var zipName = "models/compounds/" + name + ".zip";
-			console.log("Loading zip=" + zipName);
-			_jszipUtils2.default.getBinaryContent(zipName + "?cb=" + window.cb, function (err, data) {
+			//console.log("Loading zip=" + zipName);
 	
-				setLoadingUIProgress(30, function () {
-					if (err) {
-						stopLoadingUI();
-						throw err; // or handle err
-					}
+			_jquery2.default.ajax({
+				dataType: "binary",
+				processData: false,
+				responseType: "arraybuffer",
+				type: 'GET',
+				url: zipName + "?cb=" + window.cb,
+				progress: function progress(percentComplete) {
+					//console.log(percentComplete);
+					(0, _jquery2.default)("#progress-value").css("width", 80 * percentComplete + "%");
+				},
+				success: function success(data) {
+					decompressLevel(name, data, sectorX, sectorY, onload);
+				},
+				error: function error(err) {
+					console.log("Error downloading zip file: " + zipName + " error=" + err);
+				}
+			});
+		});
+	}
 	
-					setLoadingUIProgress(50, function () {
-						console.log("Loaded. Decompressing...");
-						var zip = new _jszip2.default(data);
-						console.log("zip data=", zip);
-						var jsonContent = zip.file(name).asText();
+	function decompressLevel(name, data, sectorX, sectorY, onload) {
+		setLoadingUIProgress(80, function () {
+			//console.log("Loaded. Decompressing...");
+			var zip = new _jszip2.default(data);
+			//console.log("zip data=", zip);
+			var jsonContent = zip.file(name).asText();
 	
-						setLoadingUIProgress(80, function () {
-							console.log("Constructing object... json size=", jsonContent.length);
-							var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
-							console.log("constructed=", obj);
+			setLoadingUIProgress(90, function () {
+				//console.log("Constructing object... json size=", jsonContent.length);
+				var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
+				//console.log("constructed=", obj);
 	
-							setLoadingUIProgress(95, function () {
-								stopLoadingUI();
-								onload(getLevel(sectorX, sectorY, obj));
-							});
-						});
-					});
+				setLoadingUIProgress(100, function () {
+					stopLoadingUI();
+					onload(getLevel(sectorX, sectorY, obj));
 				});
 			});
 		});
@@ -62298,7 +62386,7 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _constants = __webpack_require__(6);
+	var _constants = __webpack_require__(7);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -62678,7 +62766,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _constants = __webpack_require__(6);
+	var _constants = __webpack_require__(7);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -62784,7 +62872,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(7);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -62897,7 +62985,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(7);
+	var _jquery = __webpack_require__(5);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	

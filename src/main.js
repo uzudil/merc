@@ -18,7 +18,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.27; // todo: git hook this
+const VERSION = 0.3; // todo: git hook this
 
 class Merc {
 	constructor() {
@@ -26,7 +26,8 @@ class Merc {
 		window.escapeUsed = false;
 		this.lastLightPercent = 0;
 		this.updateLight = true;
-		window.cb = "" + Date.now();
+		window.cb = "" + VERSION;
+		util.initBinaryLoader();
 		new model.Models((models)=>this.init(models))
 	}
 
@@ -152,8 +153,8 @@ class Merc {
 
 		// by a base
 		//this.movement.loadGame({
-		//	//sectorX: 0xf8, sectorY: 0xc9,
-		//	sectorX: 9, sectorY: 2,
+		//	sectorX: 0xd9, sectorY: 0x42,
+		//	//sectorX: 9, sectorY: 2,
 		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
 		//	vehicle: null,
 		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],

@@ -25,7 +25,7 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
-    "jquery": "^2.1.4",
+    "jquery": "^2.2.2",
     "jszip": "^2.5.0",
     "jszip-utils": "0.0.2",
     "three.js": "^0.73.0"

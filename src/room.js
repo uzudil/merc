@@ -151,7 +151,7 @@ export class Level {
 			c.geometry.translate(this.w/2 * ROOM_SIZE + WALL_THICKNESS, this.h/2 * ROOM_SIZE + WALL_THICKNESS, 0);
 		}
 
-		let t, t2; t = Date.now();
+		//let t, t2; t = Date.now();
 
 		// actual doors
 		for(let door of this.doors) {
@@ -172,7 +172,7 @@ export class Level {
 
 			this.targetMesh.add(door_mesh);
 		}
-		t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
+		//t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
 
 		// objects
 		for(let object of this.objects) {
@@ -185,7 +185,7 @@ export class Level {
 			mesh.position.set(dx, dy, dz);
 			this.targetMesh.add(mesh);
 		}
-		t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
+		//t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
 
 		this.makeElevator(x, y);
 

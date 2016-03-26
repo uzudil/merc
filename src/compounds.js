@@ -32,32 +32,43 @@ export function loadLevel(sectorX, sectorY, onload) {
 		console.log("Loading model=" + name);
 
 		let zipName = "models/compounds/" + name + ".zip";
-		console.log("Loading zip=" + zipName);
-		JSZipUtils.getBinaryContent(zipName + "?cb=" + window.cb, function(err, data) {
+		//console.log("Loading zip=" + zipName);
 
-			setLoadingUIProgress(30, ()=> {
-				if(err) {
-					stopLoadingUI();
-					throw err; // or handle err
-				}
+		$.ajax({
+			dataType: "binary",
+			processData: false,
+			responseType: "arraybuffer",
+			type: 'GET',
+			url: zipName + "?cb=" + window.cb,
+			progress: function (percentComplete) {
+				//console.log(percentComplete);
+				$("#progress-value").css("width", (80 * percentComplete) + "%");
+			},
+			success: function (data) {
+				decompressLevel(name, data, sectorX, sectorY, onload);
+			},
+			error: (err) => {
+				console.log("Error downloading zip file: " + zipName + " error=" + err);
+			}
+		});
+	});
+}
 
-				setLoadingUIProgress(50, ()=> {
-					console.log("Loaded. Decompressing...");
-					var zip = new JSZip(data);
-					console.log("zip data=", zip);
-					let jsonContent = zip.file(name).asText();
+function decompressLevel(name, data, sectorX, sectorY, onload) {
+	setLoadingUIProgress(80, ()=> {
+		//console.log("Loaded. Decompressing...");
+		var zip = new JSZip(data);
+		//console.log("zip data=", zip);
+		let jsonContent = zip.file(name).asText();
 
-					setLoadingUIProgress(80, ()=> {
-						console.log("Constructing object... json size=", jsonContent.length);
-						let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
-						console.log("constructed=", obj);
+		setLoadingUIProgress(90, ()=> {
+			//console.log("Constructing object... json size=", jsonContent.length);
+			let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
+			//console.log("constructed=", obj);
 
-						setLoadingUIProgress(95, ()=> {
-							stopLoadingUI();
-							onload(getLevel(sectorX, sectorY, obj));
-						});
-					});
-				});
+			setLoadingUIProgress(100, ()=> {
+				stopLoadingUI();
+				onload(getLevel(sectorX, sectorY, obj));
 			});
 		});
 	});

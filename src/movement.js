@@ -50,6 +50,7 @@ export class Movement {
 		this.bbox = new THREE.Box3(new THREE.Vector3(-SIZE, -SIZE, -SIZE), new THREE.Vector3(SIZE, SIZE, SIZE));
 		this.model_bbox = new THREE.Box3();
 
+		this.canMove = true;
 		this.inventory = [];
 		this.vehicle = null;
 		this.level = null;
@@ -147,6 +148,7 @@ export class Movement {
 		});
 
 		$(document).keydown(( event ) => {
+			if(!this.canMove) return;
 			if(this.vehicle && this.vehicle.model.name == "ship") return;
 			switch ( event.keyCode ) {
 				case 87: this.fw = true; break;
@@ -227,7 +229,9 @@ export class Movement {
 		this.events.state = gameState.state;
 		this.main.setLightPercent();
 		if(this.player.position.z == ROOM_DEPTH) {
+			this.canMove = false;
 			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
+				this.canMove = true;
 				this.level = level;
 				this.main.setLightPercent();
 				if(this.level) {
@@ -350,7 +354,9 @@ export class Movement {
 	useElevator() {
 		if(this.enterMode == ENTER_BASE) {
 			console.log("Entering alien base.");
+			this.canMove = false;
 			compounds.loadLevel(ALIEN_BASE_POS[0], ALIEN_BASE_POS[1], (level)=> {
+				this.canMove = true;
 				this.level = level;
 				this.main.setLightPercent();
 				this.sectorX = ALIEN_BASE_POS[0];
@@ -391,7 +397,9 @@ export class Movement {
 				let elevator = this.getElevator();
 				if (elevator) {
 					// down
+					this.canMove = false;
 					compounds.loadLevel(this.sectorX, this.sectorY, (level) => {
+						this.canMove = true;
 						this.level = level;
 						this.main.updateLight = false;
 						// this.main.setLightPercent();
