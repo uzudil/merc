@@ -110,12 +110,12 @@ class Merc {
 		console.log("game starting");
 		// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
 		// lights
-		this.ambientLight = new THREE.AmbientLight( 0x404040 );
-		this.scene.add(this.ambientLight);
-
-		this.dirLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-		this.dirLight1.position.set( 0, 0, 1 );
-		this.scene.add( this.dirLight1 );
+		//this.ambientLight = new THREE.AmbientLight( 0x404040 );
+		//this.scene.add(this.ambientLight);
+		//
+		//this.dirLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
+		//this.dirLight1.position.set( 0, 0, 1 );
+		//this.scene.add( this.dirLight1 );
 
 		this.renderer.setClearColor(constants.GRASS_COLOR);
 		this.movement = new movement.Movement(this);

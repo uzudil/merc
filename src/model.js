@@ -11,7 +11,7 @@ const MODELS = [
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
 	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno",
-	"xenterm", "trans", "control", "engine", "core"
+	"xenterm", "trans", "control", "engine", "core", "pine"
 ];
 
 const VEHICLES = {
@@ -92,7 +92,8 @@ const SCALE = {
 	"trans": 10,
 	"control": 10,
 	"engine": 15,
-	"core": 10
+	"core": 10,
+	"pine": 50
 };
 
 const DESCRIPTIONS = {
