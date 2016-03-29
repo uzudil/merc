@@ -1,6 +1,5 @@
 import THREE from 'three.js';
 import * as game_map from 'game_map';
-import * as util from 'util';
 
 /*
 	To use colors, use the "vertex paint" feature of blender.
@@ -118,10 +117,17 @@ const LIFTS = {
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-const MATERIAL = new THREE.MeshBasicMaterial({
+//const MATERIAL = new THREE.MeshBasicMaterial({
+//	color: 0xffffff,
+//	side: THREE.DoubleSide,
+//	vertexColors: THREE.FaceColors
+//	//overdraw: true
+//});
+export const MATERIAL = new THREE.MeshPhongMaterial({
 	color: 0xffffff,
 	side: THREE.DoubleSide,
-	vertexColors: THREE.FaceColors
+	vertexColors: THREE.FaceColors,
+	shading: THREE.FlatShading
 	//overdraw: true
 });
 const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
@@ -135,7 +141,7 @@ export class Models {
 			if(name in VEHICLES) {
 				model = new Vehicle(name, VEHICLES[name]);
 			} else {
-				model = new Model(name);
+				model = new Model(name, name !== "elevator");
 			}
 			model.load((m) => this.modelLoaded(m));
 		}
@@ -157,12 +163,13 @@ export class Models {
 }
 
 export class Model {
-	constructor(name) {
+	constructor(name, canCompress) {
 		this.name = name;
 		this.lifts = LIFTS[name];
 		this.mesh = null;
 		this.bbox = null;
 		this.description = DESCRIPTIONS[name] || name;
+		this.canCompress = canCompress;
 	}
 
 	load(onLoad) {
@@ -176,15 +183,10 @@ export class Model {
 			geometry.translate(0, 0, geometry.boundingBox.size().z/2 + 1/60);
 			let scale = SCALE[this.name] || 60;
 			geometry.scale(scale, scale, scale);
-			util.shadeGeo(geometry, LIGHT);
 			this.mesh = new THREE.Mesh(geometry, MATERIAL);
 			this.bbox = new THREE.Box3().setFromObject(this.mesh);
 			onLoad(this);
 		});
-	}
-
-	setLightPercent(percent) {
-		util.setLightPercent(this.mesh, LIGHT, percent);
 	}
 
 	getBoundingBox() {
@@ -206,6 +208,7 @@ export class Vehicle extends Model {
 		this.exp = vehicle.exp;
 		this.noise = vehicle.noise;
 		this.vehicle = vehicle;
+		this.canCompress = false;
 	}
 
 	enterCheck(movement) {

@@ -2,6 +2,7 @@ import THREE from 'three.js'
 import * as util from 'util'
 import * as world from 'world'
 import * as constants from 'constants'
+import * as modelPackage from 'model'
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
@@ -27,6 +28,24 @@ export class GameMap {
 					pos[4] = util.angle2rad(pos[4]);
 					this.addStructure(m, pos);
 				}
+			}
+		}
+
+		// compress sectors
+		for(let key in this.sectors) {
+			let sector = this.sectors[key];
+			let meshes = sector.children.filter((child) => child.model.canCompress);
+			if(meshes.length > 0) {
+				sector.updateMatrix();
+				let geo = new THREE.Geometry();
+				for (let child of meshes) {
+					child.updateMatrix();
+					geo.merge(child.geometry, child.matrix);
+					child.parent.remove(child);
+				}
+				let mesh = new THREE.Mesh(geo, modelPackage.MATERIAL);
+				//mesh.position.set(constants.SECTOR_SIZE/2, constants.SECTOR_SIZE/2, 0);
+				sector.add(mesh);
 			}
 		}
 

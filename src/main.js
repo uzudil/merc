@@ -26,6 +26,7 @@ class Merc {
 		window.escapeUsed = false;
 		this.lastLightPercent = 0;
 		this.updateLight = true;
+		this.tmpColor = new THREE.Color();
 		window.cb = "" + VERSION;
 		util.initBinaryLoader();
 		new model.Models((models)=>this.init(models))
@@ -110,12 +111,16 @@ class Merc {
 		console.log("game starting");
 		// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
 		// lights
-		//this.ambientLight = new THREE.AmbientLight( 0x404040 );
-		//this.scene.add(this.ambientLight);
-		//
-		//this.dirLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-		//this.dirLight1.position.set( 0, 0, 1 );
-		//this.scene.add( this.dirLight1 );
+		this.ambientLight = new THREE.AmbientLight( constants.AMBIENT_COLOR.getHex() );
+		this.scene.add(this.ambientLight);
+
+		this.dirLight1 = new THREE.DirectionalLight( constants.DIR1_COLOR.getHex(), 0.5 );
+		this.dirLight1.position.set( 1, 1, 1 );
+		this.scene.add( this.dirLight1 );
+
+		this.dirLight2 = new THREE.DirectionalLight( constants.DIR2_COLOR.getHex(), 0.25 );
+		this.dirLight2.position.set( -1, -1, 1 );
+		this.scene.add( this.dirLight2 );
 
 		this.renderer.setClearColor(constants.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
@@ -239,7 +244,7 @@ class Merc {
 		} else {
 			console.log("+++ unhandled hour: " + hour);
 		}
-		return Math.max(0.15, p);
+		return Math.max(constants.MIN_LIGHT, p);
 	}
 
 	setLightPercentWorld(percent) {
@@ -248,11 +253,24 @@ class Merc {
 			//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 			this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 			this.skybox.setLightPercent(percent);
-			this.models.setLightPercent(percent);
+
+			// just dim
+			//this.ambientLight.color.set(constants.AMBIENT_COLOR.getHex()).multiplyScalar(percent);
+			this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+			this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+
+			//	this.models.setLightPercent(percent);
 			if(this.movement.level) {
 				this.movement.level.setElevatorLightPercent(percent);
 			}
 		}
+
+		// cycle thru a dawn/dusk color set
+		constants.calcLight(this.movement.events.hourOfDay, this.tmpColor, constants.AMBIENT_COLOR);
+		if(this.tmpColor.getHex() != this.ambientLight.color.getHex()) {
+			this.ambientLight.color.setHex(this.tmpColor.getHex())
+		}
+
 	}
 
 	animate() {

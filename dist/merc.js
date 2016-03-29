@@ -121,6 +121,7 @@
 			window.escapeUsed = false;
 			this.lastLightPercent = 0;
 			this.updateLight = true;
+			this.tmpColor = new _three2.default.Color();
 			window.cb = "" + VERSION;
 			util.initBinaryLoader();
 			new model.Models(function (models) {
@@ -215,12 +216,16 @@
 				console.log("game starting");
 				// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
 				// lights
-				//this.ambientLight = new THREE.AmbientLight( 0x404040 );
-				//this.scene.add(this.ambientLight);
-				//
-				//this.dirLight1 = new THREE.DirectionalLight( 0xffffff, 0.5 );
-				//this.dirLight1.position.set( 0, 0, 1 );
-				//this.scene.add( this.dirLight1 );
+				this.ambientLight = new _three2.default.AmbientLight(constants.AMBIENT_COLOR.getHex());
+				this.scene.add(this.ambientLight);
+	
+				this.dirLight1 = new _three2.default.DirectionalLight(constants.DIR1_COLOR.getHex(), 0.5);
+				this.dirLight1.position.set(1, 1, 1);
+				this.scene.add(this.dirLight1);
+	
+				this.dirLight2 = new _three2.default.DirectionalLight(constants.DIR2_COLOR.getHex(), 0.25);
+				this.dirLight2.position.set(-1, -1, 1);
+				this.scene.add(this.dirLight2);
 	
 				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
@@ -345,7 +350,7 @@
 				} else {
 					console.log("+++ unhandled hour: " + hour);
 				}
-				return Math.max(0.15, p);
+				return Math.max(constants.MIN_LIGHT, p);
 			}
 		}, {
 			key: 'setLightPercentWorld',
@@ -355,10 +360,22 @@
 					//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 					this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 					this.skybox.setLightPercent(percent);
-					this.models.setLightPercent(percent);
+	
+					// just dim
+					//this.ambientLight.color.set(constants.AMBIENT_COLOR.getHex()).multiplyScalar(percent);
+					this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+					this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+	
+					//	this.models.setLightPercent(percent);
 					if (this.movement.level) {
 						this.movement.level.setElevatorLightPercent(percent);
 					}
+				}
+	
+				// cycle thru a dawn/dusk color set
+				constants.calcLight(this.movement.events.hourOfDay, this.tmpColor, constants.AMBIENT_COLOR);
+				if (this.tmpColor.getHex() != this.ambientLight.color.getHex()) {
+					this.ambientLight.color.setHex(this.tmpColor.getHex());
 				}
 			}
 		}, {
@@ -36673,6 +36690,10 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
+	var _model = __webpack_require__(9);
+	
+	var modelPackage = _interopRequireWildcard(_model);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -36731,6 +36752,48 @@
 				}
 			}
 	
+			// compress sectors
+			for (var _key in this.sectors) {
+				var sector = this.sectors[_key];
+				var meshes = sector.children.filter(function (child) {
+					return child.model.canCompress;
+				});
+				if (meshes.length > 0) {
+					sector.updateMatrix();
+					var geo = new _three2.default.Geometry();
+					var _iteratorNormalCompletion2 = true;
+					var _didIteratorError2 = false;
+					var _iteratorError2 = undefined;
+	
+					try {
+						for (var _iterator2 = meshes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+							var child = _step2.value;
+	
+							child.updateMatrix();
+							geo.merge(child.geometry, child.matrix);
+							child.parent.remove(child);
+						}
+					} catch (err) {
+						_didIteratorError2 = true;
+						_iteratorError2 = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion2 && _iterator2.return) {
+								_iterator2.return();
+							}
+						} finally {
+							if (_didIteratorError2) {
+								throw _iteratorError2;
+							}
+						}
+					}
+	
+					var mesh = new _three2.default.Mesh(geo, modelPackage.MATERIAL);
+					//mesh.position.set(constants.SECTOR_SIZE/2, constants.SECTOR_SIZE/2, 0);
+					sector.add(mesh);
+				}
+			}
+	
 			// add xeno base
 			this.xenoBase = this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
 			this.xenoBase.visible = false;
@@ -36745,13 +36808,13 @@
 			key: 'drawRoads',
 			value: function drawRoads(maxAnisotropy, models) {
 				var roads = [];
-				var _iteratorNormalCompletion2 = true;
-				var _didIteratorError2 = false;
-				var _iteratorError2 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator2 = world.WORLD.roads[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var road = _step2.value;
+					for (var _iterator3 = world.WORLD.roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var road = _step3.value;
 	
 						if (road.length == 4) {
 							roads.push(road);
@@ -36762,16 +36825,16 @@
 							var h = road[3];
 							//console.log("Original=", x, ",", y, "-", w, ",", h);
 							var r = void 0;
-							var _iteratorNormalCompletion4 = true;
-							var _didIteratorError4 = false;
-							var _iteratorError4 = undefined;
+							var _iteratorNormalCompletion5 = true;
+							var _didIteratorError5 = false;
+							var _iteratorError5 = undefined;
 	
 							try {
-								for (var _iterator4 = road[4][Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-									var _step4$value = _slicedToArray(_step4.value, 2);
+								for (var _iterator5 = road[4][Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+									var _step5$value = _slicedToArray(_step5.value, 2);
 	
-									var bx = _step4$value[0];
-									var by = _step4$value[1];
+									var bx = _step5$value[0];
+									var by = _step5$value[1];
 	
 									if (w > 0) {
 										this.addStructure(models.models["bridge"], [bx, by, 0.001, -0.01, Math.PI / 2]);
@@ -36788,16 +36851,16 @@
 									//console.log("\tH bridge at=", bx, ",", by, " road=", r);
 								}
 							} catch (err) {
-								_didIteratorError4 = true;
-								_iteratorError4 = err;
+								_didIteratorError5 = true;
+								_iteratorError5 = err;
 							} finally {
 								try {
-									if (!_iteratorNormalCompletion4 && _iterator4.return) {
-										_iterator4.return();
+									if (!_iteratorNormalCompletion5 && _iterator5.return) {
+										_iterator5.return();
 									}
 								} finally {
-									if (_didIteratorError4) {
-										throw _iteratorError4;
+									if (_didIteratorError5) {
+										throw _iteratorError5;
 									}
 								}
 							}
@@ -36815,29 +36878,29 @@
 	
 					// todo: handle overlaps (z-fighting)
 				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
 	
 				var roadQ = new _three2.default.Geometry();
 				var roadL = new _three2.default.Geometry();
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
 	
 				try {
-					for (var _iterator3 = roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var _road = _step3.value;
+					for (var _iterator4 = roads[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var _road = _step4.value;
 	
 						var geo = void 0;
 						var lineGeo = new _three2.default.Geometry();
@@ -36879,16 +36942,16 @@
 						roadL.merge(lineGeo, lines.matrix);
 					}
 				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
+					_didIteratorError4 = true;
+					_iteratorError4 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
+						if (!_iteratorNormalCompletion4 && _iterator4.return) {
+							_iterator4.return();
 						}
 					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
+						if (_didIteratorError4) {
+							throw _iteratorError4;
 						}
 					}
 				}
@@ -47044,9 +47107,10 @@
 	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
-	  value: true
+		value: true
 	});
-	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	exports.LIGHT1 = exports.MIN_LIGHT = exports.DIR2_COLOR = exports.DIR1_COLOR = exports.AMBIENT_COLOR = exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	exports.calcLight = calcLight;
 	
 	var _three = __webpack_require__(1);
 	
@@ -47062,6 +47126,47 @@
 	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
 	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
 	//export const GAME_DAY = 1 * 40 * 1000; // 15 mins = 1 game day
+	
+	var AMBIENT_COLOR = exports.AMBIENT_COLOR = new _three2.default.Color(0x999999);
+	var DIR1_COLOR = exports.DIR1_COLOR = new _three2.default.Color(0xffffff);
+	var DIR2_COLOR = exports.DIR2_COLOR = new _three2.default.Color(0xffe0cc);
+	
+	var MIN_LIGHT = exports.MIN_LIGHT = 0.15;
+	
+	var LIGHT1 = exports.LIGHT1 = {
+		0: [38, 38, 38],
+		3: [38, 38, 38],
+		5: [180, 80, 30],
+		8: [255, 255, 255],
+		16: [255, 255, 255],
+		18: [180, 80, 30],
+		20: [38, 38, 38],
+		23: [38, 38, 38]
+	};
+	
+	function calcLight(hourOfDay, color, baseColor) {
+		var hour = hourOfDay | 0;
+		var lowHour = void 0,
+		    highHour = void 0;
+		var low = void 0,
+		    high = void 0;
+		for (lowHour = hour; lowHour >= 0; lowHour--) {
+			low = LIGHT1[lowHour];
+			if (low) break;
+		}
+		if (lowHour == 23) {
+			high = low;
+			highHour = 24;
+		} else {
+			for (highHour = hour + 1; highHour < 24; highHour++) {
+				high = LIGHT1[highHour];
+				if (high) break;
+			}
+		}
+		var t = highHour == lowHour ? 1 : (hourOfDay - lowHour) / (highHour - lowHour);
+		//console.log("h=" + hourOfDay + " low=" + low + "," + lowHour + " high=" + high + "," + highHour + " t=" + t + " color=" + color.getHexString());
+		color.setRGB((low[0] + (high[0] - low[0]) * t) / 0xff * baseColor.r, (low[1] + (high[1] - low[1]) * t) / 0xff * baseColor.g, (low[2] + (high[2] - low[2]) * t) / 0xff * baseColor.b);
+	}
 
 /***/ },
 /* 8 */
@@ -48381,7 +48486,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.Vehicle = exports.Model = exports.Models = undefined;
+	exports.Vehicle = exports.Model = exports.Models = exports.MATERIAL = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -48392,10 +48497,6 @@
 	var _game_map = __webpack_require__(3);
 	
 	var game_map = _interopRequireWildcard(_game_map);
-	
-	var _util = __webpack_require__(4);
-	
-	var util = _interopRequireWildcard(_util);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -48515,10 +48616,17 @@
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-	var MATERIAL = new _three2.default.MeshBasicMaterial({
+	//const MATERIAL = new THREE.MeshBasicMaterial({
+	//	color: 0xffffff,
+	//	side: THREE.DoubleSide,
+	//	vertexColors: THREE.FaceColors
+	//	//overdraw: true
+	//});
+	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
 		color: 0xffffff,
 		side: _three2.default.DoubleSide,
-		vertexColors: _three2.default.FaceColors
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
 		//overdraw: true
 	});
 	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
@@ -48543,7 +48651,7 @@
 					if (name in VEHICLES) {
 						model = new Vehicle(name, VEHICLES[name]);
 					} else {
-						model = new Model(name);
+						model = new Model(name, name !== "elevator");
 					}
 					model.load(function (m) {
 						return _this.modelLoaded(m);
@@ -48587,7 +48695,7 @@
 	}();
 	
 	var Model = exports.Model = function () {
-		function Model(name) {
+		function Model(name, canCompress) {
 			_classCallCheck(this, Model);
 	
 			this.name = name;
@@ -48595,6 +48703,7 @@
 			this.mesh = null;
 			this.bbox = null;
 			this.description = DESCRIPTIONS[name] || name;
+			this.canCompress = canCompress;
 		}
 	
 		_createClass(Model, [{
@@ -48612,16 +48721,10 @@
 					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
 					var scale = SCALE[_this2.name] || 60;
 					geometry.scale(scale, scale, scale);
-					util.shadeGeo(geometry, LIGHT);
 					_this2.mesh = new _three2.default.Mesh(geometry, MATERIAL);
 					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
 					onLoad(_this2);
 				});
-			}
-		}, {
-			key: 'setLightPercent',
-			value: function setLightPercent(percent) {
-				util.setLightPercent(this.mesh, LIGHT, percent);
 			}
 		}, {
 			key: 'getBoundingBox',
@@ -48653,6 +48756,7 @@
 			_this3.exp = vehicle.exp;
 			_this3.noise = vehicle.noise;
 			_this3.vehicle = vehicle;
+			_this3.canCompress = false;
 			return _this3;
 		}
 	
