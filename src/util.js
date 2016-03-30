@@ -161,3 +161,39 @@ export function initBinaryLoader() {
 		}
 	});
 }
+
+export function startLoadingUI(waitDivId="wait") {
+	window.loadingComplex = true;
+	$(".alert").hide();
+	$("#loading").show();
+	$("#" + waitDivId).show();
+}
+
+export function stopLoadingUI() {
+	$("#loading").hide();
+	$(".wait-alert").hide();
+	window.loadingComplex = false;
+}
+
+export function setLoadingUIProgress(percent, action) {
+	$("#progress-value").css("width", percent + "%");
+	setTimeout(action, 100);
+}
+
+export function execWithProgress(fxs, waitDivId="wait") {
+	startLoadingUI(waitDivId);
+	runWithProgress(fxs, 0);
+}
+
+function runWithProgress(fxs, index) {
+	let p = (((index + 1) / fxs.length * 100)|0);
+	console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+	setLoadingUIProgress(p, () => {
+		fxs[index]();
+		if(++index < fxs.length) {
+			runWithProgress(fxs, index);
+		} else {
+			stopLoadingUI();
+		}
+	})
+}

@@ -24,9 +24,9 @@ export const LEVELS = {
 };
 
 export function loadLevel(sectorX, sectorY, onload) {
-	startLoadingUI();
+	util.startLoadingUI();
 
-	setLoadingUIProgress(0, ()=> {
+	util.setLoadingUIProgress(0, ()=> {
 		let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
 		console.log("Loading model=" + name);
 
@@ -54,23 +54,23 @@ export function loadLevel(sectorX, sectorY, onload) {
 }
 
 function decompressLevel(name, data, sectorX, sectorY, onload) {
-	setLoadingUIProgress(80, ()=> {
+	util.setLoadingUIProgress(80, ()=> {
 		console.log("Starting worker");
 		let worker = new Worker('dist/zip_worker.js?v=' + window.cb);
 		console.log("Listening for worker");
 		worker.addEventListener('message', (e) => {
 			let jsonContent = e.data;
-			setLoadingUIProgress(90, ()=> {
+			util.setLoadingUIProgress(90, ()=> {
 
 				//console.log("Constructing object... json size=", jsonContent.length);
 				let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
 				//console.log("constructed=", obj);
 
-				setLoadingUIProgress(100, ()=> {
+				util.setLoadingUIProgress(100, ()=> {
 					console.log("Deleting worker.");
 					worker = undefined;
 
-					stopLoadingUI();
+					util.stopLoadingUI();
 					onload(getLevel(sectorX, sectorY, obj));
 				});
 			});
@@ -79,24 +79,6 @@ function decompressLevel(name, data, sectorX, sectorY, onload) {
 		worker.postMessage({ data: data, name: name });
 		console.log("Waiting...");
 	});
-}
-
-function startLoadingUI() {
-	window.loadingComplex = true;
-	$(".alert").hide();
-	$("#loading").show();
-	$("#wait").show();
-}
-
-function stopLoadingUI() {
-	$("#loading").hide();
-	$("#wait").hide();
-	window.loadingComplex = false;
-}
-
-function setLoadingUIProgress(percent, action) {
-	$("#progress-value").css("width", percent + "%");
-	setTimeout(action, 100);
 }
 
 function getLevel(sectorX, sectorY, obj=null) {

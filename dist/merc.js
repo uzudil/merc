@@ -52,9 +52,9 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _game_map = __webpack_require__(3);
+	var _game_map2 = __webpack_require__(3);
 	
-	var game_map = _interopRequireWildcard(_game_map);
+	var game_map = _interopRequireWildcard(_game_map2);
 	
 	var _jquery = __webpack_require__(5);
 	
@@ -211,6 +211,8 @@
 		}, {
 			key: 'startGame',
 			value: function startGame() {
+				var _this3 = this;
+	
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
 	
 				console.log("game starting");
@@ -230,47 +232,61 @@
 				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 	
-				// maybe use real planet movement instead
-				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
+				var _game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
-				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
+				util.execWithProgress([function () {
+					return _game_map.initModels();
+				}, function () {
+					return _game_map.compressSectors();
+				}, function () {
+					return _game_map.addXenoBase();
+				}, function () {
+					return _game_map.addRoads();
+				}, function () {
+					return _game_map.finishInit();
+				}, function () {
+					_this3.game_map = _game_map;
 	
-				this.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-				if (skipLanding) {
-					this.movement.endLanding();
-				} else {
-					this.movement.startLanding();
-				}
+					// maybe use real planet movement instead
+					_this3.skybox = new skybox.Skybox(_this3.movement.player, FAR_DIST);
 	
-				// hack: start in a room
-				// by the xeno base
-				//this.movement.loadGame({
-				//	sectorX: 0xf8, sectorY: 0xc9,
-				//	//sectorX: 9, sectorY: 2,
-				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
-				//	vehicle: this.models.models["ufo"].createObject(),
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-				//	state: Object.assign(events.Events.getStartState(), {
-				//		"lightcar-keys": true,
-				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-				//	})
-				//});
+					_this3.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+					if (skipLanding) {
+						_this3.movement.endLanding();
+					} else {
+						_this3.movement.startLanding();
+					}
 	
-				// by a base
-				//this.movement.loadGame({
-				//	sectorX: 0xd9, sectorY: 0x42,
-				//	//sectorX: 9, sectorY: 2,
-				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
-				//	vehicle: null,
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-				//	state: Object.assign(events.Events.getStartState(), {
-				//		"lightcar-keys": true,
-				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-				//	})
-				//});
+					// hack: start in a room
+					// by the xeno base
+					//this.movement.loadGame({
+					//	sectorX: 0xf8, sectorY: 0xc9,
+					//	//sectorX: 9, sectorY: 2,
+					//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+					//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
+					//	vehicle: this.models.models["ufo"].createObject(),
+					//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+					//	state: Object.assign(events.Events.getStartState(), {
+					//		"lightcar-keys": true,
+					//		"override-17a": true,
+					//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+					//	})
+					//});
+	
+					// by a base
+					//this.movement.loadGame({
+					//	sectorX: 0xd9, sectorY: 0x42,
+					//	//sectorX: 9, sectorY: 2,
+					//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+					//	vehicle: null,
+					//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+					//	state: Object.assign(events.Events.getStartState(), {
+					//		"lightcar-keys": true,
+					//		"override-17a": true,
+					//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+					//	})
+					//});
+				}], "wait-world");
 			}
 		}, {
 			key: 'setupUI',
@@ -381,10 +397,10 @@
 		}, {
 			key: 'animate',
 			value: function animate() {
-				var _this3 = this;
+				var _this4 = this;
 	
 				this.benson.update();
-				if (this.movement) {
+				if (this.movement && this.game_map) {
 					this.movement.update();
 					this.skybox.update(this.movement.player.rotation.z);
 	
@@ -397,7 +413,7 @@
 				}
 				this.renderer.render(this.scene, this.camera);
 	
-				if (this.movement) {
+				if (this.movement && this.game_map) {
 					var x, y;
 					if (this.movement.level) {
 						x = this.movement.sectorX;
@@ -421,7 +437,7 @@
 	
 				if (FPS_LIMITS[this.fpsLimitIndex] != 0) {
 					setTimeout(function () {
-						requestAnimationFrame(util.bind(_this3, _this3.animate));
+						requestAnimationFrame(util.bind(_this4, _this4.animate));
 					}, 1000 / FPS_LIMITS[this.fpsLimitIndex]);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
@@ -36708,8 +36724,10 @@
 		function GameMap(scene, models, player, maxAnisotropy) {
 			_classCallCheck(this, GameMap);
 	
+			this.scene = scene;
 			this.models = models;
 			this.player = player;
+			this.maxAnisotropy = maxAnisotropy;
 			this.land = new _three2.default.Object3D();
 			this.sectors = {};
 			this.minSector = { x: 0, y: 0 };
@@ -36721,90 +36739,103 @@
 	
 			// add models
 			this.structures = [];
-			for (var name in models.models) {
-				var m = models.models[name];
-				if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
-					var _iteratorNormalCompletion = true;
-					var _didIteratorError = false;
-					var _iteratorError = undefined;
-	
-					try {
-						for (var _iterator = world.WORLD.structures[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-							var pos = _step.value;
-	
-							pos[4] = util.angle2rad(pos[4]);
-							this.addStructure(m, pos);
-						}
-					} catch (err) {
-						_didIteratorError = true;
-						_iteratorError = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion && _iterator.return) {
-								_iterator.return();
-							}
-						} finally {
-							if (_didIteratorError) {
-								throw _iteratorError;
-							}
-						}
-					}
-				}
-			}
-	
-			// compress sectors
-			for (var _key in this.sectors) {
-				var sector = this.sectors[_key];
-				var meshes = sector.children.filter(function (child) {
-					return child.model.canCompress;
-				});
-				if (meshes.length > 0) {
-					sector.updateMatrix();
-					var geo = new _three2.default.Geometry();
-					var _iteratorNormalCompletion2 = true;
-					var _didIteratorError2 = false;
-					var _iteratorError2 = undefined;
-	
-					try {
-						for (var _iterator2 = meshes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-							var child = _step2.value;
-	
-							child.updateMatrix();
-							geo.merge(child.geometry, child.matrix);
-							child.parent.remove(child);
-						}
-					} catch (err) {
-						_didIteratorError2 = true;
-						_iteratorError2 = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion2 && _iterator2.return) {
-								_iterator2.return();
-							}
-						} finally {
-							if (_didIteratorError2) {
-								throw _iteratorError2;
-							}
-						}
-					}
-	
-					var mesh = new _three2.default.Mesh(geo, modelPackage.MATERIAL);
-					//mesh.position.set(constants.SECTOR_SIZE/2, constants.SECTOR_SIZE/2, 0);
-					sector.add(mesh);
-				}
-			}
-	
-			// add xeno base
-			this.xenoBase = this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
-			this.xenoBase.visible = false;
-	
-			// roads
-			this.drawRoads(maxAnisotropy, models);
-	
-			scene.add(this.land);
+			this.xenoBase = null;
 		}
 	
 		_createClass(GameMap, [{
+			key: 'initModels',
+			value: function initModels() {
+				for (var name in this.models.models) {
+					var m = this.models.models[name];
+					if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
+						var _iteratorNormalCompletion = true;
+						var _didIteratorError = false;
+						var _iteratorError = undefined;
+	
+						try {
+							for (var _iterator = world.WORLD.structures[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+								var pos = _step.value;
+	
+								pos[4] = util.angle2rad(pos[4]);
+								this.addStructure(m, pos);
+							}
+						} catch (err) {
+							_didIteratorError = true;
+							_iteratorError = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion && _iterator.return) {
+									_iterator.return();
+								}
+							} finally {
+								if (_didIteratorError) {
+									throw _iteratorError;
+								}
+							}
+						}
+					}
+				}
+			}
+		}, {
+			key: 'compressSectors',
+			value: function compressSectors() {
+				for (var _key in this.sectors) {
+					var sector = this.sectors[_key];
+					var meshes = sector.children.filter(function (child) {
+						return child.model.canCompress;
+					});
+					if (meshes.length > 0) {
+						sector.updateMatrix();
+						var geo = new _three2.default.Geometry();
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
+	
+						try {
+							for (var _iterator2 = meshes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var child = _step2.value;
+	
+								child.updateMatrix();
+								geo.merge(child.geometry, child.matrix);
+								child.parent.remove(child);
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
+	
+						var mesh = new _three2.default.Mesh(geo, modelPackage.MATERIAL);
+						sector.add(mesh);
+					}
+				}
+			}
+		}, {
+			key: 'addXenoBase',
+			value: function addXenoBase() {
+				this.xenoBase = this.addStructure(this.models.models["xeno"], [0xf8, 0xc9], 10000);
+				this.xenoBase.visible = false;
+			}
+		}, {
+			key: 'addRoads',
+			value: function addRoads() {
+				this.drawRoads(this.maxAnisotropy, this.models);
+			}
+		}, {
+			key: 'finishInit',
+			value: function finishInit() {
+				this.scene.add(this.land);
+			}
+		}, {
 			key: 'drawRoads',
 			value: function drawRoads(maxAnisotropy, models) {
 				var roads = [];
@@ -37065,6 +37096,10 @@
 	exports.toggleColor = toggleColor;
 	exports.updateColors = updateColors;
 	exports.initBinaryLoader = initBinaryLoader;
+	exports.startLoadingUI = startLoadingUI;
+	exports.stopLoadingUI = stopLoadingUI;
+	exports.setLoadingUIProgress = setLoadingUIProgress;
+	exports.execWithProgress = execWithProgress;
 	
 	var _three = __webpack_require__(1);
 	
@@ -37237,6 +37272,46 @@
 						jqXHR.abort();
 					}
 				};
+			}
+		});
+	}
+	
+	function startLoadingUI() {
+		var waitDivId = arguments.length <= 0 || arguments[0] === undefined ? "wait" : arguments[0];
+	
+		window.loadingComplex = true;
+		(0, _jquery2.default)(".alert").hide();
+		(0, _jquery2.default)("#loading").show();
+		(0, _jquery2.default)("#" + waitDivId).show();
+	}
+	
+	function stopLoadingUI() {
+		(0, _jquery2.default)("#loading").hide();
+		(0, _jquery2.default)(".wait-alert").hide();
+		window.loadingComplex = false;
+	}
+	
+	function setLoadingUIProgress(percent, action) {
+		(0, _jquery2.default)("#progress-value").css("width", percent + "%");
+		setTimeout(action, 100);
+	}
+	
+	function execWithProgress(fxs) {
+		var waitDivId = arguments.length <= 1 || arguments[1] === undefined ? "wait" : arguments[1];
+	
+		startLoadingUI(waitDivId);
+		runWithProgress(fxs, 0);
+	}
+	
+	function runWithProgress(fxs, index) {
+		var p = (index + 1) / fxs.length * 100 | 0;
+		console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+		setLoadingUIProgress(p, function () {
+			fxs[index]();
+			if (++index < fxs.length) {
+				runWithProgress(fxs, index);
+			} else {
+				stopLoadingUI();
 			}
 		});
 	}
@@ -50664,9 +50739,9 @@
 	};
 	
 	function loadLevel(sectorX, sectorY, onload) {
-		startLoadingUI();
+		util.startLoadingUI();
 	
-		setLoadingUIProgress(0, function () {
+		util.setLoadingUIProgress(0, function () {
 			var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
 			console.log("Loading model=" + name);
 	
@@ -50694,23 +50769,23 @@
 	}
 	
 	function decompressLevel(name, data, sectorX, sectorY, onload) {
-		setLoadingUIProgress(80, function () {
+		util.setLoadingUIProgress(80, function () {
 			console.log("Starting worker");
 			var worker = new Worker('dist/zip_worker.js?v=' + window.cb);
 			console.log("Listening for worker");
 			worker.addEventListener('message', function (e) {
 				var jsonContent = e.data;
-				setLoadingUIProgress(90, function () {
+				util.setLoadingUIProgress(90, function () {
 	
 					//console.log("Constructing object... json size=", jsonContent.length);
 					var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
 					//console.log("constructed=", obj);
 	
-					setLoadingUIProgress(100, function () {
+					util.setLoadingUIProgress(100, function () {
 						console.log("Deleting worker.");
 						worker = undefined;
 	
-						stopLoadingUI();
+						util.stopLoadingUI();
 						onload(getLevel(sectorX, sectorY, obj));
 					});
 				});
@@ -50719,24 +50794,6 @@
 			worker.postMessage({ data: data, name: name });
 			console.log("Waiting...");
 		});
-	}
-	
-	function startLoadingUI() {
-		window.loadingComplex = true;
-		(0, _jquery2.default)(".alert").hide();
-		(0, _jquery2.default)("#loading").show();
-		(0, _jquery2.default)("#wait").show();
-	}
-	
-	function stopLoadingUI() {
-		(0, _jquery2.default)("#loading").hide();
-		(0, _jquery2.default)("#wait").hide();
-		window.loadingComplex = false;
-	}
-	
-	function setLoadingUIProgress(percent, action) {
-		(0, _jquery2.default)("#progress-value").css("width", percent + "%");
-		setTimeout(action, 100);
 	}
 	
 	function getLevel(sectorX, sectorY) {

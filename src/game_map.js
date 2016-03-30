@@ -8,8 +8,10 @@ var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 export class GameMap {
 	constructor(scene, models, player, maxAnisotropy) {
+		this.scene = scene;
 		this.models = models;
 		this.player = player;
+		this.maxAnisotropy = maxAnisotropy;
 		this.land = new THREE.Object3D();
 		this.sectors = {};
 		this.minSector = {x: 0, y: 0};
@@ -21,21 +23,26 @@ export class GameMap {
 
 		// add models
 		this.structures = [];
-		for(let name in models.models) {
-			var m = models.models[name];
-			if(world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
-				for(let pos of world.WORLD.structures[name]) {
+		this.xenoBase = null;
+	}
+
+	initModels() {
+		for (let name in this.models.models) {
+			var m = this.models.models[name];
+			if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
+				for (let pos of world.WORLD.structures[name]) {
 					pos[4] = util.angle2rad(pos[4]);
 					this.addStructure(m, pos);
 				}
 			}
 		}
+	}
 
-		// compress sectors
-		for(let key in this.sectors) {
+	compressSectors() {
+		for (let key in this.sectors) {
 			let sector = this.sectors[key];
 			let meshes = sector.children.filter((child) => child.model.canCompress);
-			if(meshes.length > 0) {
+			if (meshes.length > 0) {
 				sector.updateMatrix();
 				let geo = new THREE.Geometry();
 				for (let child of meshes) {
@@ -44,19 +51,22 @@ export class GameMap {
 					child.parent.remove(child);
 				}
 				let mesh = new THREE.Mesh(geo, modelPackage.MATERIAL);
-				//mesh.position.set(constants.SECTOR_SIZE/2, constants.SECTOR_SIZE/2, 0);
 				sector.add(mesh);
 			}
 		}
+	}
 
-		// add xeno base
-		this.xenoBase = this.addStructure(models.models["xeno"], [ 0xf8, 0xc9 ], 10000);
+	addXenoBase() {
+		this.xenoBase = this.addStructure(this.models.models["xeno"], [0xf8, 0xc9], 10000);
 		this.xenoBase.visible = false;
+	}
 
-		// roads
-		this.drawRoads(maxAnisotropy, models);
+	addRoads() {
+		this.drawRoads(this.maxAnisotropy, this.models);
+	}
 
-		scene.add(this.land);
+	finishInit() {
+		this.scene.add(this.land);
 	}
 
 	drawRoads(maxAnisotropy, models) {
