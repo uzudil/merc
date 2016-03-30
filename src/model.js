@@ -13,6 +13,13 @@ const MODELS = [
 	"xenterm", "trans", "control", "engine", "core", "pine"
 ];
 
+// objects inside compounds should be rendered via a basic material
+const USE_BASIC_MATERIAL = [
+	"keya", "keyb", "keyc", "keyd", "pres",
+	"term", "disk", "art", "art2", "allitus",
+	"xenterm", "trans", "control", "engine", "core"
+];
+
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
 	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
@@ -117,12 +124,11 @@ const LIFTS = {
 };
 
 //const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-//const MATERIAL = new THREE.MeshBasicMaterial({
-//	color: 0xffffff,
-//	side: THREE.DoubleSide,
-//	vertexColors: THREE.FaceColors
-//	//overdraw: true
-//});
+const BASIC_MATERIAL = new THREE.MeshBasicMaterial({
+	color: 0xffffff,
+	side: THREE.DoubleSide,
+	vertexColors: THREE.FaceColors
+});
 export const MATERIAL = new THREE.MeshPhongMaterial({
 	color: 0xffffff,
 	side: THREE.DoubleSide,
@@ -183,7 +189,7 @@ export class Model {
 			geometry.translate(0, 0, geometry.boundingBox.size().z/2 + 1/60);
 			let scale = SCALE[this.name] || 60;
 			geometry.scale(scale, scale, scale);
-			this.mesh = new THREE.Mesh(geometry, MATERIAL);
+			this.mesh = new THREE.Mesh(geometry, USE_BASIC_MATERIAL.indexOf(this.name) > -1 ? BASIC_MATERIAL : MATERIAL);
 			this.bbox = new THREE.Box3().setFromObject(this.mesh);
 			onLoad(this);
 		});

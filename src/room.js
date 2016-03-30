@@ -178,6 +178,7 @@ export class Level {
 		for(let object of this.objects) {
 			let m = models.models[object.object];
 			let mesh = m.createObject();
+			util.shadeGeo(mesh.geometry, LIGHT);
 			let dx = (object.x + .5) * ROOM_SIZE;
 			let dy = (object.y + .5) * ROOM_SIZE;
 			let dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;

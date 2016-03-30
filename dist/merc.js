@@ -47205,6 +47205,9 @@
 	 */
 	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine"];
 	
+	// objects inside compounds should be rendered via a basic material
+	var USE_BASIC_MATERIAL = ["keya", "keyb", "keyc", "keyd", "pres", "term", "disk", "art", "art2", "allitus", "xenterm", "trans", "control", "engine", "core"];
+	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
 		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
@@ -47307,12 +47310,11 @@
 	};
 	
 	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-	//const MATERIAL = new THREE.MeshBasicMaterial({
-	//	color: 0xffffff,
-	//	side: THREE.DoubleSide,
-	//	vertexColors: THREE.FaceColors
-	//	//overdraw: true
-	//});
+	var BASIC_MATERIAL = new _three2.default.MeshBasicMaterial({
+		color: 0xffffff,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors
+	});
 	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
 		color: 0xffffff,
 		side: _three2.default.DoubleSide,
@@ -47412,7 +47414,7 @@
 					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
 					var scale = SCALE[_this2.name] || 60;
 					geometry.scale(scale, scale, scale);
-					_this2.mesh = new _three2.default.Mesh(geometry, MATERIAL);
+					_this2.mesh = new _three2.default.Mesh(geometry, USE_BASIC_MATERIAL.indexOf(_this2.name) > -1 ? BASIC_MATERIAL : MATERIAL);
 					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
 					onLoad(_this2);
 				});
@@ -49914,6 +49916,7 @@
 	
 						var m = models.models[object.object];
 						var mesh = m.createObject();
+						util.shadeGeo(mesh.geometry, LIGHT);
 						var _dx = (object.x + .5) * ROOM_SIZE;
 						var _dy = (object.y + .5) * ROOM_SIZE;
 						var _dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
