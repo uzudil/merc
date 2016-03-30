@@ -2,7 +2,6 @@
 
 An open-ended exploration game with a minimalist plot. A variation and alternate sequel of the  [original](http://plus4world.powweb.com/software/Mercenary_Escape_From_Targ).
 
-<img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen.png" width="200">
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen2.png" width="200">
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen3.png" width="200">
 <img src="https://raw.githubusercontent.com/uzudil/merc/master/images/screen4.png" width="200">
