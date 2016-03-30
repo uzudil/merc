@@ -4,10 +4,13 @@ module.exports = {
 	cache: true,
 	debug: true,
 	devtool: 'source-map',
-	entry: './src/main.js',
+	entry: {
+		merc: './src/main.js',
+		zip_worker: './src/zip_worker.js'
+	},
 	output: {
 		path: __dirname,
-		filename: 'dist/merc.js'
+		filename: 'dist/[name].js'
 	},
 	module: {
 	  loaders: [

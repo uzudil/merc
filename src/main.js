@@ -18,7 +18,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.3; // todo: git hook this
+const VERSION = 0.31; // todo: git hook this
 
 class Merc {
 	constructor() {

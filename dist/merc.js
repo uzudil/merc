@@ -64,31 +64,31 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(60);
+	var _skybox = __webpack_require__(59);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
-	var _model = __webpack_require__(9);
+	var _model = __webpack_require__(8);
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(61);
+	var _compass = __webpack_require__(60);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(62);
+	var _benson = __webpack_require__(61);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(63);
+	var _space = __webpack_require__(62);
 	
 	var space = _interopRequireWildcard(_space);
 	
-	var _events = __webpack_require__(59);
+	var _events = __webpack_require__(58);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -109,7 +109,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.3; // todo: git hook this
+	var VERSION = 0.31; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -36690,7 +36690,7 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
-	var _model = __webpack_require__(9);
+	var _model = __webpack_require__(8);
 	
 	var modelPackage = _interopRequireWildcard(_model);
 	
@@ -47177,6 +47177,299 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+	exports.Vehicle = exports.Model = exports.Models = exports.MATERIAL = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _game_map = __webpack_require__(3);
+	
+	var game_map = _interopRequireWildcard(_game_map);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	/*
+		To use colors, use the "vertex paint" feature of blender.
+		Then, export with vertex colors on (no materials needed.)
+	 */
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine"];
+	
+	var VEHICLES = {
+		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
+			onEnter: function onEnter(movement) {
+				if (movement.inInventory("art") && movement.inInventory("art2")) {
+					if (!movement.events.state["ufo-first"]) {
+						movement.main.benson.addMessage("The xeno artifacts");
+						movement.main.benson.addMessage("started the craft!");
+						movement.main.benson.addMessage("Try take-off and turns");
+						movement.main.benson.addMessage("without moving first.");
+						movement.events.state["ufo-first"] = true;
+					}
+					return true;
+				} else {
+					movement.main.benson.addMessage("This craft seems broken.");
+					return false;
+				}
+			}
+		},
+		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
+			onEnter: function onEnter(movement) {
+				// can't depart until either: allitus is stopped, or the xeno base left
+				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
+					setTimeout(function () {
+						movement.main.benson.addMessage("Preparing for takeoff...", function () {
+							movement.main.benson.addMessage("3...", function () {
+								movement.main.benson.addMessage("2...", function () {
+									movement.main.benson.addMessage("1...", function () {
+										movement.main.benson.addMessage("Blastoff!", function () {
+											movement.startTakeoff();
+										});
+									});
+								});
+							});
+						});
+					}, 500);
+					return true;
+				} else {
+					movement.main.benson.addMessage("Until you complete");
+					movement.main.benson.addMessage("your mission, your");
+					movement.main.benson.addMessage("ship remains locked.");
+					return false;
+				}
+			}
+		},
+		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
+			onEnter: function onEnter(movement) {
+				return movement.events.state["lightcar-keys"];
+			}
+		}
+	};
+	
+	var SCALE = {
+		"car": 20,
+		"light": 10,
+		"plane": 20,
+		"keya": 10,
+		"keyb": 10,
+		"keyc": 10,
+		"keyd": 10,
+		"ship": 20,
+		"pres": 15,
+		"elevator": 30,
+		"tower2": 80,
+		"plant": 80,
+		"term": 15,
+		"disk": 20,
+		"art": 20,
+		"art2": 20,
+		"ufo": 20,
+		"allitus": 15,
+		"xenterm": 8,
+		"trans": 10,
+		"control": 10,
+		"engine": 15,
+		"core": 10,
+		"pine": 50
+	};
+	
+	var DESCRIPTIONS = {
+		"keya": "Pentagon key",
+		"keyb": "Triangle key",
+		"keyc": "Gate key",
+		"keyd": "X key",
+		"car": "Tando groundcar",
+		"plane": "Harris skipjet",
+		"ship": "Templar class cruiser",
+		"light": "Pulsar lightcar",
+		"disk": "Emergency Override Disk",
+		"art": "Xeno artifact",
+		"art2": "Xeno artifact",
+		"ufo": "Alien craft A3",
+		"trans": "Xeno translator chip",
+		"core": "Plasma drive core"
+	};
+	
+	var LIFTS = {
+		bridge: true
+	};
+	
+	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
+	//const MATERIAL = new THREE.MeshBasicMaterial({
+	//	color: 0xffffff,
+	//	side: THREE.DoubleSide,
+	//	vertexColors: THREE.FaceColors
+	//	//overdraw: true
+	//});
+	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
+		color: 0xffffff,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
+		//overdraw: true
+	});
+	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
+	
+	var Models = exports.Models = function () {
+		function Models(onLoad) {
+			var _this = this;
+	
+			_classCallCheck(this, Models);
+	
+			this.onLoad = onLoad;
+			this.models = {};
+			var _iteratorNormalCompletion = true;
+			var _didIteratorError = false;
+			var _iteratorError = undefined;
+	
+			try {
+				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					var name = _step.value;
+	
+					var model = void 0;
+					if (name in VEHICLES) {
+						model = new Vehicle(name, VEHICLES[name]);
+					} else {
+						model = new Model(name, name !== "elevator");
+					}
+					model.load(function (m) {
+						return _this.modelLoaded(m);
+					});
+				}
+			} catch (err) {
+				_didIteratorError = true;
+				_iteratorError = err;
+			} finally {
+				try {
+					if (!_iteratorNormalCompletion && _iterator.return) {
+						_iterator.return();
+					}
+				} finally {
+					if (_didIteratorError) {
+						throw _iteratorError;
+					}
+				}
+			}
+		}
+	
+		_createClass(Models, [{
+			key: 'modelLoaded',
+			value: function modelLoaded(model) {
+				console.log("Model loaded: " + model);
+				this.models[model.name] = model;
+				if (Object.keys(this.models).length == MODELS.length) {
+					this.onLoad(this);
+				}
+			}
+		}, {
+			key: 'setLightPercent',
+			value: function setLightPercent(percent) {
+				for (var m in this.models) {
+					this.models[m].setLightPercent(percent);
+				}
+			}
+		}]);
+	
+		return Models;
+	}();
+	
+	var Model = exports.Model = function () {
+		function Model(name, canCompress) {
+			_classCallCheck(this, Model);
+	
+			this.name = name;
+			this.lifts = LIFTS[name];
+			this.mesh = null;
+			this.bbox = null;
+			this.description = DESCRIPTIONS[name] || name;
+			this.canCompress = canCompress;
+		}
+	
+		_createClass(Model, [{
+			key: 'load',
+			value: function load(onLoad) {
+				var _this2 = this;
+	
+				var loader = new _three2.default.JSONLoader();
+				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
+	
+					// put the geom. on the ground
+					geometry.center();
+					geometry.rotateX(Math.PI / 2);
+					geometry.rotateZ(Math.PI / 2);
+					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
+					var scale = SCALE[_this2.name] || 60;
+					geometry.scale(scale, scale, scale);
+					_this2.mesh = new _three2.default.Mesh(geometry, MATERIAL);
+					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
+					onLoad(_this2);
+				});
+			}
+		}, {
+			key: 'getBoundingBox',
+			value: function getBoundingBox() {
+				return this.bbox;
+			}
+		}, {
+			key: 'createObject',
+			value: function createObject() {
+				var m = this.mesh.clone();
+				m["model"] = this;
+				return m;
+			}
+		}]);
+	
+		return Model;
+	}();
+	
+	var Vehicle = exports.Vehicle = function (_Model) {
+		_inherits(Vehicle, _Model);
+	
+		function Vehicle(name, vehicle) {
+			_classCallCheck(this, Vehicle);
+	
+			var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(Vehicle).call(this, name));
+	
+			_this3.speed = vehicle.speed;
+			_this3.flies = vehicle.flies;
+			_this3.exp = vehicle.exp;
+			_this3.noise = vehicle.noise;
+			_this3.vehicle = vehicle;
+			_this3.canCompress = false;
+			return _this3;
+		}
+	
+		_createClass(Vehicle, [{
+			key: 'enterCheck',
+			value: function enterCheck(movement) {
+				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
+			}
+		}]);
+	
+		return Vehicle;
+	}(Model);
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
 	exports.Movement = exports.ROOM_DEPTH = exports.DEFAULT_Z = undefined;
 	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -47195,7 +47488,7 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _model = __webpack_require__(9);
+	var _model = __webpack_require__(8);
 	
 	var models = _interopRequireWildcard(_model);
 	
@@ -47219,7 +47512,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(59);
+	var _events = __webpack_require__(58);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -48478,299 +48771,6 @@
 	}();
 
 /***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports.Vehicle = exports.Model = exports.Models = exports.MATERIAL = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	var _game_map = __webpack_require__(3);
-	
-	var game_map = _interopRequireWildcard(_game_map);
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	/*
-		To use colors, use the "vertex paint" feature of blender.
-		Then, export with vertex colors on (no materials needed.)
-	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine"];
-	
-	var VEHICLES = {
-		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
-		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
-			onEnter: function onEnter(movement) {
-				if (movement.inInventory("art") && movement.inInventory("art2")) {
-					if (!movement.events.state["ufo-first"]) {
-						movement.main.benson.addMessage("The xeno artifacts");
-						movement.main.benson.addMessage("started the craft!");
-						movement.main.benson.addMessage("Try take-off and turns");
-						movement.main.benson.addMessage("without moving first.");
-						movement.events.state["ufo-first"] = true;
-					}
-					return true;
-				} else {
-					movement.main.benson.addMessage("This craft seems broken.");
-					return false;
-				}
-			}
-		},
-		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
-			onEnter: function onEnter(movement) {
-				// can't depart until either: allitus is stopped, or the xeno base left
-				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
-					setTimeout(function () {
-						movement.main.benson.addMessage("Preparing for takeoff...", function () {
-							movement.main.benson.addMessage("3...", function () {
-								movement.main.benson.addMessage("2...", function () {
-									movement.main.benson.addMessage("1...", function () {
-										movement.main.benson.addMessage("Blastoff!", function () {
-											movement.startTakeoff();
-										});
-									});
-								});
-							});
-						});
-					}, 500);
-					return true;
-				} else {
-					movement.main.benson.addMessage("Until you complete");
-					movement.main.benson.addMessage("your mission, your");
-					movement.main.benson.addMessage("ship remains locked.");
-					return false;
-				}
-			}
-		},
-		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
-			onEnter: function onEnter(movement) {
-				return movement.events.state["lightcar-keys"];
-			}
-		}
-	};
-	
-	var SCALE = {
-		"car": 20,
-		"light": 10,
-		"plane": 20,
-		"keya": 10,
-		"keyb": 10,
-		"keyc": 10,
-		"keyd": 10,
-		"ship": 20,
-		"pres": 15,
-		"elevator": 30,
-		"tower2": 80,
-		"plant": 80,
-		"term": 15,
-		"disk": 20,
-		"art": 20,
-		"art2": 20,
-		"ufo": 20,
-		"allitus": 15,
-		"xenterm": 8,
-		"trans": 10,
-		"control": 10,
-		"engine": 15,
-		"core": 10,
-		"pine": 50
-	};
-	
-	var DESCRIPTIONS = {
-		"keya": "Pentagon key",
-		"keyb": "Triangle key",
-		"keyc": "Gate key",
-		"keyd": "X key",
-		"car": "Tando groundcar",
-		"plane": "Harris skipjet",
-		"ship": "Templar class cruiser",
-		"light": "Pulsar lightcar",
-		"disk": "Emergency Override Disk",
-		"art": "Xeno artifact",
-		"art2": "Xeno artifact",
-		"ufo": "Alien craft A3",
-		"trans": "Xeno translator chip",
-		"core": "Plasma drive core"
-	};
-	
-	var LIFTS = {
-		bridge: true
-	};
-	
-	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-	//const MATERIAL = new THREE.MeshBasicMaterial({
-	//	color: 0xffffff,
-	//	side: THREE.DoubleSide,
-	//	vertexColors: THREE.FaceColors
-	//	//overdraw: true
-	//});
-	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
-		color: 0xffffff,
-		side: _three2.default.DoubleSide,
-		vertexColors: _three2.default.FaceColors,
-		shading: _three2.default.FlatShading
-		//overdraw: true
-	});
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	
-	var Models = exports.Models = function () {
-		function Models(onLoad) {
-			var _this = this;
-	
-			_classCallCheck(this, Models);
-	
-			this.onLoad = onLoad;
-			this.models = {};
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
-	
-			try {
-				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var name = _step.value;
-	
-					var model = void 0;
-					if (name in VEHICLES) {
-						model = new Vehicle(name, VEHICLES[name]);
-					} else {
-						model = new Model(name, name !== "elevator");
-					}
-					model.load(function (m) {
-						return _this.modelLoaded(m);
-					});
-				}
-			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
-			} finally {
-				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
-					}
-				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
-					}
-				}
-			}
-		}
-	
-		_createClass(Models, [{
-			key: 'modelLoaded',
-			value: function modelLoaded(model) {
-				console.log("Model loaded: " + model);
-				this.models[model.name] = model;
-				if (Object.keys(this.models).length == MODELS.length) {
-					this.onLoad(this);
-				}
-			}
-		}, {
-			key: 'setLightPercent',
-			value: function setLightPercent(percent) {
-				for (var m in this.models) {
-					this.models[m].setLightPercent(percent);
-				}
-			}
-		}]);
-	
-		return Models;
-	}();
-	
-	var Model = exports.Model = function () {
-		function Model(name, canCompress) {
-			_classCallCheck(this, Model);
-	
-			this.name = name;
-			this.lifts = LIFTS[name];
-			this.mesh = null;
-			this.bbox = null;
-			this.description = DESCRIPTIONS[name] || name;
-			this.canCompress = canCompress;
-		}
-	
-		_createClass(Model, [{
-			key: 'load',
-			value: function load(onLoad) {
-				var _this2 = this;
-	
-				var loader = new _three2.default.JSONLoader();
-				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
-	
-					// put the geom. on the ground
-					geometry.center();
-					geometry.rotateX(Math.PI / 2);
-					geometry.rotateZ(Math.PI / 2);
-					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
-					var scale = SCALE[_this2.name] || 60;
-					geometry.scale(scale, scale, scale);
-					_this2.mesh = new _three2.default.Mesh(geometry, MATERIAL);
-					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
-					onLoad(_this2);
-				});
-			}
-		}, {
-			key: 'getBoundingBox',
-			value: function getBoundingBox() {
-				return this.bbox;
-			}
-		}, {
-			key: 'createObject',
-			value: function createObject() {
-				var m = this.mesh.clone();
-				m["model"] = this;
-				return m;
-			}
-		}]);
-	
-		return Model;
-	}();
-	
-	var Vehicle = exports.Vehicle = function (_Model) {
-		_inherits(Vehicle, _Model);
-	
-		function Vehicle(name, vehicle) {
-			_classCallCheck(this, Vehicle);
-	
-			var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(Vehicle).call(this, name));
-	
-			_this3.speed = vehicle.speed;
-			_this3.flies = vehicle.flies;
-			_this3.exp = vehicle.exp;
-			_this3.noise = vehicle.noise;
-			_this3.vehicle = vehicle;
-			_this3.canCompress = false;
-			return _this3;
-		}
-	
-		_createClass(Vehicle, [{
-			key: 'enterCheck',
-			value: function enterCheck(movement) {
-				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
-			}
-		}]);
-	
-		return Vehicle;
-	}(Model);
-
-/***/ },
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -49557,7 +49557,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -50638,10 +50638,6 @@
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
-	var _jszipUtils = __webpack_require__(58);
-	
-	var _jszipUtils2 = _interopRequireDefault(_jszipUtils);
-	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
@@ -50696,21 +50692,29 @@
 	
 	function decompressLevel(name, data, sectorX, sectorY, onload) {
 		setLoadingUIProgress(80, function () {
-			//console.log("Loaded. Decompressing...");
-			var zip = new _jszip2.default(data);
-			//console.log("zip data=", zip);
-			var jsonContent = zip.file(name).asText();
+			console.log("Starting worker");
+			var worker = new Worker('dist/zip_worker.js?v=' + window.cb);
+			console.log("Listening for worker");
+			worker.addEventListener('message', function (e) {
+				var jsonContent = e.data;
+				setLoadingUIProgress(90, function () {
 	
-			setLoadingUIProgress(90, function () {
-				//console.log("Constructing object... json size=", jsonContent.length);
-				var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
-				//console.log("constructed=", obj);
+					//console.log("Constructing object... json size=", jsonContent.length);
+					var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
+					//console.log("constructed=", obj);
 	
-				setLoadingUIProgress(100, function () {
-					stopLoadingUI();
-					onload(getLevel(sectorX, sectorY, obj));
+					setLoadingUIProgress(100, function () {
+						console.log("Deleting worker.");
+						worker = undefined;
+	
+						stopLoadingUI();
+						onload(getLevel(sectorX, sectorY, obj));
+					});
 				});
-			});
+			}, false);
+			console.log("Messaging worker");
+			worker.postMessage({ data: data, name: name });
+			console.log("Waiting...");
 		});
 	}
 	
@@ -50781,7 +50785,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -62367,115 +62371,6 @@
 
 /***/ },
 /* 58 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	var JSZipUtils = {};
-	// just use the responseText with xhr1, response with xhr2.
-	// The transformation doesn't throw away high-order byte (with responseText)
-	// because JSZip handles that case. If not used with JSZip, you may need to
-	// do it, see https://developer.mozilla.org/En/Using_XMLHttpRequest#Handling_binary_data
-	JSZipUtils._getBinaryFromXHR = function (xhr) {
-	    // for xhr.responseText, the 0xFF mask is applied by JSZip
-	    return xhr.response || xhr.responseText;
-	};
-	
-	// taken from jQuery
-	function createStandardXHR() {
-	    try {
-	        return new window.XMLHttpRequest();
-	    } catch( e ) {}
-	}
-	
-	function createActiveXHR() {
-	    try {
-	        return new window.ActiveXObject("Microsoft.XMLHTTP");
-	    } catch( e ) {}
-	}
-	
-	// Create the request object
-	var createXHR = window.ActiveXObject ?
-	    /* Microsoft failed to properly
-	     * implement the XMLHttpRequest in IE7 (can't request local files),
-	     * so we use the ActiveXObject when it is available
-	     * Additionally XMLHttpRequest can be disabled in IE7/IE8 so
-	     * we need a fallback.
-	     */
-	    function() {
-	    return createStandardXHR() || createActiveXHR();
-	} :
-	    // For all other browsers, use the standard XMLHttpRequest object
-	    createStandardXHR;
-	
-	
-	
-	JSZipUtils.getBinaryContent = function(path, callback) {
-	    /*
-	     * Here is the tricky part : getting the data.
-	     * In firefox/chrome/opera/... setting the mimeType to 'text/plain; charset=x-user-defined'
-	     * is enough, the result is in the standard xhr.responseText.
-	     * cf https://developer.mozilla.org/En/XMLHttpRequest/Using_XMLHttpRequest#Receiving_binary_data_in_older_browsers
-	     * In IE <= 9, we must use (the IE only) attribute responseBody
-	     * (for binary data, its content is different from responseText).
-	     * In IE 10, the 'charset=x-user-defined' trick doesn't work, only the
-	     * responseType will work :
-	     * http://msdn.microsoft.com/en-us/library/ie/hh673569%28v=vs.85%29.aspx#Binary_Object_upload_and_download
-	     *
-	     * I'd like to use jQuery to avoid this XHR madness, but it doesn't support
-	     * the responseType attribute : http://bugs.jquery.com/ticket/11461
-	     */
-	    try {
-	
-	        var xhr = createXHR();
-	
-	        xhr.open('GET', path, true);
-	
-	        // recent browsers
-	        if ("responseType" in xhr) {
-	            xhr.responseType = "arraybuffer";
-	        }
-	
-	        // older browser
-	        if(xhr.overrideMimeType) {
-	            xhr.overrideMimeType("text/plain; charset=x-user-defined");
-	        }
-	
-	        xhr.onreadystatechange = function(evt) {
-	            var file, err;
-	            // use `xhr` and not `this`... thanks IE
-	            if (xhr.readyState === 4) {
-	                if (xhr.status === 200 || xhr.status === 0) {
-	                    file = null;
-	                    err = null;
-	                    try {
-	                        file = JSZipUtils._getBinaryFromXHR(xhr);
-	                    } catch(e) {
-	                        err = new Error(e);
-	                    }
-	                    callback(err, file);
-	                } else {
-	                    callback(new Error("Ajax error for " + path + " : " + this.status + " " + this.statusText), null);
-	                }
-	            }
-	        };
-	
-	        xhr.send();
-	
-	    } catch (e) {
-	        callback(new Error(e), null);
-	    }
-	};
-	
-	// export
-	module.exports = JSZipUtils;
-	
-	// enforcing Stuk's coding style
-	// vim: set shiftwidth=4 softtabstop=4:
-
-
-/***/ },
-/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62855,7 +62750,7 @@
 	}();
 
 /***/ },
-/* 60 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62965,7 +62860,7 @@
 	}();
 
 /***/ },
-/* 61 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63078,7 +62973,7 @@
 	}();
 
 /***/ },
-/* 62 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63185,7 +63080,7 @@
 	}();
 
 /***/ },
-/* 63 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

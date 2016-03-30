@@ -4,7 +4,6 @@ import * as util from 'util'
 import $ from 'jquery'
 import THREE from 'three.js';
 import JSZip from 'jszip';
-import JSZipUtils from 'jszip-utils';
 
 // edit these via: http://localhost:8000/compound_editor/rooms.html
 export const LEVELS = {
@@ -56,21 +55,29 @@ export function loadLevel(sectorX, sectorY, onload) {
 
 function decompressLevel(name, data, sectorX, sectorY, onload) {
 	setLoadingUIProgress(80, ()=> {
-		//console.log("Loaded. Decompressing...");
-		var zip = new JSZip(data);
-		//console.log("zip data=", zip);
-		let jsonContent = zip.file(name).asText();
+		console.log("Starting worker");
+		let worker = new Worker('dist/zip_worker.js?v=' + window.cb);
+		console.log("Listening for worker");
+		worker.addEventListener('message', (e) => {
+			let jsonContent = e.data;
+			setLoadingUIProgress(90, ()=> {
 
-		setLoadingUIProgress(90, ()=> {
-			//console.log("Constructing object... json size=", jsonContent.length);
-			let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
-			//console.log("constructed=", obj);
+				//console.log("Constructing object... json size=", jsonContent.length);
+				let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
+				//console.log("constructed=", obj);
 
-			setLoadingUIProgress(100, ()=> {
-				stopLoadingUI();
-				onload(getLevel(sectorX, sectorY, obj));
+				setLoadingUIProgress(100, ()=> {
+					console.log("Deleting worker.");
+					worker = undefined;
+
+					stopLoadingUI();
+					onload(getLevel(sectorX, sectorY, obj));
+				});
 			});
-		});
+		}, false);
+		console.log("Messaging worker");
+		worker.postMessage({ data: data, name: name });
+		console.log("Waiting...");
 	});
 }
 
