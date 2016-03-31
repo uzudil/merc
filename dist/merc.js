@@ -52,9 +52,9 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _game_map2 = __webpack_require__(3);
+	var _game_map = __webpack_require__(3);
 	
-	var game_map = _interopRequireWildcard(_game_map2);
+	var game_map = _interopRequireWildcard(_game_map);
 	
 	var _jquery = __webpack_require__(5);
 	
@@ -124,8 +124,32 @@
 			this.tmpColor = new _three2.default.Color();
 			window.cb = "" + VERSION;
 			util.initBinaryLoader();
+	
 			new model.Models(function (models) {
-				return _this.init(models);
+				_this.init(models);
+	
+				_this._game_map = new game_map.GameMap(_this.scene, _this.models, _this.renderer.getMaxAnisotropy());
+				util.execWithProgress([function () {
+					return _this._game_map.initModels();
+				}, function () {
+					return _this._game_map.compressSectors();
+				}, function () {
+					return _this._game_map.addXenoBase();
+				}, function () {
+					return _this._game_map.addRoads();
+				}, function () {
+					return _this._game_map.finishInit();
+				}, function () {
+					(0, _jquery2.default)("#title .start").show();
+					(0, _jquery2.default)(document).keydown(function (event) {
+						(0, _jquery2.default)(document).unbind("keydown");
+						_this.setupUI();
+						//this.startGame();
+						//this.startGame(true);
+						_this.startIntro();
+						_this.animate();
+					});
+				}], "wait-world");
 			});
 		}
 	
@@ -144,15 +168,8 @@
 	
 				this.benson = new benson.Benson();
 	
-				this.setupUI();
-	
 				this.space = null;
 				this.movement = null;
-				//this.startGame();
-				//this.startGame(true);
-				this.startIntro();
-	
-				this.animate();
 			}
 		}, {
 			key: 'startIntro',
@@ -211,8 +228,6 @@
 		}, {
 			key: 'startGame',
 			value: function startGame() {
-				var _this3 = this;
-	
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
 	
 				console.log("game starting");
@@ -232,65 +247,54 @@
 				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 	
-				var _game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
+				this.game_map = this._game_map;
 	
-				util.execWithProgress([function () {
-					return _game_map.initModels();
-				}, function () {
-					return _game_map.compressSectors();
-				}, function () {
-					return _game_map.addXenoBase();
-				}, function () {
-					return _game_map.addRoads();
-				}, function () {
-					return _game_map.finishInit();
-				}, function () {
-					_this3.game_map = _game_map;
+				// maybe use real planet movement instead
+				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 	
-					// maybe use real planet movement instead
-					_this3.skybox = new skybox.Skybox(_this3.movement.player, FAR_DIST);
+				this.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+				if (skipLanding) {
+					this.movement.endLanding();
+				} else {
+					this.movement.startLanding();
+				}
 	
-					_this3.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-					if (skipLanding) {
-						_this3.movement.endLanding();
-					} else {
-						_this3.movement.startLanding();
-					}
+				// hack: start in a room
+				// by the xeno base
+				//this.movement.loadGame({
+				//	sectorX: 0xf8, sectorY: 0xc9,
+				//	//sectorX: 9, sectorY: 2,
+				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+				//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
+				//	vehicle: this.models.models["ufo"].createObject(),
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"override-17a": true,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+				//	})
+				//});
 	
-					// hack: start in a room
-					// by the xeno base
-					//this.movement.loadGame({
-					//	sectorX: 0xf8, sectorY: 0xc9,
-					//	//sectorX: 9, sectorY: 2,
-					//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-					//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
-					//	vehicle: this.models.models["ufo"].createObject(),
-					//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-					//	state: Object.assign(events.Events.getStartState(), {
-					//		"lightcar-keys": true,
-					//		"override-17a": true,
-					//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-					//	})
-					//});
-	
-					// by a base
-					//this.movement.loadGame({
-					//	sectorX: 0xd9, sectorY: 0x42,
-					//	//sectorX: 9, sectorY: 2,
-					//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
-					//	vehicle: null,
-					//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-					//	state: Object.assign(events.Events.getStartState(), {
-					//		"lightcar-keys": true,
-					//		"override-17a": true,
-					//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-					//	})
-					//});
-				}], "wait-world");
+				// by a base
+				//this.movement.loadGame({
+				//	sectorX: 0xd9, sectorY: 0x42,
+				//	//sectorX: 9, sectorY: 2,
+				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+				//	vehicle: null,
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"override-17a": true,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+				//	})
+				//});
 			}
 		}, {
 			key: 'setupUI',
 			value: function setupUI() {
+				(0, _jquery2.default)("#title").hide();
+				(0, _jquery2.default)("#ui").show();
+	
 				window.loadingComplex = false;
 	
 				var h = this.height;
@@ -397,7 +401,7 @@
 		}, {
 			key: 'animate',
 			value: function animate() {
-				var _this4 = this;
+				var _this3 = this;
 	
 				this.benson.update();
 				if (this.movement && this.game_map) {
@@ -437,7 +441,7 @@
 	
 				if (FPS_LIMITS[this.fpsLimitIndex] != 0) {
 					setTimeout(function () {
-						requestAnimationFrame(util.bind(_this4, _this4.animate));
+						requestAnimationFrame(util.bind(_this3, _this3.animate));
 					}, 1000 / FPS_LIMITS[this.fpsLimitIndex]);
 				} else {
 					requestAnimationFrame(util.bind(this, this.animate));
@@ -36721,12 +36725,11 @@
 	};
 	
 	var GameMap = exports.GameMap = function () {
-		function GameMap(scene, models, player, maxAnisotropy) {
+		function GameMap(scene, models, maxAnisotropy) {
 			_classCallCheck(this, GameMap);
 	
 			this.scene = scene;
 			this.models = models;
-			this.player = player;
 			this.maxAnisotropy = maxAnisotropy;
 			this.land = new _three2.default.Object3D();
 			this.sectors = {};
@@ -47264,6 +47267,10 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
+	var _util = __webpack_require__(4);
+	
+	var util = _interopRequireWildcard(_util);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -47407,12 +47414,14 @@
 	
 			this.onLoad = onLoad;
 			this.models = {};
+			util.startLoadingUI("wait-models");
+	
 			var _iteratorNormalCompletion = true;
 			var _didIteratorError = false;
 			var _iteratorError = undefined;
 	
 			try {
-				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				var _loop = function _loop() {
 					var name = _step.value;
 	
 					var model = void 0;
@@ -47422,8 +47431,18 @@
 						model = new Model(name, name !== "elevator");
 					}
 					model.load(function (m) {
-						return _this.modelLoaded(m);
+						console.log("Model loaded: " + model);
+						_this.models[model.name] = model;
+						util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
+						if (Object.keys(_this.models).length == MODELS.length) {
+							util.stopLoadingUI();
+							_this.onLoad(_this);
+						}
 					});
+				};
+	
+				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+					_loop();
 				}
 			} catch (err) {
 				_didIteratorError = true;
@@ -47442,15 +47461,6 @@
 		}
 	
 		_createClass(Models, [{
-			key: 'modelLoaded',
-			value: function modelLoaded(model) {
-				console.log("Model loaded: " + model);
-				this.models[model.name] = model;
-				if (Object.keys(this.models).length == MODELS.length) {
-					this.onLoad(this);
-				}
-			}
-		}, {
 			key: 'setLightPercent',
 			value: function setLightPercent(percent) {
 				for (var m in this.models) {

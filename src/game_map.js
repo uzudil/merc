@@ -7,10 +7,9 @@ import * as modelPackage from 'model'
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
 export class GameMap {
-	constructor(scene, models, player, maxAnisotropy) {
+	constructor(scene, models, maxAnisotropy) {
 		this.scene = scene;
 		this.models = models;
-		this.player = player;
 		this.maxAnisotropy = maxAnisotropy;
 		this.land = new THREE.Object3D();
 		this.sectors = {};

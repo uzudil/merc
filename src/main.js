@@ -29,7 +29,30 @@ class Merc {
 		this.tmpColor = new THREE.Color();
 		window.cb = "" + VERSION;
 		util.initBinaryLoader();
-		new model.Models((models)=>this.init(models))
+
+		new model.Models((models) => {
+			this.init(models);
+
+			this._game_map = new game_map.GameMap(this.scene, this.models, this.renderer.getMaxAnisotropy());
+			util.execWithProgress([
+				() => this._game_map.initModels(),
+				() => this._game_map.compressSectors(),
+				() => this._game_map.addXenoBase(),
+				() => this._game_map.addRoads(),
+				() => this._game_map.finishInit(),
+				() => {
+					$("#title .start").show();
+					$(document).keydown(( event ) => {
+						$(document).unbind("keydown");
+						this.setupUI();
+						//this.startGame();
+						//this.startGame(true);
+						this.startIntro();
+						this.animate();
+					});
+				}
+			], "wait-world");
+		});
 	}
 
 	init(models) {
@@ -45,15 +68,8 @@ class Merc {
 
 		this.benson = new benson.Benson();
 
-		this.setupUI();
-
 		this.space = null;
 		this.movement = null;
-		 //this.startGame();
-		 //this.startGame(true);
-		this.startIntro();
-
-		this.animate();
 	}
 
 	startIntro() {
@@ -125,64 +141,56 @@ class Merc {
 		this.renderer.setClearColor(constants.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
 
-		let _game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
+		this.game_map = this._game_map;
 
-		util.execWithProgress([
-			() => _game_map.initModels(),
-			() => _game_map.compressSectors(),
-			() => _game_map.addXenoBase(),
-			() => _game_map.addRoads(),
-			() => _game_map.finishInit(),
-			() => {
-				this.game_map = _game_map;
+		// maybe use real planet movement instead
+		this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
 
-				// maybe use real planet movement instead
-				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
+		this.movement.player.position.set(
+			constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2,
+			constants.SECTOR_SIZE * constants.START_Y,
+			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
+		if (skipLanding) {
+			this.movement.endLanding();
+		} else {
+			this.movement.startLanding();
+		}
 
-				this.movement.player.position.set(
-					constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2,
-					constants.SECTOR_SIZE * constants.START_Y,
-					skipLanding ? movement.DEFAULT_Z : constants.START_Z);
-				if (skipLanding) {
-					this.movement.endLanding();
-				} else {
-					this.movement.startLanding();
-				}
+		// hack: start in a room
+		// by the xeno base
+		//this.movement.loadGame({
+		//	sectorX: 0xf8, sectorY: 0xc9,
+		//	//sectorX: 9, sectorY: 2,
+		//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
+		//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
+		//	vehicle: this.models.models["ufo"].createObject(),
+		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+		//	state: Object.assign(events.Events.getStartState(), {
+		//		"lightcar-keys": true,
+		//		"override-17a": true,
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+		//	})
+		//});
 
-				// hack: start in a room
-				// by the xeno base
-				//this.movement.loadGame({
-				//	sectorX: 0xf8, sectorY: 0xc9,
-				//	//sectorX: 9, sectorY: 2,
-				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
-				//	vehicle: this.models.models["ufo"].createObject(),
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-				//	state: Object.assign(events.Events.getStartState(), {
-				//		"lightcar-keys": true,
-				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-				//	})
-				//});
-
-				// by a base
-				//this.movement.loadGame({
-				//	sectorX: 0xd9, sectorY: 0x42,
-				//	//sectorX: 9, sectorY: 2,
-				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
-				//	vehicle: null,
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-				//	state: Object.assign(events.Events.getStartState(), {
-				//		"lightcar-keys": true,
-				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
-				//	})
-				//});
-			}
-		], "wait-world");
+		// by a base
+		//this.movement.loadGame({
+		//	sectorX: 0xd9, sectorY: 0x42,
+		//	//sectorX: 9, sectorY: 2,
+		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+		//	vehicle: null,
+		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+		//	state: Object.assign(events.Events.getStartState(), {
+		//		"lightcar-keys": true,
+		//		"override-17a": true,
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+		//	})
+		//});
 	}
 
 	setupUI() {
+		$("#title").hide();
+		$("#ui").show();
+
 		window.loadingComplex = false;
 
 		let h = this.height;

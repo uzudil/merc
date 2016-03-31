@@ -1,5 +1,6 @@
 import THREE from 'three.js';
 import * as game_map from 'game_map';
+import * as util from 'util';
 
 /*
 	To use colors, use the "vertex paint" feature of blender.
@@ -142,6 +143,8 @@ export class Models {
 	constructor(onLoad) {
 		this.onLoad = onLoad;
 		this.models = {};
+		util.startLoadingUI("wait-models");
+
 		for(let name of MODELS) {
 			let model;
 			if(name in VEHICLES) {
@@ -149,15 +152,15 @@ export class Models {
 			} else {
 				model = new Model(name, name !== "elevator");
 			}
-			model.load((m) => this.modelLoaded(m));
-		}
-	}
-
-	modelLoaded(model) {
-		console.log("Model loaded: " + model);
-		this.models[model.name] = model;
-		if(Object.keys(this.models).length == MODELS.length) {
-			this.onLoad(this);
+			model.load((m) => {
+				console.log("Model loaded: " + model);
+				this.models[model.name] = model;
+				util.setLoadingUIProgress(Object.keys(this.models).length / MODELS.length);
+				if(Object.keys(this.models).length == MODELS.length) {
+					util.stopLoadingUI();
+					this.onLoad(this);
+				}
+			});
 		}
 	}
 
