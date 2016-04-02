@@ -11,7 +11,8 @@ const MODELS = [
 	"keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light",
 	"ruins", "tower2", "bldg", "bridge", "plant", "term",
 	"disk", "stadium", "art", "art2", "ufo", "allitus", "xeno",
-	"xenterm", "trans", "control", "engine", "core", "pine"
+	"xenterm", "trans", "control", "engine", "core", "pine",
+	"mill"
 ];
 
 // objects inside compounds should be rendered via a basic material

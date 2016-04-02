@@ -30,6 +30,7 @@ class Merc {
 			width: w + "px",
 			height: h + "px"
 		});
+		$("#version").empty().append("v" + VERSION);
 
 		window.escapeUsed = false;
 		this.lastLightPercent = 0;
