@@ -28,6 +28,7 @@
     "jquery": "^2.2.2",
     "jszip": "^2.5.0",
     "jszip-utils": "0.0.2",
+    "stats.js": "0.0.14-master",
     "three.js": "^0.73.0"
   }
 }

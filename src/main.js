@@ -1,4 +1,5 @@
 import THREE from 'three.js'
+import Stats from 'stats.js'
 import * as game_map from 'game_map'
 import $ from 'jquery'
 import * as util from 'util'
@@ -19,6 +20,8 @@ const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
 const VERSION = 0.31; // todo: git hook this
+
+const DEV_MODE = location.hostname == "localhost";
 
 class Merc {
 	constructor() {
@@ -198,6 +201,16 @@ class Merc {
 	}
 
 	setupUI() {
+
+		if(DEV_MODE) {
+			this.statsFPS = new Stats();
+			this.statsFPS.setMode(0); // 0: fps, 1: ms, 2: mb
+			this.statsFPS.domElement.style.position = 'absolute';
+			this.statsFPS.domElement.style.left = '0px';
+			this.statsFPS.domElement.style.top = '0px';
+			document.body.appendChild(this.statsFPS.domElement);
+		}
+
 		$("#title-container").hide();
 		$("#ui").show();
 
@@ -303,6 +316,8 @@ class Merc {
 	}
 
 	animate() {
+		if(DEV_MODE) this.statsFPS.begin();
+
 		this.benson.update();
 		if(this.movement && this.game_map) {
 			this.movement.update();
@@ -339,6 +354,8 @@ class Merc {
 		} else if(this.space) {
 			$("#speed .value").text("" + this.space.getSpeed());
 		}
+
+		if(DEV_MODE) this.statsFPS.end();
 
 		if(FPS_LIMITS[this.fpsLimitIndex] != 0) {
 			setTimeout(()=> {

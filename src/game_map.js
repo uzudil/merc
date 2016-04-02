@@ -198,7 +198,7 @@ export class GameMap {
 		var oy = y % constants.SECTOR_SIZE;
 
 		var object = model.createObject();
-		this.structures.push(object);
+		if(model.hasBB()) this.structures.push(object);
 
 		object.position.set(0, 0, z);
 		object.rotation.z = zRot;

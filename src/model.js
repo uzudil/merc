@@ -208,6 +208,10 @@ export class Model {
 		m["model"] = this;
 		return m;
 	}
+
+	hasBB() {
+		return !this.canCompress;
+	}
 }
 
 export class Vehicle extends Model {
@@ -223,5 +227,9 @@ export class Vehicle extends Model {
 
 	enterCheck(movement) {
 		return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
+	}
+
+	hasBB() {
+		return true;
 	}
 }
