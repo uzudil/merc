@@ -23,11 +23,20 @@ const VERSION = 0.31; // todo: git hook this
 class Merc {
 	constructor() {
 		console.log(`Merc (c) 2016 v${VERSION}`);
+
+		let h = window.innerHeight * .75;
+		let w = h * ASPECT_RATIO;
+		$("#title").css({
+			width: w + "px",
+			height: h + "px"
+		});
+
 		window.escapeUsed = false;
 		this.lastLightPercent = 0;
 		this.updateLight = true;
 		this.tmpColor = new THREE.Color();
 		window.cb = "" + VERSION;
+
 		util.initBinaryLoader();
 
 		new model.Models((models) => {
@@ -188,7 +197,7 @@ class Merc {
 	}
 
 	setupUI() {
-		$("#title").hide();
+		$("#title-container").hide();
 		$("#ui").show();
 
 		window.loadingComplex = false;

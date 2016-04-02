@@ -118,11 +118,20 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
+	
+			var h = window.innerHeight * .75;
+			var w = h * ASPECT_RATIO;
+			(0, _jquery2.default)("#title").css({
+				width: w + "px",
+				height: h + "px"
+			});
+	
 			window.escapeUsed = false;
 			this.lastLightPercent = 0;
 			this.updateLight = true;
 			this.tmpColor = new _three2.default.Color();
 			window.cb = "" + VERSION;
+	
 			util.initBinaryLoader();
 	
 			new model.Models(function (models) {
@@ -292,7 +301,7 @@
 		}, {
 			key: 'setupUI',
 			value: function setupUI() {
-				(0, _jquery2.default)("#title").hide();
+				(0, _jquery2.default)("#title-container").hide();
 				(0, _jquery2.default)("#ui").show();
 	
 				window.loadingComplex = false;
