@@ -3,17 +3,7 @@ import * as game_map from 'game_map'
 import * as util from 'util'
 import THREE from 'three.js'
 import * as csg from "ThreeCSG"
-
-export const ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
-export const DOOR_WIDTH = ROOM_SIZE * .35;
-export const DOOR_HEIGHT = ROOM_SIZE * .7;
-export const WALL_THICKNESS = 10;
-export const DOOR_THICKNESS = WALL_THICKNESS * .25;
-
-export const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
-
-export const WALL_SEGMENTS = 3; // making this bigger takes forever to compute
-export const CAVE_RAND_FACTOR = 1.25;
+import * as constants from "constants"
 
 export class Door {
 	constructor(x, y, dir, roomAName, roomBName, color, key) {
@@ -32,24 +22,24 @@ export class Door {
 
 		this.dx = 0;
 		this.dy = 0;
-		this.w = WALL_THICKNESS * .5;
-		this.h = WALL_THICKNESS * .5;
+		this.w = constants.WALL_THICKNESS * .5;
+		this.h = constants.WALL_THICKNESS * .5;
 		switch (dir) {
 			case "e":
-				this.dx = ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "w":
-				this.dx = -ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = -constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "s":
-				this.dy = ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 			case "n":
-				this.dy = -ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = -constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 		}
 	}
@@ -118,8 +108,8 @@ export class Level {
 		}
 		if(debug) console.log("point=", point);
 		for(let room of this.rooms) {
-			let min = new THREE.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE/2);
-			let max = new THREE.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE/2);
+			let min = new THREE.Vector3(room.x * constants.ROOM_SIZE, room.y * constants.ROOM_SIZE, movement.ROOM_DEPTH - constants.ROOM_SIZE/2);
+			let max = new THREE.Vector3((room.x + room.w) * constants.ROOM_SIZE, (room.y + room.h) * constants.ROOM_SIZE, movement.ROOM_DEPTH + constants.ROOM_SIZE/2);
 			if(debug) console.log("...vs " + room.name + " min=",min, " max=", max);
 			let box = new THREE.Box3(min, max);
 			if(box.containsPoint(point)) {
@@ -131,8 +121,8 @@ export class Level {
 	}
 
 	moveToRoom(room, position) {
-		position.x = (room.x + room.w/2) * ROOM_SIZE + this.offsetX;
-		position.y = (room.y + room.h/2) * ROOM_SIZE + this.offsetY;
+		position.x = (room.x + room.w/2) * constants.ROOM_SIZE + this.offsetX;
+		position.y = (room.y + room.h/2) * constants.ROOM_SIZE + this.offsetY;
 	}
 
 	create(scene, x, y, liftX, liftY, models, progressUpdate=null) {
@@ -143,12 +133,11 @@ export class Level {
 		this.targetMesh = this.mesh.children[0];
 		this.targetMesh["name"] = "room_wall";
 		this.targetMesh["type"] = "wall";
-		this.mat = this.targetMesh.material;
 		this.geo = this.targetMesh.geometry;
-		this.geo.translate(this.w/2 * ROOM_SIZE + WALL_THICKNESS, this.h/2 * ROOM_SIZE + WALL_THICKNESS, 0);
+		this.geo.translate(this.w/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
 		this.caveMeshObj = this.mesh.children[1];
 		for(let c of this.caveMeshObj.children) {
-			c.geometry.translate(this.w/2 * ROOM_SIZE + WALL_THICKNESS, this.h/2 * ROOM_SIZE + WALL_THICKNESS, 0);
+			c.geometry.translate(this.w/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
 		}
 
 		//let t, t2; t = Date.now();
@@ -156,14 +145,12 @@ export class Level {
 		// actual doors
 		for(let door of this.doors) {
 
-			let dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
-			let dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
-			let dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
+			let dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
+			let dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
+			let dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
 
-			let door_geo = new THREE.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
-			let door_mesh = new THREE.Mesh(door_geo,
-				new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, vertexColors: THREE.FaceColors }));
-			util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
+			let door_geo = new THREE.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), constants.DOOR_HEIGHT);
+			let door_mesh = new THREE.Mesh(door_geo, constants.DOOR_MATERIAL);
 
 			door_mesh.position.set(dx, dy, dz);
 			door_mesh["name"] = "door_" + door.dir;
@@ -178,10 +165,9 @@ export class Level {
 		for(let object of this.objects) {
 			let m = models.models[object.object];
 			let mesh = m.createObject();
-			util.shadeGeo(mesh.geometry, LIGHT);
-			let dx = (object.x + .5) * ROOM_SIZE;
-			let dy = (object.y + .5) * ROOM_SIZE;
-			let dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+			let dx = (object.x + .5) * constants.ROOM_SIZE;
+			let dy = (object.y + .5) * constants.ROOM_SIZE;
+			let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
 			mesh.rotation.z = util.angle2rad(object["rot"] || 0);
 			mesh.position.set(dx, dy, dz);
 			this.targetMesh.add(mesh);
@@ -192,16 +178,16 @@ export class Level {
 
 		// center in start room
 		let start = this.rooms[0];
-		this.offsetX = x + (- start.x - start.w/2) * ROOM_SIZE;
-		this.offsetY = y + (- start.y - start.h/2) * ROOM_SIZE;
+		this.offsetX = x + (- start.x - start.w/2) * constants.ROOM_SIZE;
+		this.offsetY = y + (- start.y - start.h/2) * constants.ROOM_SIZE;
 		this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
 		scene.add( this.mesh );
 	}
 
 	makeElevator(x, y) {
-		let z = -movement.ROOM_DEPTH - ROOM_SIZE * .5;
+		let z = -movement.ROOM_DEPTH - constants.ROOM_SIZE * .5;
 		let stripes = 15;
-		this.lift_geo = new THREE.BoxGeometry(ROOM_SIZE, ROOM_SIZE, z, 1, 1, stripes);
+		this.lift_geo = new THREE.BoxGeometry(constants.ROOM_SIZE, constants.ROOM_SIZE, z, 1, 1, stripes);
 		let dark = new THREE.Color("#cccc88");
 		let light = new THREE.Color("#ffffcc");
 		let faces = [];
@@ -218,18 +204,10 @@ export class Level {
 		}
 		// remove top/bottom face
 		this.lift_geo.faces = faces;
-		this.lift_mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, vertexColors: THREE.FaceColors });
-		util.shadeGeo(this.lift_geo, LIGHT);
-		this.lift_mesh = new THREE.Mesh(this.lift_geo, this.lift_mat);
+		this.lift_mesh = new THREE.Mesh(this.lift_geo, constants.MATERIAL);
 		this.lift_mesh.position.set(x, y, -z / 2);
 
 		this.scene.add( this.lift_mesh );
-	}
-
-	setElevatorLightPercent(percent) {
-		if(this.lift_mesh) {
-			util.setLightPercent(this.lift_mesh, LIGHT, percent);
-		}
 	}
 
 	setPosition(x, y) {
@@ -242,11 +220,9 @@ export class Level {
 	destroy() {
 		this.scene.remove(this.lift_mesh);
 		this.lift_geo.dispose();
-		this.lift_mat.dispose();
 
 		this.scene.remove(this.mesh);
 		this.geo.dispose();
-		this.mat.dispose();
 
 		for(let c of this.caveMeshObj.children) {
 			c.geometry.dispose();

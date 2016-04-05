@@ -408,14 +408,8 @@
 					this.skybox.setLightPercent(percent);
 	
 					// just dim
-					//this.ambientLight.color.set(constants.AMBIENT_COLOR.getHex()).multiplyScalar(percent);
 					this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 					this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
-	
-					//	this.models.setLightPercent(percent);
-					if (this.movement.level) {
-						this.movement.level.setElevatorLightPercent(percent);
-					}
 				}
 	
 				// cycle thru a dawn/dusk color set
@@ -36740,10 +36734,6 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
-	var _model = __webpack_require__(8);
-	
-	var modelPackage = _interopRequireWildcard(_model);
-	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -36847,7 +36837,7 @@
 							}
 						}
 	
-						var mesh = new _three2.default.Mesh(geo, modelPackage.MATERIAL);
+						var mesh = new _three2.default.Mesh(geo, constants.MATERIAL);
 						sector.add(mesh);
 					}
 				}
@@ -37121,8 +37111,6 @@
 	exports.bind = bind;
 	exports.rad2angle = rad2angle;
 	exports.angle2rad = angle2rad;
-	exports.shadeGeo = shadeGeo;
-	exports.setLightPercent = setLightPercent;
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
 	exports.toHex = toHex;
@@ -37156,38 +37144,6 @@
 	
 	function angle2rad(angle) {
 		return angle / 180.0 * Math.PI;
-	}
-	
-	// to use this, use a material with vertexColors: THREE.FaceColors
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	function shadeGeo(geo, light, color) {
-		if (!light) light = LIGHT;
-		for (var i = 0; i < geo.faces.length; i++) {
-			var f = geo.faces[i];
-			if (color) f.color = color.clone();else {
-				// use the first vertex colors, if given
-				if (f.vertexColors && f.vertexColors[0]) {
-					f.color.copy(f.vertexColors[0]);
-				}
-			}
-			var a = 0.75 + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
-			f["original_color"] = f.color.getHex();
-			f["light_mod"] = a;
-			f.color.multiplyScalar(a);
-			// do not use vertex colors
-			f.vertexColors = [];
-		}
-	}
-	
-	function setLightPercent(mesh, light, percent) {
-		var geo = mesh.geometry;
-		for (var i = 0; i < geo.faces.length; i++) {
-			var f = geo.faces[i];
-			var a = 0.75 * percent + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
-			f.color.setHex(f["original_color"]);
-			f.color.multiplyScalar(a);
-		}
-		updateColors(mesh);
 	}
 	
 	function getOppositeDir(dir) {
@@ -47217,7 +47173,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.LIGHT1 = exports.MIN_LIGHT = exports.DIR2_COLOR = exports.DIR1_COLOR = exports.AMBIENT_COLOR = exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	exports.CAVE_RAND_FACTOR = exports.WALL_SEGMENTS = exports.LIGHT = exports.DOOR_THICKNESS = exports.WALL_THICKNESS = exports.DOOR_HEIGHT = exports.DOOR_WIDTH = exports.ROOM_SIZE = exports.DOOR_MATERIAL = exports.MATERIAL = exports.LIGHT1 = exports.MIN_LIGHT = exports.DIR2_COLOR = exports.DIR1_COLOR = exports.AMBIENT_COLOR = exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
 	exports.calcLight = calcLight;
 	
 	var _three = __webpack_require__(1);
@@ -47275,6 +47231,32 @@
 		//console.log("h=" + hourOfDay + " low=" + low + "," + lowHour + " high=" + high + "," + highHour + " t=" + t + " color=" + color.getHexString());
 		color.setRGB((low[0] + (high[0] - low[0]) * t) / 0xff * baseColor.r, (low[1] + (high[1] - low[1]) * t) / 0xff * baseColor.g, (low[2] + (high[2] - low[2]) * t) / 0xff * baseColor.b);
 	}
+	
+	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
+		color: 0xffffff,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
+		//overdraw: true
+	});
+	var DOOR_MATERIAL = exports.DOOR_MATERIAL = new _three2.default.MeshPhongMaterial({
+		color: 0xffcc22,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
+		//overdraw: true
+	});
+	
+	var ROOM_SIZE = exports.ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
+	var DOOR_WIDTH = exports.DOOR_WIDTH = ROOM_SIZE * .35;
+	var DOOR_HEIGHT = exports.DOOR_HEIGHT = ROOM_SIZE * .7;
+	var WALL_THICKNESS = exports.WALL_THICKNESS = 10;
+	var DOOR_THICKNESS = exports.DOOR_THICKNESS = WALL_THICKNESS * .25;
+	
+	var LIGHT = exports.LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
+	
+	var WALL_SEGMENTS = exports.WALL_SEGMENTS = 2; // making this bigger takes forever to compute
+	var CAVE_RAND_FACTOR = exports.CAVE_RAND_FACTOR = 1.25;
 
 /***/ },
 /* 8 */
@@ -47285,7 +47267,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.Vehicle = exports.Model = exports.Models = exports.MATERIAL = undefined;
+	exports.Vehicle = exports.Model = exports.Models = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -47300,6 +47282,10 @@
 	var _util = __webpack_require__(4);
 	
 	var util = _interopRequireWildcard(_util);
+	
+	var _constants = __webpack_require__(7);
+	
+	var constants = _interopRequireWildcard(_constants);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -47317,12 +47303,9 @@
 	 */
 	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine", "mill"];
 	
-	// objects inside compounds should be rendered via a basic material
-	var USE_BASIC_MATERIAL = ["keya", "keyb", "keyc", "keyd", "pres", "term", "disk", "art", "art2", "allitus", "xenterm", "trans", "control", "engine", "core"];
-	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+		"plane": { speed: 80000, flies: true, exp: false, noise: "jet", hovers: false },
 		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 			onEnter: function onEnter(movement) {
 				if (movement.inInventory("art") && movement.inInventory("art2")) {
@@ -47421,86 +47404,58 @@
 		bridge: true
 	};
 	
-	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-	var BASIC_MATERIAL = new _three2.default.MeshBasicMaterial({
-		color: 0xffffff,
-		side: _three2.default.DoubleSide,
-		vertexColors: _three2.default.FaceColors
-	});
-	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
-		color: 0xffffff,
-		side: _three2.default.DoubleSide,
-		vertexColors: _three2.default.FaceColors,
-		shading: _three2.default.FlatShading
-		//overdraw: true
-	});
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
+	var Models = exports.Models = function Models(onLoad) {
+		var _this = this;
 	
-	var Models = exports.Models = function () {
-		function Models(onLoad) {
-			var _this = this;
+		_classCallCheck(this, Models);
 	
-			_classCallCheck(this, Models);
+		this.onLoad = onLoad;
+		this.models = {};
+		util.startLoadingUI("wait-models");
 	
-			this.onLoad = onLoad;
-			this.models = {};
-			util.startLoadingUI("wait-models");
+		var _iteratorNormalCompletion = true;
+		var _didIteratorError = false;
+		var _iteratorError = undefined;
 	
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
+		try {
+			var _loop = function _loop() {
+				var name = _step.value;
 	
-			try {
-				var _loop = function _loop() {
-					var name = _step.value;
-	
-					var model = void 0;
-					if (name in VEHICLES) {
-						model = new Vehicle(name, VEHICLES[name]);
-					} else {
-						model = new Model(name, name !== "elevator");
-					}
-					model.load(function (m) {
-						console.log("Model loaded: " + model);
-						_this.models[model.name] = model;
-						util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
-						if (Object.keys(_this.models).length == MODELS.length) {
-							util.stopLoadingUI();
-							_this.onLoad(_this);
-						}
-					});
-				};
-	
-				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					_loop();
+				var model = void 0;
+				if (name in VEHICLES) {
+					model = new Vehicle(name, VEHICLES[name]);
+				} else {
+					model = new Model(name, name !== "elevator");
 				}
-			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
+				model.load(function (m) {
+					console.log("Model loaded: " + model);
+					_this.models[model.name] = model;
+					util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
+					if (Object.keys(_this.models).length == MODELS.length) {
+						util.stopLoadingUI();
+						_this.onLoad(_this);
+					}
+				});
+			};
+	
+			for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				_loop();
+			}
+		} catch (err) {
+			_didIteratorError = true;
+			_iteratorError = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion && _iterator.return) {
+					_iterator.return();
+				}
 			} finally {
-				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
-					}
-				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
-					}
+				if (_didIteratorError) {
+					throw _iteratorError;
 				}
 			}
 		}
-	
-		_createClass(Models, [{
-			key: 'setLightPercent',
-			value: function setLightPercent(percent) {
-				for (var m in this.models) {
-					this.models[m].setLightPercent(percent);
-				}
-			}
-		}]);
-	
-		return Models;
-	}();
+	};
 	
 	var Model = exports.Model = function () {
 		function Model(name, canCompress) {
@@ -47529,7 +47484,7 @@
 					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
 					var scale = SCALE[_this2.name] || 60;
 					geometry.scale(scale, scale, scale);
-					_this2.mesh = new _three2.default.Mesh(geometry, USE_BASIC_MATERIAL.indexOf(_this2.name) > -1 ? BASIC_MATERIAL : MATERIAL);
+					_this2.mesh = new _three2.default.Mesh(geometry, constants.MATERIAL);
 					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
 					onLoad(_this2);
 				});
@@ -47626,10 +47581,6 @@
 	var _noise = __webpack_require__(10);
 	
 	var noise = _interopRequireWildcard(_noise);
-	
-	var _room = __webpack_require__(11);
-	
-	var room_package = _interopRequireWildcard(_room);
 	
 	var _compounds = __webpack_require__(13);
 	
@@ -48575,10 +48526,10 @@
 					var _loop = function _loop(_i) {
 						var door = _this4.doorsUp[_i];
 						door.getWorldPosition(_this4.worldPos);
-						var dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
+						var dz = ROOM_DEPTH + constants.DOOR_HEIGHT * .8;
 						if (_this4.worldPos.z < dz) {
 							door.position.z += delta * 50;
-							_this4.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - _this4.worldPos.z)) / room_package.DOOR_HEIGHT);
+							_this4.noise.setLevel("door", (constants.DOOR_HEIGHT - Math.abs(dz - _this4.worldPos.z)) / constants.DOOR_HEIGHT);
 						} else {
 							door.moving = "down";
 							_this4.doorsUp.splice(_i, 1);
@@ -48602,7 +48553,7 @@
 							// todo: check for player...
 							_door.position.z -= delta * 50;
 							if (_door.position.z < _door.original_z) _door.position.z = _door.original_z;
-							this.noise.setLevel("door", (_door.position.z - _door.original_z) / room_package.DOOR_HEIGHT);
+							this.noise.setLevel("door", (_door.position.z - _door.original_z) / constants.DOOR_HEIGHT);
 						} else {
 							_door.position.z = _door.original_z;
 							_door.moving = null;
@@ -49680,7 +49631,7 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.Level = exports.Room = exports.Door = exports.CAVE_RAND_FACTOR = exports.WALL_SEGMENTS = exports.LIGHT = exports.DOOR_THICKNESS = exports.WALL_THICKNESS = exports.DOOR_HEIGHT = exports.DOOR_WIDTH = exports.ROOM_SIZE = undefined;
+	exports.Level = exports.Room = exports.Door = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -49704,22 +49655,15 @@
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
+	var _constants = __webpack_require__(7);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var ROOM_SIZE = exports.ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
-	var DOOR_WIDTH = exports.DOOR_WIDTH = ROOM_SIZE * .35;
-	var DOOR_HEIGHT = exports.DOOR_HEIGHT = ROOM_SIZE * .7;
-	var WALL_THICKNESS = exports.WALL_THICKNESS = 10;
-	var DOOR_THICKNESS = exports.DOOR_THICKNESS = WALL_THICKNESS * .25;
-	
-	var LIGHT = exports.LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	
-	var WALL_SEGMENTS = exports.WALL_SEGMENTS = 3; // making this bigger takes forever to compute
-	var CAVE_RAND_FACTOR = exports.CAVE_RAND_FACTOR = 1.25;
 	
 	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color, key) {
 		_classCallCheck(this, Door);
@@ -49739,24 +49683,24 @@
 	
 		this.dx = 0;
 		this.dy = 0;
-		this.w = WALL_THICKNESS * .5;
-		this.h = WALL_THICKNESS * .5;
+		this.w = constants.WALL_THICKNESS * .5;
+		this.h = constants.WALL_THICKNESS * .5;
 		switch (dir) {
 			case "e":
-				this.dx = ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "w":
-				this.dx = -ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = -constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "s":
-				this.dy = ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 			case "n":
-				this.dy = -ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = -constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 		}
 	};
@@ -49912,8 +49856,8 @@
 					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 						var room = _step4.value;
 	
-						var min = new _three2.default.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE / 2);
-						var max = new _three2.default.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE / 2);
+						var min = new _three2.default.Vector3(room.x * constants.ROOM_SIZE, room.y * constants.ROOM_SIZE, movement.ROOM_DEPTH - constants.ROOM_SIZE / 2);
+						var max = new _three2.default.Vector3((room.x + room.w) * constants.ROOM_SIZE, (room.y + room.h) * constants.ROOM_SIZE, movement.ROOM_DEPTH + constants.ROOM_SIZE / 2);
 						if (debug) console.log("...vs " + room.name + " min=", min, " max=", max);
 						var box = new _three2.default.Box3(min, max);
 						if (box.containsPoint(point)) {
@@ -49941,8 +49885,8 @@
 		}, {
 			key: 'moveToRoom',
 			value: function moveToRoom(room, position) {
-				position.x = (room.x + room.w / 2) * ROOM_SIZE + this.offsetX;
-				position.y = (room.y + room.h / 2) * ROOM_SIZE + this.offsetY;
+				position.x = (room.x + room.w / 2) * constants.ROOM_SIZE + this.offsetX;
+				position.y = (room.y + room.h / 2) * constants.ROOM_SIZE + this.offsetY;
 			}
 		}, {
 			key: 'create',
@@ -49956,9 +49900,8 @@
 				this.targetMesh = this.mesh.children[0];
 				this.targetMesh["name"] = "room_wall";
 				this.targetMesh["type"] = "wall";
-				this.mat = this.targetMesh.material;
 				this.geo = this.targetMesh.geometry;
-				this.geo.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
+				this.geo.translate(this.w / 2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h / 2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
 				this.caveMeshObj = this.mesh.children[1];
 				var _iteratorNormalCompletion5 = true;
 				var _didIteratorError5 = false;
@@ -49968,7 +49911,7 @@
 					for (var _iterator5 = this.caveMeshObj.children[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
 						var c = _step5.value;
 	
-						c.geometry.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
+						c.geometry.translate(this.w / 2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h / 2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
 					}
 	
 					//let t, t2; t = Date.now();
@@ -49998,13 +49941,12 @@
 						var door = _step6.value;
 	
 	
-						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
-						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
-						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
+						var dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
+						var dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
+						var dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
 	
-						var door_geo = new _three2.default.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
-						var door_mesh = new _three2.default.Mesh(door_geo, new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors }));
-						util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
+						var door_geo = new _three2.default.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), constants.DOOR_HEIGHT);
+						var door_mesh = new _three2.default.Mesh(door_geo, constants.DOOR_MATERIAL);
 	
 						door_mesh.position.set(dx, dy, dz);
 						door_mesh["name"] = "door_" + door.dir;
@@ -50041,10 +49983,9 @@
 	
 						var m = models.models[object.object];
 						var mesh = m.createObject();
-						util.shadeGeo(mesh.geometry, LIGHT);
-						var _dx = (object.x + .5) * ROOM_SIZE;
-						var _dy = (object.y + .5) * ROOM_SIZE;
-						var _dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
+						var _dx = (object.x + .5) * constants.ROOM_SIZE;
+						var _dy = (object.y + .5) * constants.ROOM_SIZE;
+						var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
 						mesh.rotation.z = util.angle2rad(object["rot"] || 0);
 						mesh.position.set(_dx, _dy, _dz);
 						this.targetMesh.add(mesh);
@@ -50069,17 +50010,17 @@
 	
 				// center in start room
 				var start = this.rooms[0];
-				this.offsetX = x + (-start.x - start.w / 2) * ROOM_SIZE;
-				this.offsetY = y + (-start.y - start.h / 2) * ROOM_SIZE;
+				this.offsetX = x + (-start.x - start.w / 2) * constants.ROOM_SIZE;
+				this.offsetY = y + (-start.y - start.h / 2) * constants.ROOM_SIZE;
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
 				scene.add(this.mesh);
 			}
 		}, {
 			key: 'makeElevator',
 			value: function makeElevator(x, y) {
-				var z = -movement.ROOM_DEPTH - ROOM_SIZE * .5;
+				var z = -movement.ROOM_DEPTH - constants.ROOM_SIZE * .5;
 				var stripes = 15;
-				this.lift_geo = new _three2.default.BoxGeometry(ROOM_SIZE, ROOM_SIZE, z, 1, 1, stripes);
+				this.lift_geo = new _three2.default.BoxGeometry(constants.ROOM_SIZE, constants.ROOM_SIZE, z, 1, 1, stripes);
 				var dark = new _three2.default.Color("#cccc88");
 				var light = new _three2.default.Color("#ffffcc");
 				var faces = [];
@@ -50095,19 +50036,10 @@
 				}
 				// remove top/bottom face
 				this.lift_geo.faces = faces;
-				this.lift_mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
-				util.shadeGeo(this.lift_geo, LIGHT);
-				this.lift_mesh = new _three2.default.Mesh(this.lift_geo, this.lift_mat);
+				this.lift_mesh = new _three2.default.Mesh(this.lift_geo, constants.MATERIAL);
 				this.lift_mesh.position.set(x, y, -z / 2);
 	
 				this.scene.add(this.lift_mesh);
-			}
-		}, {
-			key: 'setElevatorLightPercent',
-			value: function setElevatorLightPercent(percent) {
-				if (this.lift_mesh) {
-					util.setLightPercent(this.lift_mesh, LIGHT, percent);
-				}
 			}
 		}, {
 			key: 'setPosition',
@@ -50122,11 +50054,9 @@
 			value: function destroy() {
 				this.scene.remove(this.lift_mesh);
 				this.lift_geo.dispose();
-				this.lift_mat.dispose();
 	
 				this.scene.remove(this.mesh);
 				this.geo.dispose();
-				this.mat.dispose();
 	
 				var _iteratorNormalCompletion8 = true;
 				var _didIteratorError8 = false;
@@ -50915,9 +50845,9 @@
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
-	var _room3 = __webpack_require__(11);
+	var _constants = __webpack_require__(7);
 	
-	var constants = _interopRequireWildcard(_room3);
+	var constants = _interopRequireWildcard(_constants);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -50946,7 +50876,6 @@
 	
 				var level_geometry = new _three2.default.CubeGeometry(this.w * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, this.h * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, constants.ROOM_SIZE);
 				level_geometry.computeVertexNormals();
-				util.shadeGeo(level_geometry, constants.LIGHT, new _three2.default.Color("#ffffcc"));
 				var level_mesh = new _three2.default.Mesh(level_geometry);
 				level_mesh.position.set(this.w * constants.ROOM_SIZE / 2 + constants.WALL_THICKNESS, this.h * constants.ROOM_SIZE / 2 + constants.WALL_THICKNESS, 0);
 				var level_bsp = new csg.ThreeBSP(level_mesh);
@@ -51056,9 +50985,8 @@
 	
 				t2 = Date.now();console.log("3. " + (t2 - t));t = t2;
 	
-				this.mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
 				// this is the mesh targeted by the raycasters
-				this.targetMesh = level_bsp.toMesh(this.mat);
+				this.targetMesh = level_bsp.toMesh(constants.MATERIAL);
 				this.targetMesh["merc_name"] = "room_wall";
 				this.targetMesh["merc_type"] = "wall";
 				this.geo = this.targetMesh.geometry;
@@ -51107,7 +51035,6 @@
 					}
 				}
 	
-				util.shadeGeo(this.geo, constants.LIGHT);
 				t2 = Date.now();console.log("8. " + (t2 - t));t = t2;
 	
 				var _iteratorNormalCompletion4 = true;
@@ -51224,7 +51151,7 @@
 				mesh.position.set(rx, ry, constants.CAVE_RAND_FACTOR / 2);
 				bsp = new csg.ThreeBSP(mesh).subtract(bsp);
 	
-				mesh = bsp.toMesh(this.mat);
+				mesh = bsp.toMesh(constants.MATERIAL);
 				room.caveMesh = mesh;
 	
 				// cutout doors
@@ -51269,7 +51196,6 @@
 						var face = _step8.value;
 	
 						face.color = room.color.clone();
-						face.vertexColors = [room.color.clone()];
 					}
 				} catch (err) {
 					_didIteratorError8 = true;
@@ -51288,7 +51214,6 @@
 	
 				room.caveMesh.geometry.computeVertexNormals();
 				room.caveMesh.geometry.computeFaceNormals();
-				util.shadeGeo(room.caveMesh.geometry, constants.LIGHT);
 				this.caveMeshObj.add(room.caveMesh);
 				this.caveMeshes.push(room.caveMesh);
 			}
@@ -51299,7 +51224,7 @@
 				var shell_bsp = new csg.ThreeBSP(door.shell_mesh);
 				var bsp = new csg.ThreeBSP(room.caveMesh);
 				bsp = bsp.subtract(shell_bsp);
-				room.caveMesh = bsp.toMesh(this.mat);
+				room.caveMesh = bsp.toMesh(constants.MATERIAL);
 				var _iteratorNormalCompletion9 = true;
 				var _didIteratorError9 = false;
 				var _iteratorError9 = undefined;

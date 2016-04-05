@@ -1,6 +1,7 @@
 import THREE from 'three.js';
 import * as game_map from 'game_map';
 import * as util from 'util';
+import * as constants from 'constants';
 
 /*
 	To use colors, use the "vertex paint" feature of blender.
@@ -15,16 +16,9 @@ const MODELS = [
 	"mill"
 ];
 
-// objects inside compounds should be rendered via a basic material
-const USE_BASIC_MATERIAL = [
-	"keya", "keyb", "keyc", "keyd", "pres",
-	"term", "disk", "art", "art2", "allitus",
-	"xenterm", "trans", "control", "engine", "core"
-];
-
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+	"plane": { speed: 80000, flies: true, exp: false, noise: "jet", hovers: false },
 	"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {
@@ -125,21 +119,6 @@ const LIFTS = {
 	bridge: true
 };
 
-//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-const BASIC_MATERIAL = new THREE.MeshBasicMaterial({
-	color: 0xffffff,
-	side: THREE.DoubleSide,
-	vertexColors: THREE.FaceColors
-});
-export const MATERIAL = new THREE.MeshPhongMaterial({
-	color: 0xffffff,
-	side: THREE.DoubleSide,
-	vertexColors: THREE.FaceColors,
-	shading: THREE.FlatShading
-	//overdraw: true
-});
-const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
-
 export class Models {
 	constructor(onLoad) {
 		this.onLoad = onLoad;
@@ -162,12 +141,6 @@ export class Models {
 					this.onLoad(this);
 				}
 			});
-		}
-	}
-
-	setLightPercent(percent) {
-		for(let m in this.models) {
-			this.models[m].setLightPercent(percent);
 		}
 	}
 }
@@ -193,7 +166,7 @@ export class Model {
 			geometry.translate(0, 0, geometry.boundingBox.size().z/2 + 1/60);
 			let scale = SCALE[this.name] || 60;
 			geometry.scale(scale, scale, scale);
-			this.mesh = new THREE.Mesh(geometry, USE_BASIC_MATERIAL.indexOf(this.name) > -1 ? BASIC_MATERIAL : MATERIAL);
+			this.mesh = new THREE.Mesh(geometry, constants.MATERIAL);
 			this.bbox = new THREE.Box3().setFromObject(this.mesh);
 			onLoad(this);
 		});

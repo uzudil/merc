@@ -3,7 +3,7 @@ import * as game_map from 'game_map'
 import * as util from 'util'
 import THREE from 'three.js'
 import * as csg from "ThreeCSG"
-import * as constants from "room"
+import * as constants from "constants"
 
 export class CompoundGenerator {
 	constructor(rooms, doors, objects, models, w, h) {
@@ -24,7 +24,6 @@ export class CompoundGenerator {
 			this.h * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2,
 			constants.ROOM_SIZE );
 		level_geometry.computeVertexNormals();
-		util.shadeGeo(level_geometry, constants.LIGHT, new THREE.Color("#ffffcc"));
 		var level_mesh = new THREE.Mesh( level_geometry );
 		level_mesh.position.set(
 			(this.w * constants.ROOM_SIZE)/2 + constants.WALL_THICKNESS,
@@ -95,9 +94,8 @@ export class CompoundGenerator {
 		}
 		t2 = Date.now(); console.log("3. " + (t2 - t)); t = t2;
 
-		this.mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, vertexColors: THREE.FaceColors });
 		// this is the mesh targeted by the raycasters
-		this.targetMesh = level_bsp.toMesh( this.mat );
+		this.targetMesh = level_bsp.toMesh( constants.MATERIAL );
 		this.targetMesh["merc_name"] = "room_wall";
 		this.targetMesh["merc_type"] = "wall";
 		this.geo = this.targetMesh.geometry;
@@ -124,7 +122,6 @@ export class CompoundGenerator {
 				face.color = room.color.clone();
 			}
 		}
-		util.shadeGeo(this.geo, constants.LIGHT);
 		t2 = Date.now(); console.log("8. " + (t2 - t)); t = t2;
 
 		for(let room of this.rooms) {
@@ -177,7 +174,7 @@ export class CompoundGenerator {
 		mesh.position.set(rx, ry, constants.CAVE_RAND_FACTOR / 2);
 		bsp = new csg.ThreeBSP(mesh).subtract(bsp);
 
-		mesh = bsp.toMesh(this.mat);
+		mesh = bsp.toMesh(constants.MATERIAL);
 		room.caveMesh = mesh;
 
 		// cutout doors
@@ -194,11 +191,9 @@ export class CompoundGenerator {
 
 		for(let face of room.caveMesh.geometry.faces) {
 			face.color = room.color.clone();
-			face.vertexColors = [room.color.clone()];
 		}
 		room.caveMesh.geometry.computeVertexNormals();
 		room.caveMesh.geometry.computeFaceNormals();
-		util.shadeGeo(room.caveMesh.geometry, constants.LIGHT);
 		this.caveMeshObj.add(room.caveMesh);
 		this.caveMeshes.push(room.caveMesh);
 	}
@@ -208,7 +203,7 @@ export class CompoundGenerator {
 		let shell_bsp = new csg.ThreeBSP(door.shell_mesh);
 		let bsp = new csg.ThreeBSP(room.caveMesh);
 		bsp = bsp.subtract(shell_bsp);
-		room.caveMesh = bsp.toMesh(this.mat);
+		room.caveMesh = bsp.toMesh(constants.MATERIAL);
 		for (let face of room.caveMesh.geometry.faces) {
 			face.color = room.color.clone();
 		}

@@ -297,14 +297,8 @@ class Merc {
 			this.skybox.setLightPercent(percent);
 
 			// just dim
-			//this.ambientLight.color.set(constants.AMBIENT_COLOR.getHex()).multiplyScalar(percent);
 			this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 			this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
-
-			//	this.models.setLightPercent(percent);
-			if(this.movement.level) {
-				this.movement.level.setElevatorLightPercent(percent);
-			}
 		}
 
 		// cycle thru a dawn/dusk color set

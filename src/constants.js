@@ -50,3 +50,29 @@ export function calcLight(hourOfDay, color, baseColor) {
 		(low[1] + (high[1] - low[1]) * t)/0xff * baseColor.g,
 		(low[2] + (high[2] - low[2]) * t)/0xff * baseColor.b);
 }
+
+export const MATERIAL = new THREE.MeshPhongMaterial({
+	color: 0xffffff,
+	side: THREE.DoubleSide,
+	vertexColors: THREE.FaceColors,
+	shading: THREE.FlatShading
+	//overdraw: true
+});
+export const DOOR_MATERIAL = new THREE.MeshPhongMaterial({
+	color: 0xffcc22,
+	side: THREE.DoubleSide,
+	vertexColors: THREE.FaceColors,
+	shading: THREE.FlatShading
+	//overdraw: true
+});
+
+export const ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
+export const DOOR_WIDTH = ROOM_SIZE * .35;
+export const DOOR_HEIGHT = ROOM_SIZE * .7;
+export const WALL_THICKNESS = 10;
+export const DOOR_THICKNESS = WALL_THICKNESS * .25;
+
+export const LIGHT = new THREE.Vector3(0.5, 0.75, 1.0);
+
+export const WALL_SEGMENTS = 2; // making this bigger takes forever to compute
+export const CAVE_RAND_FACTOR = 1.25;

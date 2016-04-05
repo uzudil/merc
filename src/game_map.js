@@ -2,7 +2,6 @@ import THREE from 'three.js'
 import * as util from 'util'
 import * as world from 'world'
 import * as constants from 'constants'
-import * as modelPackage from 'model'
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
@@ -49,7 +48,7 @@ export class GameMap {
 					geo.merge(child.geometry, child.matrix);
 					child.parent.remove(child);
 				}
-				let mesh = new THREE.Mesh(geo, modelPackage.MATERIAL);
+				let mesh = new THREE.Mesh(geo, constants.MATERIAL);
 				sector.add(mesh);
 			}
 		}

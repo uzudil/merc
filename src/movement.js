@@ -7,7 +7,6 @@ import $ from 'jquery';
 import * as models from 'model'
 import * as util from 'util'
 import * as noise from 'noise'
-import * as room_package from 'room'
 import * as compounds from 'compounds'
 import * as game_map from 'game_map'
 import * as events from 'events'
@@ -810,10 +809,10 @@ export class Movement {
 			for(let i = 0; i < this.doorsUp.length; i++) {
 				let door = this.doorsUp[i];
 				door.getWorldPosition(this.worldPos);
-				let dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
+				let dz = ROOM_DEPTH + constants.DOOR_HEIGHT * .8;
 				if(this.worldPos.z < dz) {
 					door.position.z += delta * 50;
-					this.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / room_package.DOOR_HEIGHT);
+					this.noise.setLevel("door", (constants.DOOR_HEIGHT - Math.abs(dz - this.worldPos.z)) / constants.DOOR_HEIGHT);
 				} else {
 					door.moving = "down";
 					this.doorsUp.splice(i, 1);
@@ -832,7 +831,7 @@ export class Movement {
 					// todo: check for player...
 					door.position.z -= delta * 50;
 					if(door.position.z < door.original_z) door.position.z = door.original_z;
-					this.noise.setLevel("door", (door.position.z - door.original_z) / room_package.DOOR_HEIGHT);
+					this.noise.setLevel("door", (door.position.z - door.original_z) / constants.DOOR_HEIGHT);
 				} else {
 					door.position.z = door.original_z;
 					door.moving = null;
