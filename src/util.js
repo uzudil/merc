@@ -164,3 +164,14 @@ function runWithProgress(fxs, index) {
 		}
 	})
 }
+
+export function invertGeo(geometry) {
+	for ( var i = 0; i < geometry.faces.length; i ++ ) {
+		var face = geometry.faces[ i ];
+		var temp = face.a;
+		face.a = face.c;
+		face.c = temp;
+	}
+	geometry.computeFaceNormals();
+	geometry.computeVertexNormals();
+}

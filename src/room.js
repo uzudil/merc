@@ -58,6 +58,8 @@ export class Room {
 		this.caveMesh = null;
 		this.elevator = roomCount == 0;
 		this.teleportToRoom = teleportToRoom;
+		this.minPoint = new THREE.Vector2();
+		this.maxPoint = new THREE.Vector2();
 		roomCount++;
 	}
 }
@@ -134,13 +136,7 @@ export class Level {
 		this.targetMesh["name"] = "room_wall";
 		this.targetMesh["type"] = "wall";
 		this.geo = this.targetMesh.geometry;
-		this.geo.translate(this.w/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
 		this.caveMeshObj = this.mesh.children[1];
-		for(let c of this.caveMeshObj.children) {
-			c.geometry.translate(this.w/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, this.h/2 * constants.ROOM_SIZE + constants.WALL_THICKNESS, 0);
-		}
-
-		//let t, t2; t = Date.now();
 
 		// actual doors
 		for(let door of this.doors) {
@@ -159,7 +155,6 @@ export class Level {
 
 			this.targetMesh.add(door_mesh);
 		}
-		//t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
 
 		// objects
 		for(let object of this.objects) {
@@ -172,7 +167,6 @@ export class Level {
 			mesh.position.set(dx, dy, dz);
 			this.targetMesh.add(mesh);
 		}
-		//t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
 
 		this.makeElevator(x, y);
 
@@ -185,7 +179,7 @@ export class Level {
 	}
 
 	makeElevator(x, y) {
-		let z = -movement.ROOM_DEPTH - constants.ROOM_SIZE * .5;
+		let z = -movement.ROOM_DEPTH - (constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
 		let stripes = 15;
 		this.lift_geo = new THREE.BoxGeometry(constants.ROOM_SIZE, constants.ROOM_SIZE, z, 1, 1, stripes);
 		let dark = new THREE.Color("#cccc88");

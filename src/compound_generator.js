@@ -19,36 +19,36 @@ export class CompoundGenerator {
 		let t, t2;
 		t = Date.now();
 
-		var level_geometry = new THREE.CubeGeometry(
-			this.w * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2,
-			this.h * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2,
-			constants.ROOM_SIZE );
-		level_geometry.computeVertexNormals();
-		var level_mesh = new THREE.Mesh( level_geometry );
-		level_mesh.position.set(
-			(this.w * constants.ROOM_SIZE)/2 + constants.WALL_THICKNESS,
-			(this.h * constants.ROOM_SIZE)/2 + constants.WALL_THICKNESS,
-			0);
-		var level_bsp = new csg.ThreeBSP( level_mesh );
-
-		t2 = Date.now(); console.log("1. " + (t2 - t)); t = t2;
-
 		// cut out the rooms
+		let compoundGeo = new THREE.Geometry();
 		for(let room of this.rooms) {
 			let inner_geometry = new THREE.CubeGeometry(
 				room.w * constants.ROOM_SIZE - constants.WALL_THICKNESS,
 				room.h * constants.ROOM_SIZE - constants.WALL_THICKNESS,
 				constants.ROOM_SIZE - constants.WALL_THICKNESS);
+			// invert normals
+			util.invertGeo(inner_geometry);
+
 			let inner_mesh = new THREE.Mesh(inner_geometry);
 
 			let rx = (room.x + room.w/2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
 			let ry = (room.y + room.h/2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
 			inner_mesh.position.set(rx, ry, 0);
 
-			let inner_bsp = new csg.ThreeBSP( inner_mesh );
+			room.minPoint.set(
+				room.x * constants.ROOM_SIZE + constants.WALL_THICKNESS,
+				room.y * constants.ROOM_SIZE + constants.WALL_THICKNESS
+			);
+			room.maxPoint.set(
+				(room.x + room.w) * constants.ROOM_SIZE + constants.WALL_THICKNESS,
+				(room.y + room.h) * constants.ROOM_SIZE + constants.WALL_THICKNESS
+			);
 
-			level_bsp = level_bsp.subtract( inner_bsp );
+			inner_mesh.updateMatrix();
+			compoundGeo.merge(inner_mesh.geometry, inner_mesh.matrix);
 		}
+		let level_mesh = new THREE.Mesh(compoundGeo);
+		let level_bsp = new csg.ThreeBSP(level_mesh);
 		t2 = Date.now(); console.log("2. " + (t2 - t)); t = t2;
 
 		// door cutouts
@@ -109,13 +109,9 @@ export class CompoundGenerator {
 		this.caveMeshObj = new THREE.Object3D();
 		this.mesh.add(this.caveMeshObj);
 
-		this.caveMeshes = [];
-
 		// color the rooms
 		for(let face of this.geo.faces) {
 			let p = this.geo.vertices[face.a].clone();
-			p.x += this.w * constants.ROOM_SIZE * .5;
-			p.y += this.h * constants.ROOM_SIZE * .5;
 			p.z += movement.ROOM_DEPTH;
 			let room = this.getRoomAtPos(p);
 			if (room) {
@@ -124,17 +120,24 @@ export class CompoundGenerator {
 		}
 		t2 = Date.now(); console.log("8. " + (t2 - t)); t = t2;
 
+		let caveGeo = new THREE.Geometry();
 		for(let room of this.rooms) {
-			this.makeCaveRoom(room);
+			let mesh = this.makeCaveRoom(room);
+			if(mesh) {
+				mesh.updateMatrix();
+				caveGeo.merge(mesh.geometry, mesh.matrix);
+			}
 		}
+		this.caveMeshObj.add(new THREE.Mesh(caveGeo, constants.MATERIAL));
 	}
 
 	getRoomAtPos(point, debug=false) {
 		if(debug) console.log("point=", point);
 		for(let room of this.rooms) {
-			let min = new THREE.Vector3(room.x * constants.ROOM_SIZE, room.y * constants.ROOM_SIZE, movement.ROOM_DEPTH - constants.ROOM_SIZE/2);
-			let max = new THREE.Vector3((room.x + room.w) * constants.ROOM_SIZE, (room.y + room.h) * constants.ROOM_SIZE, movement.ROOM_DEPTH + constants.ROOM_SIZE/2);
-			if(debug) console.log("...vs " + room.name + " min=",min, " max=", max);
+			let min = new THREE.Vector3(room.minPoint.x, room.minPoint.y, movement.ROOM_DEPTH - constants.ROOM_SIZE/2);
+			let max = new THREE.Vector3(room.maxPoint.x, room.maxPoint.y, movement.ROOM_DEPTH + constants.ROOM_SIZE/2);
+
+			if(debug) console.log("...vs " + room.name + " min=",min, " max=", max, " room=", room.x, ",", room.y, " dim=", room.w, ",", room.h);
 			let box = new THREE.Box3(min, max);
 			if(box.containsPoint(point)) {
 				if(debug) console.log("!!!");
@@ -146,7 +149,7 @@ export class CompoundGenerator {
 
 	makeCaveRoom(room) {
 		if(!room.cave || room.caveMesh) {
-			return;
+			return null;
 		}
 
 		let rx = (room.x + room.w/2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
@@ -183,8 +186,8 @@ export class CompoundGenerator {
 			if(door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
 		}
 
-		let dx = (room.x + room.w/2 - this.w/2) * constants.ROOM_SIZE;
-		let dy = (room.y + room.h/2 - this.h/2) * constants.ROOM_SIZE;
+		let dx = (room.x + room.w/2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+		let dy = (room.y + room.h/2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
 		let dz = 0;
 		room.caveMesh.position.set(dx, dy, dz);
 		room.caveMesh.updateMatrix();
@@ -194,8 +197,7 @@ export class CompoundGenerator {
 		}
 		room.caveMesh.geometry.computeVertexNormals();
 		room.caveMesh.geometry.computeFaceNormals();
-		this.caveMeshObj.add(room.caveMesh);
-		this.caveMeshes.push(room.caveMesh);
+		return room.caveMesh;
 	}
 
 	cutoutCaveDoor(door, room) {

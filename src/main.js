@@ -198,6 +198,21 @@ class Merc {
 		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
 		//	})
 		//});
+
+
+		// inside
+		this.movement.loadGame({
+			sectorX: 0xd9, sectorY: 0x42,
+			//sectorX: 9, sectorY: 2,
+			x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.ROOM_DEPTH,
+			vehicle: null,
+			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+			state: Object.assign(events.Events.getStartState(), {
+				"lightcar-keys": true,
+				"override-17a": true,
+				"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
+			})
+		});
 	}
 
 	setupUI() {

@@ -23,34 +23,81 @@ export const LEVELS = {
 	"f8,c9": {"rooms":[{"x":31,"y":24,"w":6,"h":6,"color":"#ffcccc","cave":false},{"x":28,"y":26,"w":3,"h":3,"color":"#ffcc88","cave":false},{"x":37,"y":26,"w":4,"h":2,"color":"#cccccc","cave":false},{"x":41,"y":25,"w":4,"h":4,"color":"#ff8866","cave":false},{"x":77,"y":26,"w":3,"h":3,"color":"#ff8866","cave":false},{"x":73,"y":24,"w":4,"h":7,"color":"#ffccff","cave":false},{"x":70,"y":25,"w":3,"h":2,"color":"#ccffff","cave":false},{"x":70,"y":28,"w":3,"h":2,"color":"#ffcc88","cave":false},{"x":74,"y":22,"w":2,"h":2,"color":"#ffffcc","cave":false},{"x":69,"y":51,"w":2,"h":2,"color":"#ccffcc","cave":false},{"x":68,"y":46,"w":4,"h":5,"color":"#ccccff","cave":false},{"x":65,"y":47,"w":3,"h":3,"color":"#cccccc","cave":false},{"x":72,"y":47,"w":3,"h":3,"color":"#cccccc","cave":false},{"x":69,"y":35,"w":1,"h":11,"color":"#cccccc","cave":false},{"x":66,"y":36,"w":3,"h":3,"color":"#ffcccc","cave":false},{"x":70,"y":36,"w":3,"h":3,"color":"#ccffcc","cave":false},{"x":66,"y":40,"w":3,"h":3,"color":"#ffffcc","cave":false},{"x":70,"y":40,"w":3,"h":3,"color":"#ffcc88","cave":false},{"x":68,"y":32,"w":3,"h":3,"color":"#ccffff","cave":false},{"x":33,"y":30,"w":2,"h":3,"color":"#ffccff","cave":false},{"x":32,"y":20,"w":4,"h":4,"color":"#ccffff","cave":false},{"x":45,"y":26,"w":2,"h":2,"color":"#cccccc","cave":false},{"x":52,"y":26,"w":2,"h":2,"color":"#cccccc","cave":false},{"x":54,"y":25,"w":8,"h":4,"color":"#cccccc","cave":false}],"doors":[{"x":31,"y":27,"dir":"w","roomA":0,"roomB":1,"key":""},{"x":36,"y":27,"dir":"e","roomA":0,"roomB":2,"key":""},{"x":34,"y":29,"dir":"s","roomA":0,"roomB":19,"key":""},{"x":34,"y":24,"dir":"n","roomA":0,"roomB":20,"key":""},{"x":40,"y":27,"dir":"e","roomA":2,"roomB":3,"key":""},{"x":44,"y":27,"dir":"e","roomA":3,"roomB":21,"key":""},{"x":77,"y":27,"dir":"w","roomA":4,"roomB":5,"key":""},{"x":73,"y":26,"dir":"w","roomA":5,"roomB":6,"key":""},{"x":73,"y":29,"dir":"w","roomA":5,"roomB":7,"key":""},{"x":75,"y":24,"dir":"n","roomA":5,"roomB":8,"key":""},{"x":70,"y":51,"dir":"n","roomA":9,"roomB":10,"key":""},{"x":68,"y":48,"dir":"w","roomA":10,"roomB":11,"key":""},{"x":71,"y":48,"dir":"e","roomA":10,"roomB":12,"key":""},{"x":69,"y":46,"dir":"n","roomA":10,"roomB":13,"key":""},{"x":69,"y":37,"dir":"w","roomA":13,"roomB":14,"key":""},{"x":69,"y":37,"dir":"e","roomA":13,"roomB":15,"key":""},{"x":69,"y":41,"dir":"w","roomA":13,"roomB":16,"key":""},{"x":69,"y":41,"dir":"e","roomA":13,"roomB":17,"key":""},{"x":69,"y":35,"dir":"n","roomA":13,"roomB":18,"key":""},{"x":53,"y":27,"dir":"e","roomA":22,"roomB":23,"key":""}],"objects":[{"x":33,"y":20,"object":"xenterm","room":20,"rot":null},{"x":42,"y":25,"object":"xenterm","room":3,"rot":null},{"x":43,"y":25,"object":"xenterm","room":3,"rot":null},{"x":67,"y":36,"object":"control","room":14,"rot":null},{"x":57,"y":26,"object":"engine","room":23,"rot":90},{"x":57,"y":27,"object":"engine","room":23,"rot":90}],"teleporters":[{"roomA":4,"roomB":1},{"roomA":8,"roomB":9},{"roomA":19,"roomB":18},{"roomA":21,"roomB":22}]}
 };
 
+const LEVEL_CACHE = {};
 export function loadLevel(sectorX, sectorY, onload) {
-	util.startLoadingUI();
+	let name = util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
+	if(LEVEL_CACHE[name]) {
+		onload(LEVEL_CACHE[name]);
+	} else {
+		util.startLoadingUI();
 
-	util.setLoadingUIProgress(0, ()=> {
-		let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
-		console.log("Loading model=" + name);
+		util.setLoadingUIProgress(0, ()=> {
 
-		let zipName = "models/compounds/" + name + ".zip";
-		//console.log("Loading zip=" + zipName);
 
-		$.ajax({
-			dataType: "binary",
-			processData: false,
-			responseType: "arraybuffer",
-			type: 'GET',
-			url: zipName + "?cb=" + window.cb,
-			progress: function (percentComplete) {
-				//console.log(percentComplete);
-				$("#progress-value").css("width", (80 * percentComplete) + "%");
-			},
-			success: function (data) {
-				decompressLevel(name, data, sectorX, sectorY, onload);
-			},
-			error: (err) => {
-				console.log("Error downloading zip file: " + zipName + " error=" + err);
-			}
+			let level = getLevel(sectorX, sectorY);
+			let gen = new generator.CompoundGenerator(level.rooms, level.doors, level.objects, window.models, level.w, level.h);
+			console.log("Generating...");
+			gen.generate();
+			console.log("Creating...");
+			util.setLoadingUIProgress(50, ()=> {
+				let level = getLevel(sectorX, sectorY, gen.mesh);
+				LEVEL_CACHE[name] = level;
+				util.stopLoadingUI();
+				onload(level);
+			});
+
+
+			// ObjectLoader crashes on large data...
+
+			/*
+			 let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+			 console.log("Loading model=" + name);
+
+			 let zipName = "models/compounds/" + name + ".zip";
+			 //console.log("Loading zip=" + zipName);
+
+			 $.ajax({
+			 dataType: "binary",
+			 processData: false,
+			 responseType: "arraybuffer",
+			 type: 'GET',
+			 url: zipName + "?cb=" + window.cb,
+			 progress: function (percentComplete) {
+			 //console.log(percentComplete);
+			 $("#progress-value").css("width", (80 * percentComplete) + "%");
+			 },
+			 success: function (data) {
+			 decompressLevel(name, data, sectorX, sectorY, onload);
+			 },
+			 error: (err) => {
+			 console.log("Error downloading zip file: " + zipName + " error=" + err);
+			 }
+			 });
+			 */
 		});
-	});
+	}
+}
+
+function parseGeometry(index, geometries, jsonGeometries, loader, onload) {
+	setTimeout(()=> {
+		console.log("Parsing geometry " + index + " of " + jsonGeometries.length);
+		let geo = jsonGeometries[index];
+		console.log("1");
+		let g = loader.parseGeometries([geo]);
+		console.log("2");
+		Object.assign(geometries, g);
+		console.log("3");
+
+		index++;
+		if(index < jsonGeometries.length) {
+			parseGeometry(index, geometries, jsonGeometries, loader, onload);
+		} else {
+			console.log("Done loading geos.");
+			onload();
+		}
+
+	}, 100);
+
 }
 
 function decompressLevel(name, data, sectorX, sectorY, onload) {
@@ -61,17 +108,32 @@ function decompressLevel(name, data, sectorX, sectorY, onload) {
 		worker.addEventListener('message', (e) => {
 			let jsonContent = e.data;
 			util.setLoadingUIProgress(90, ()=> {
+				console.log("Deleting worker.");
+				worker = undefined;
 
-				//console.log("Constructing object... json size=", jsonContent.length);
-				let obj = new THREE.ObjectLoader().parse(JSON.parse(jsonContent));
-				//console.log("constructed=", obj);
+				console.log("Parsing JSON... json size=", jsonContent.length);
+				let json = JSON.parse(jsonContent);
+				console.log("JSON parsed");
 
-				util.setLoadingUIProgress(100, ()=> {
-					console.log("Deleting worker.");
-					worker = undefined;
+				let loader = new THREE.ObjectLoader();
+				console.log("Constructing object...");
+				//let obj = loader.parse(json);
 
-					util.stopLoadingUI();
-					onload(getLevel(sectorX, sectorY, obj));
+				let geometries = {};
+				parseGeometry(0, geometries, json.geometries, loader, () => {
+					console.log("parsing materials");
+					let materials = loader.parseMaterials( json.materials, null );
+
+					console.log("parsing object");
+					let obj = loader.parseObject( json.object, geometries, materials );
+
+					console.log("constructed=", obj);
+					util.setLoadingUIProgress(100, ()=> {
+						console.log("done loading level 1");
+						util.stopLoadingUI();
+						console.log("done loading level 2");
+						onload(getLevel(sectorX, sectorY, obj));
+					});
 				});
 			});
 		}, false);
