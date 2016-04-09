@@ -159,6 +159,9 @@ export class Model {
 		var loader = new THREE.JSONLoader();
 		loader.load("models/" + this.name + ".json?cb=" + window.cb, (geometry, materials) => {
 
+			// compress the model a bit by removing stuff we don't need
+			util.compressGeo(geometry);
+
 			// put the geom. on the ground
 			geometry.center();
 			geometry.rotateX(Math.PI/2);

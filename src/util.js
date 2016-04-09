@@ -173,5 +173,15 @@ export function invertGeo(geometry) {
 		face.c = temp;
 	}
 	geometry.computeFaceNormals();
-	geometry.computeVertexNormals();
+}
+
+export function compressGeo(geometry) {
+	for(let face of geometry.faces) {
+		face.vertexNormals = [];
+		if(face.vertexColors && face.vertexColors.length > 0) {
+			face.color = face.vertexColors[0].clone();
+			face.vertexColors = [];
+		}
+	}
+	geometry.faceVertexUvs = [[]];
 }

@@ -48,6 +48,7 @@ export class GameMap {
 					geo.merge(child.geometry, child.matrix);
 					child.parent.remove(child);
 				}
+				util.compressGeo(geo);
 				let mesh = new THREE.Mesh(geo, constants.MATERIAL);
 				sector.add(mesh);
 			}

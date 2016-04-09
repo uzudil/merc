@@ -71,5 +71,11 @@ export const DOOR_WIDTH = ROOM_SIZE * .35;
 export const DOOR_HEIGHT = ROOM_SIZE * .7;
 export const WALL_THICKNESS = 10;
 
+export const CAVES_ENABLED = true; // caves disabled for now: it causes page to crash
 export const WALL_SEGMENTS = 2; // making this bigger takes forever to compute
 export const CAVE_RAND_FACTOR = 1.25;
+
+export const DOOR_EW = new THREE.CubeGeometry(WALL_THICKNESS * .5, DOOR_WIDTH * 1.5, DOOR_HEIGHT);
+DOOR_EW.name = "door_ew";
+export const DOOR_NS = new THREE.CubeGeometry(DOOR_WIDTH * 1.5, WALL_THICKNESS * .5, DOOR_HEIGHT);
+DOOR_NS.name = "door_ns";

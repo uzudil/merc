@@ -133,39 +133,10 @@ export class Level {
 		this.scene = scene;
 
 		this.targetMesh = this.mesh.children[0];
-		this.targetMesh["name"] = "room_wall";
-		this.targetMesh["type"] = "wall";
 		this.geo = this.targetMesh.geometry;
-		this.caveMeshObj = this.mesh.children[1];
 
-		// actual doors
-		for(let door of this.doors) {
-
-			let dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
-			let dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
-			let dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
-
-			let door_geo = new THREE.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), constants.DOOR_HEIGHT);
-			let door_mesh = new THREE.Mesh(door_geo, constants.DOOR_MATERIAL);
-
-			door_mesh.position.set(dx, dy, dz);
-			door_mesh["name"] = "door_" + door.dir;
-			door_mesh["type"] = "door";
-			door_mesh["door"] = door;
-
-			this.targetMesh.add(door_mesh);
-		}
-
-		// objects
-		for(let object of this.objects) {
-			let m = models.models[object.object];
-			let mesh = m.createObject();
-			let dx = (object.x + .5) * constants.ROOM_SIZE;
-			let dy = (object.y + .5) * constants.ROOM_SIZE;
-			let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-			mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-			mesh.position.set(dx, dy, dz);
-			this.targetMesh.add(mesh);
+		if (constants.CAVES_ENABLED) {
+			this.caveMeshObj = this.mesh.children[1];
 		}
 
 		this.makeElevator(x, y);
@@ -198,6 +169,7 @@ export class Level {
 		}
 		// remove top/bottom face
 		this.lift_geo.faces = faces;
+		util.compressGeo(this.lift_geo);
 		this.lift_mesh = new THREE.Mesh(this.lift_geo, constants.MATERIAL);
 		this.lift_mesh.position.set(x, y, -z / 2);
 
@@ -218,9 +190,10 @@ export class Level {
 		this.scene.remove(this.mesh);
 		this.geo.dispose();
 
-		for(let c of this.caveMeshObj.children) {
-			c.geometry.dispose();
+		if (constants.CAVES_ENABLED) {
+			for (let c of this.caveMeshObj.children) {
+				c.geometry.dispose();
+			}
 		}
-
 	}
 }

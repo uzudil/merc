@@ -195,24 +195,24 @@ class Merc {
 		//	state: Object.assign(events.Events.getStartState(), {
 		//		"lightcar-keys": true,
 		//		"override-17a": true,
-		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
 		//	})
 		//});
 
 
 		// inside
-		this.movement.loadGame({
-			sectorX: 0xd9, sectorY: 0x42,
-			//sectorX: 9, sectorY: 2,
-			x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.ROOM_DEPTH,
-			vehicle: null,
-			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-			state: Object.assign(events.Events.getStartState(), {
-				"lightcar-keys": true,
-				"override-17a": true,
-				"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
-			})
-		});
+		//this.movement.loadGame({
+		//	sectorX: 0xd9, sectorY: 0x42,
+		//	//sectorX: 9, sectorY: 2,
+		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.ROOM_DEPTH,
+		//	vehicle: null,
+		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+		//	state: Object.assign(events.Events.getStartState(), {
+		//		"lightcar-keys": true,
+		//		"override-17a": true,
+		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
+		//	})
+		//});
 	}
 
 	setupUI() {
@@ -224,6 +224,13 @@ class Merc {
 			this.statsFPS.domElement.style.left = '0px';
 			this.statsFPS.domElement.style.top = '0px';
 			document.body.appendChild(this.statsFPS.domElement);
+
+			this.statsMB = new Stats();
+			this.statsMB.setMode(2); // 0: fps, 1: ms, 2: mb
+			this.statsMB.domElement.style.position = 'absolute';
+			this.statsMB.domElement.style.left = '0px';
+			this.statsMB.domElement.style.top = '50px';
+			document.body.appendChild(this.statsMB.domElement);
 		}
 
 		$("#title-container").hide();
@@ -325,7 +332,10 @@ class Merc {
 	}
 
 	animate() {
-		if(DEV_MODE) this.statsFPS.begin();
+		if(DEV_MODE) {
+			this.statsFPS.begin();
+			this.statsMB.begin();
+		}
 
 		this.benson.update();
 		if(this.movement && this.game_map) {
@@ -364,7 +374,10 @@ class Merc {
 			$("#speed .value").text("" + this.space.getSpeed());
 		}
 
-		if(DEV_MODE) this.statsFPS.end();
+		if(DEV_MODE) {
+			this.statsFPS.end();
+			this.statsMB.end();
+		}
 
 		if(FPS_LIMITS[this.fpsLimitIndex] != 0) {
 			setTimeout(()=> {
