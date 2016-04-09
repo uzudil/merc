@@ -25,24 +25,31 @@ export const LEVELS = {
 
 const LEVEL_CACHE = {};
 export function loadLevel(sectorX, sectorY, onload) {
-	let name = util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
+	let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
 	if(LEVEL_CACHE[name]) {
 		onload(LEVEL_CACHE[name]);
 	} else {
 		util.startLoadingUI();
-
 		util.setLoadingUIProgress(0, ()=> {
-
-			let level = getLevel(sectorX, sectorY);
-			let gen = new generator.CompoundGenerator(level.rooms, level.doors, level.objects, window.models, level.w, level.h);
-			console.log("Generating...");
-			gen.generate();
-			console.log("Creating...");
-			util.setLoadingUIProgress(50, ()=> {
-				let level = getLevel(sectorX, sectorY, gen.mesh);
-				LEVEL_CACHE[name] = level;
-				util.stopLoadingUI();
-				onload(level);
+			console.log("Loading model=" + name);
+			let zipName = "models/compounds/" + name + ".zip";
+			//console.log("Loading zip=" + zipName);
+			$.ajax({
+				dataType: "binary",
+				processData: false,
+				responseType: "arraybuffer",
+				type: 'GET',
+				url: zipName + "?cb=" + window.cb,
+				progress: function (percentComplete) {
+					//console.log(percentComplete);
+					$("#progress-value").css("width", (80 * percentComplete) + "%");
+				},
+				success: function (data) {
+					decompressLevel(name, data, sectorX, sectorY, onload);
+				},
+				error: (err) => {
+					console.log("Error downloading zip file: " + zipName + " error=" + err);
+				}
 			});
 		});
 	}
@@ -67,7 +74,6 @@ function parseGeometry(index, geometries, jsonGeometries, loader, onload) {
 		}
 
 	}, 100);
-
 }
 
 function decompressLevel(name, data, sectorX, sectorY, onload) {
@@ -102,7 +108,9 @@ function decompressLevel(name, data, sectorX, sectorY, onload) {
 						console.log("done loading level 1");
 						util.stopLoadingUI();
 						console.log("done loading level 2");
-						onload(getLevel(sectorX, sectorY, obj));
+						let level = getLevel(sectorX, sectorY, obj);
+						LEVEL_CACHE[name] = level;
+						onload(level);
 					});
 				});
 			});

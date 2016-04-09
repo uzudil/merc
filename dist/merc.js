@@ -49951,24 +49951,31 @@
 	
 	var LEVEL_CACHE = {};
 	function loadLevel(sectorX, sectorY, onload) {
-		var name = util.toHex(sectorX, 2) + "," + util.toHex(sectorY, 2);
+		var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
 		if (LEVEL_CACHE[name]) {
 			onload(LEVEL_CACHE[name]);
 		} else {
 			util.startLoadingUI();
-	
 			util.setLoadingUIProgress(0, function () {
-	
-				var level = getLevel(sectorX, sectorY);
-				var gen = new generator.CompoundGenerator(level.rooms, level.doors, level.objects, window.models, level.w, level.h);
-				console.log("Generating...");
-				gen.generate();
-				console.log("Creating...");
-				util.setLoadingUIProgress(50, function () {
-					var level = getLevel(sectorX, sectorY, gen.mesh);
-					LEVEL_CACHE[name] = level;
-					util.stopLoadingUI();
-					onload(level);
+				console.log("Loading model=" + name);
+				var zipName = "models/compounds/" + name + ".zip";
+				//console.log("Loading zip=" + zipName);
+				_jquery2.default.ajax({
+					dataType: "binary",
+					processData: false,
+					responseType: "arraybuffer",
+					type: 'GET',
+					url: zipName + "?cb=" + window.cb,
+					progress: function progress(percentComplete) {
+						//console.log(percentComplete);
+						(0, _jquery2.default)("#progress-value").css("width", 80 * percentComplete + "%");
+					},
+					success: function success(data) {
+						decompressLevel(name, data, sectorX, sectorY, onload);
+					},
+					error: function error(err) {
+						console.log("Error downloading zip file: " + zipName + " error=" + err);
+					}
 				});
 			});
 		}
@@ -50026,7 +50033,9 @@
 							console.log("done loading level 1");
 							util.stopLoadingUI();
 							console.log("done loading level 2");
-							onload(getLevel(sectorX, sectorY, obj));
+							var level = getLevel(sectorX, sectorY, obj);
+							LEVEL_CACHE[name] = level;
+							onload(level);
 						});
 					});
 				});
@@ -50288,6 +50297,7 @@
 			}
 	
 			this.mesh = obj;
+			this.initialized = false;
 		}
 	
 		_createClass(Level, [{
@@ -50357,6 +50367,82 @@
 					this.caveMeshObj = this.mesh.children[1];
 				}
 	
+				if (!this.initialized) {
+					this.initialized = true;
+					// actual doors
+					var _iteratorNormalCompletion5 = true;
+					var _didIteratorError5 = false;
+					var _iteratorError5 = undefined;
+	
+					try {
+						for (var _iterator5 = this.doors[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+							var door = _step5.value;
+	
+	
+							var dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
+							var dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
+							var dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
+	
+							var door_geo = door.w > door.h ? constants.DOOR_NS : constants.DOOR_EW;
+							var door_mesh = new _three2.default.Mesh(door_geo, constants.DOOR_MATERIAL);
+	
+							door_mesh.position.set(dx, dy, dz);
+							door_mesh["name"] = "door_" + door.dir;
+							door_mesh["type"] = "door";
+							door_mesh["door"] = door;
+	
+							this.targetMesh.add(door_mesh);
+						}
+	
+						// objects
+					} catch (err) {
+						_didIteratorError5 = true;
+						_iteratorError5 = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion5 && _iterator5.return) {
+								_iterator5.return();
+							}
+						} finally {
+							if (_didIteratorError5) {
+								throw _iteratorError5;
+							}
+						}
+					}
+	
+					var _iteratorNormalCompletion6 = true;
+					var _didIteratorError6 = false;
+					var _iteratorError6 = undefined;
+	
+					try {
+						for (var _iterator6 = this.objects[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+							var object = _step6.value;
+	
+							var m = models.models[object.object];
+							var mesh = m.createObject();
+							var _dx = (object.x + .5) * constants.ROOM_SIZE;
+							var _dy = (object.y + .5) * constants.ROOM_SIZE;
+							var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
+							mesh.rotation.z = util.angle2rad(object["rot"] || 0);
+							mesh.position.set(_dx, _dy, _dz);
+							this.targetMesh.add(mesh);
+						}
+					} catch (err) {
+						_didIteratorError6 = true;
+						_iteratorError6 = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion6 && _iterator6.return) {
+								_iterator6.return();
+							}
+						} finally {
+							if (_didIteratorError6) {
+								throw _iteratorError6;
+							}
+						}
+					}
+				}
+	
 				this.makeElevator(x, y);
 	
 				// center in start room
@@ -50411,27 +50497,27 @@
 				this.geo.dispose();
 	
 				if (constants.CAVES_ENABLED) {
-					var _iteratorNormalCompletion5 = true;
-					var _didIteratorError5 = false;
-					var _iteratorError5 = undefined;
+					var _iteratorNormalCompletion7 = true;
+					var _didIteratorError7 = false;
+					var _iteratorError7 = undefined;
 	
 					try {
-						for (var _iterator5 = this.caveMeshObj.children[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-							var c = _step5.value;
+						for (var _iterator7 = this.caveMeshObj.children[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+							var c = _step7.value;
 	
 							c.geometry.dispose();
 						}
 					} catch (err) {
-						_didIteratorError5 = true;
-						_iteratorError5 = err;
+						_didIteratorError7 = true;
+						_iteratorError7 = err;
 					} finally {
 						try {
-							if (!_iteratorNormalCompletion5 && _iterator5.return) {
-								_iterator5.return();
+							if (!_iteratorNormalCompletion7 && _iterator7.return) {
+								_iterator7.return();
 							}
 						} finally {
-							if (_didIteratorError5) {
-								throw _iteratorError5;
+							if (_didIteratorError7) {
+								throw _iteratorError7;
 							}
 						}
 					}
@@ -51323,79 +51409,6 @@
 						}
 					}
 				}
-	
-				// actual doors
-				var _iteratorNormalCompletion7 = true;
-				var _didIteratorError7 = false;
-				var _iteratorError7 = undefined;
-	
-				try {
-					for (var _iterator7 = this.doors[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var _door2 = _step7.value;
-	
-	
-						var _dx = (_door2.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + _door2.dx;
-						var _dy = (_door2.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + _door2.dy;
-						var _dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
-	
-						var door_geo = _door2.w > _door2.h ? constants.DOOR_NS : constants.DOOR_EW;
-						var door_mesh = new _three2.default.Mesh(door_geo, constants.DOOR_MATERIAL);
-	
-						door_mesh.position.set(_dx, _dy, _dz);
-						door_mesh["name"] = "door_" + _door2.dir;
-						door_mesh["type"] = "door";
-						door_mesh["door"] = _door2;
-	
-						this.targetMesh.add(door_mesh);
-					}
-	
-					// objects
-				} catch (err) {
-					_didIteratorError7 = true;
-					_iteratorError7 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion7 && _iterator7.return) {
-							_iterator7.return();
-						}
-					} finally {
-						if (_didIteratorError7) {
-							throw _iteratorError7;
-						}
-					}
-				}
-	
-				var _iteratorNormalCompletion8 = true;
-				var _didIteratorError8 = false;
-				var _iteratorError8 = undefined;
-	
-				try {
-					for (var _iterator8 = this.objects[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-						var object = _step8.value;
-	
-						var m = models.models[object.object];
-						var _mesh = m.createObject();
-						var _dx2 = (object.x + .5) * constants.ROOM_SIZE;
-						var _dy2 = (object.y + .5) * constants.ROOM_SIZE;
-						var _dz2 = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-						_mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-						_mesh.position.set(_dx2, _dy2, _dz2);
-						this.targetMesh.add(_mesh);
-					}
-				} catch (err) {
-					_didIteratorError8 = true;
-					_iteratorError8 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion8 && _iterator8.return) {
-							_iterator8.return();
-						}
-					} finally {
-						if (_didIteratorError8) {
-							throw _iteratorError8;
-						}
-					}
-				}
 			}
 		}, {
 			key: 'getRoomAtPos',
@@ -51403,13 +51416,13 @@
 				var debug = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 	
 				if (debug) console.log("point=", point);
-				var _iteratorNormalCompletion9 = true;
-				var _didIteratorError9 = false;
-				var _iteratorError9 = undefined;
+				var _iteratorNormalCompletion7 = true;
+				var _didIteratorError7 = false;
+				var _iteratorError7 = undefined;
 	
 				try {
-					for (var _iterator9 = this.rooms[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-						var room = _step9.value;
+					for (var _iterator7 = this.rooms[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+						var room = _step7.value;
 	
 						var min = new _three2.default.Vector3(room.minPoint.x, room.minPoint.y, movement.ROOM_DEPTH - constants.ROOM_SIZE / 2);
 						var max = new _three2.default.Vector3(room.maxPoint.x, room.maxPoint.y, movement.ROOM_DEPTH + constants.ROOM_SIZE / 2);
@@ -51422,16 +51435,16 @@
 						}
 					}
 				} catch (err) {
-					_didIteratorError9 = true;
-					_iteratorError9 = err;
+					_didIteratorError7 = true;
+					_iteratorError7 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion9 && _iterator9.return) {
-							_iterator9.return();
+						if (!_iteratorNormalCompletion7 && _iterator7.return) {
+							_iterator7.return();
 						}
 					} finally {
-						if (_didIteratorError9) {
-							throw _iteratorError9;
+						if (_didIteratorError7) {
+							throw _iteratorError7;
 						}
 					}
 				}
@@ -51451,29 +51464,29 @@
 				var h = room.h * constants.ROOM_SIZE - constants.WALL_THICKNESS - constants.CAVE_RAND_FACTOR * 2;
 				var d = constants.ROOM_SIZE - constants.WALL_THICKNESS;
 				var geo = new _three2.default.BoxGeometry(w, h, d, room.w * constants.WALL_SEGMENTS, room.h * constants.WALL_SEGMENTS, constants.WALL_SEGMENTS);
-				var _iteratorNormalCompletion10 = true;
-				var _didIteratorError10 = false;
-				var _iteratorError10 = undefined;
+				var _iteratorNormalCompletion8 = true;
+				var _didIteratorError8 = false;
+				var _iteratorError8 = undefined;
 	
 				try {
-					for (var _iterator10 = geo.vertices[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-						var v = _step10.value;
+					for (var _iterator8 = geo.vertices[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+						var v = _step8.value;
 	
 						v.x += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
 						v.y += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
 						v.z += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
 					}
 				} catch (err) {
-					_didIteratorError10 = true;
-					_iteratorError10 = err;
+					_didIteratorError8 = true;
+					_iteratorError8 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion10 && _iterator10.return) {
-							_iterator10.return();
+						if (!_iteratorNormalCompletion8 && _iterator8.return) {
+							_iterator8.return();
 						}
 					} finally {
-						if (_didIteratorError10) {
-							throw _iteratorError10;
+						if (_didIteratorError8) {
+							throw _iteratorError8;
 						}
 					}
 				}
@@ -51491,28 +51504,28 @@
 				room.caveMesh = mesh;
 	
 				// cutout doors
-				var _iteratorNormalCompletion11 = true;
-				var _didIteratorError11 = false;
-				var _iteratorError11 = undefined;
+				var _iteratorNormalCompletion9 = true;
+				var _didIteratorError9 = false;
+				var _iteratorError9 = undefined;
 	
 				try {
-					for (var _iterator11 = this.doors[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-						var door = _step11.value;
+					for (var _iterator9 = this.doors[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+						var door = _step9.value;
 	
 						if (door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
 						if (door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
 					}
 				} catch (err) {
-					_didIteratorError11 = true;
-					_iteratorError11 = err;
+					_didIteratorError9 = true;
+					_iteratorError9 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion11 && _iterator11.return) {
-							_iterator11.return();
+						if (!_iteratorNormalCompletion9 && _iterator9.return) {
+							_iterator9.return();
 						}
 					} finally {
-						if (_didIteratorError11) {
-							throw _iteratorError11;
+						if (_didIteratorError9) {
+							throw _iteratorError9;
 						}
 					}
 				}
@@ -51523,27 +51536,27 @@
 				room.caveMesh.position.set(dx, dy, dz);
 				room.caveMesh.updateMatrix();
 	
-				var _iteratorNormalCompletion12 = true;
-				var _didIteratorError12 = false;
-				var _iteratorError12 = undefined;
+				var _iteratorNormalCompletion10 = true;
+				var _didIteratorError10 = false;
+				var _iteratorError10 = undefined;
 	
 				try {
-					for (var _iterator12 = room.caveMesh.geometry.faces[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-						var face = _step12.value;
+					for (var _iterator10 = room.caveMesh.geometry.faces[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+						var face = _step10.value;
 	
 						face.color = room.color.clone();
 					}
 				} catch (err) {
-					_didIteratorError12 = true;
-					_iteratorError12 = err;
+					_didIteratorError10 = true;
+					_iteratorError10 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion12 && _iterator12.return) {
-							_iterator12.return();
+						if (!_iteratorNormalCompletion10 && _iterator10.return) {
+							_iterator10.return();
 						}
 					} finally {
-						if (_didIteratorError12) {
-							throw _iteratorError12;
+						if (_didIteratorError10) {
+							throw _iteratorError10;
 						}
 					}
 				}
@@ -51559,27 +51572,27 @@
 				var bsp = new csg.ThreeBSP(room.caveMesh);
 				bsp = bsp.subtract(shell_bsp);
 				room.caveMesh = bsp.toMesh(constants.MATERIAL);
-				var _iteratorNormalCompletion13 = true;
-				var _didIteratorError13 = false;
-				var _iteratorError13 = undefined;
+				var _iteratorNormalCompletion11 = true;
+				var _didIteratorError11 = false;
+				var _iteratorError11 = undefined;
 	
 				try {
-					for (var _iterator13 = room.caveMesh.geometry.faces[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
-						var face = _step13.value;
+					for (var _iterator11 = room.caveMesh.geometry.faces[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+						var face = _step11.value;
 	
 						face.color = room.color.clone();
 					}
 				} catch (err) {
-					_didIteratorError13 = true;
-					_iteratorError13 = err;
+					_didIteratorError11 = true;
+					_iteratorError11 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion13 && _iterator13.return) {
-							_iterator13.return();
+						if (!_iteratorNormalCompletion11 && _iterator11.return) {
+							_iterator11.return();
 						}
 					} finally {
-						if (_didIteratorError13) {
-							throw _iteratorError13;
+						if (_didIteratorError11) {
+							throw _iteratorError11;
 						}
 					}
 				}

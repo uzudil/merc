@@ -143,36 +143,6 @@ export class CompoundGenerator {
 				door.shell_mesh = null;
 			}
 		}
-
-		// actual doors
-		for(let door of this.doors) {
-
-			let dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
-			let dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
-			let dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
-
-			let door_geo = door.w > door.h ? constants.DOOR_NS : constants.DOOR_EW;
-			let door_mesh = new THREE.Mesh(door_geo, constants.DOOR_MATERIAL);
-
-			door_mesh.position.set(dx, dy, dz);
-			door_mesh["name"] = "door_" + door.dir;
-			door_mesh["type"] = "door";
-			door_mesh["door"] = door;
-
-			this.targetMesh.add(door_mesh);
-		}
-
-		// objects
-		for(let object of this.objects) {
-			let m = models.models[object.object];
-			let mesh = m.createObject();
-			let dx = (object.x + .5) * constants.ROOM_SIZE;
-			let dy = (object.y + .5) * constants.ROOM_SIZE;
-			let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-			mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-			mesh.position.set(dx, dy, dz);
-			this.targetMesh.add(mesh);
-		}
 	}
 
 	getRoomAtPos(point, debug=false) {
