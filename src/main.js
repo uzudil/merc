@@ -143,13 +143,17 @@ class Merc {
 		this.ambientLight = new THREE.AmbientLight( constants.AMBIENT_COLOR.getHex() );
 		this.scene.add(this.ambientLight);
 
-		this.dirLight1 = new THREE.DirectionalLight( constants.DIR1_COLOR.getHex(), 0.5 );
-		this.dirLight1.position.set( 1, 1, 1 );
+		this.dirLight1 = new THREE.DirectionalLight( constants.DIR1_COLOR.getHex(), 0.4 );
+		this.dirLight1.position.set( 1, 1, .8 );
 		this.scene.add( this.dirLight1 );
 
 		this.dirLight2 = new THREE.DirectionalLight( constants.DIR2_COLOR.getHex(), 0.25 );
-		this.dirLight2.position.set( -1, -1, 1 );
+		this.dirLight2.position.set(-.8, 1, -.5 );
 		this.scene.add( this.dirLight2 );
+
+		//window.light1 = this.dirLight1;
+		//window.light2 = this.dirLight2;
+		//window.ambient = this.ambientLight;
 
 		this.renderer.setClearColor(constants.GRASS_COLOR);
 		this.movement = new movement.Movement(this);
@@ -186,18 +190,18 @@ class Merc {
 		//});
 
 		// by a base
-		//this.movement.loadGame({
-		//	sectorX: 0xd9, sectorY: 0x42,
-		//	//sectorX: 9, sectorY: 2,
-		//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
-		//	vehicle: null,
-		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-		//	state: Object.assign(events.Events.getStartState(), {
-		//		"lightcar-keys": true,
-		//		"override-17a": true,
-		//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
-		//	})
-		//});
+		this.movement.loadGame({
+			sectorX: 0xd9, sectorY: 0x42,
+			//sectorX: 9, sectorY: 2,
+			x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+			vehicle: null,
+			inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+			state: Object.assign(events.Events.getStartState(), {
+				"lightcar-keys": true,
+				"override-17a": true,
+				"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
+			})
+		});
 
 
 		// inside
@@ -317,14 +321,26 @@ class Merc {
 			//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 			this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 			this.skybox.setLightPercent(percent);
-
-			// just dim
-			this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
-			this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 		}
+
+		// just dim
+		this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+		this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 
 		// cycle thru a dawn/dusk color set
 		constants.calcLight(this.movement.events.hourOfDay, this.tmpColor, constants.AMBIENT_COLOR);
+
+		// adjust light color for inside
+		if(this.movement.level) {
+			if(this.movement.liftDirection != 0) {
+				this.tmpColor.r = this.tmpColor.r + (0.6 - this.tmpColor.r) * percent;
+				this.tmpColor.g = this.tmpColor.g + (0.6 - this.tmpColor.g) * percent;
+				this.tmpColor.b = this.tmpColor.b + (0.6 - this.tmpColor.b) * percent;
+			} else {
+				this.tmpColor.r = this.tmpColor.g = this.tmpColor.b = 0.6;
+			}
+		}
+
 		if(this.tmpColor.getHex() != this.ambientLight.color.getHex()) {
 			this.ambientLight.color.setHex(this.tmpColor.getHex())
 		}

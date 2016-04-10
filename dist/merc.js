@@ -252,13 +252,17 @@
 				this.ambientLight = new _three2.default.AmbientLight(constants.AMBIENT_COLOR.getHex());
 				this.scene.add(this.ambientLight);
 	
-				this.dirLight1 = new _three2.default.DirectionalLight(constants.DIR1_COLOR.getHex(), 0.5);
-				this.dirLight1.position.set(1, 1, 1);
+				this.dirLight1 = new _three2.default.DirectionalLight(constants.DIR1_COLOR.getHex(), 0.4);
+				this.dirLight1.position.set(1, 1, .8);
 				this.scene.add(this.dirLight1);
 	
 				this.dirLight2 = new _three2.default.DirectionalLight(constants.DIR2_COLOR.getHex(), 0.25);
-				this.dirLight2.position.set(-1, -1, 1);
+				this.dirLight2.position.set(-.8, 1, -.5);
 				this.scene.add(this.dirLight2);
+	
+				//window.light1 = this.dirLight1;
+				//window.light2 = this.dirLight2;
+				//window.ambient = this.ambientLight;
 	
 				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
@@ -292,18 +296,18 @@
 				//});
 	
 				// by a base
-				//this.movement.loadGame({
-				//	sectorX: 0xd9, sectorY: 0x42,
-				//	//sectorX: 9, sectorY: 2,
-				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
-				//	vehicle: null,
-				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-				//	state: Object.assign(events.Events.getStartState(), {
-				//		"lightcar-keys": true,
-				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
-				//	})
-				//});
+				this.movement.loadGame({
+					sectorX: 0xd9, sectorY: 0x42,
+					//sectorX: 9, sectorY: 2,
+					x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
+					vehicle: null,
+					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+					state: Object.assign(events.Events.getStartState(), {
+						"lightcar-keys": true,
+						"override-17a": true,
+						"next-game-day": Date.now() + constants.GAME_DAY * 0.65
+					})
+				});
 	
 				// inside
 				//this.movement.loadGame({
@@ -427,14 +431,26 @@
 					//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 					this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 					this.skybox.setLightPercent(percent);
-	
-					// just dim
-					this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
-					this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 				}
+	
+				// just dim
+				this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+				this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
 	
 				// cycle thru a dawn/dusk color set
 				constants.calcLight(this.movement.events.hourOfDay, this.tmpColor, constants.AMBIENT_COLOR);
+	
+				// adjust light color for inside
+				if (this.movement.level) {
+					if (this.movement.liftDirection != 0) {
+						this.tmpColor.r = this.tmpColor.r + (0.6 - this.tmpColor.r) * percent;
+						this.tmpColor.g = this.tmpColor.g + (0.6 - this.tmpColor.g) * percent;
+						this.tmpColor.b = this.tmpColor.b + (0.6 - this.tmpColor.b) * percent;
+					} else {
+						this.tmpColor.r = this.tmpColor.g = this.tmpColor.b = 0.6;
+					}
+				}
+	
 				if (this.tmpColor.getHex() != this.ambientLight.color.getHex()) {
 					this.ambientLight.color.setHex(this.tmpColor.getHex());
 				}
@@ -63179,6 +63195,9 @@
 			this.mesh.position.z = far_dist / 4;
 			player.add(this.mesh);
 	
+			var starGeo = new _three2.default.BoxGeometry(70, 70, 70);
+			util.compressGeo(starGeo);
+	
 			// add some stars
 			this.stars = new _three2.default.Object3D();
 			this.starMaterial = new _three2.default.MeshBasicMaterial({ color: new _three2.default.Color("rgb(240,220,16)"), opacity: 0, transparent: true });
@@ -63189,8 +63208,9 @@
 				var x = r * Math.cos(a) * Math.sin(b);
 				var y = r * Math.sin(a) * Math.sin(b);
 				var z = r * Math.cos(b);
-				var size = Math.random() * 70 + 70;
-				var star = new _three2.default.Mesh(new _three2.default.BoxGeometry(size, size, size), this.starMaterial);
+				var star = new _three2.default.Mesh(starGeo, this.starMaterial);
+				var size = Math.random() + 1;
+				star.scale.set(size, size, size);
 				star.position.set(x, y, z);
 				this.stars.add(star);
 			}
@@ -63210,6 +63230,9 @@
 				// show stars at night - sun during day
 				this.material.color = constants.SKY_COLOR.clone().multiplyScalar(percent);
 				util.updateColors(this.mesh);
+				this.starMaterial.opacity = 1 - percent;
+	
+				// might be done simpler since only 1 geo... oh well
 				var _iteratorNormalCompletion = true;
 				var _didIteratorError = false;
 				var _iteratorError = undefined;
@@ -63218,7 +63241,6 @@
 					for (var _iterator = this.stars.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 						var star = _step.value;
 	
-						star.material.opacity = 1 - percent;
 						util.updateColors(star);
 					}
 				} catch (err) {

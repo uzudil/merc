@@ -17,6 +17,9 @@ export class Skybox {
 		this.mesh.position.z = far_dist/4;
 		player.add( this.mesh );
 
+		let starGeo = new THREE.BoxGeometry( 70, 70, 70 );
+		util.compressGeo(starGeo);
+
 		// add some stars
 		this.stars = new THREE.Object3D();
 		this.starMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color("rgb(240,220,16)"), opacity: 0, transparent: true });
@@ -27,8 +30,9 @@ export class Skybox {
 			let x = r * Math.cos(a) * Math.sin(b);
 			let y = r * Math.sin(a) * Math.sin(b);
 			let z = r * Math.cos(b);
-			let size = Math.random() * 70 + 70;
-			let star = new THREE.Mesh(new THREE.BoxGeometry( size, size, size ), this.starMaterial);
+			let star = new THREE.Mesh(starGeo, this.starMaterial);
+			let size = Math.random() + 1;
+			star.scale.set(size, size, size);
 			star.position.set(x, y, z);
 			this.stars.add(star);
 		}
@@ -45,8 +49,10 @@ export class Skybox {
 		// show stars at night - sun during day
 		this.material.color = constants.SKY_COLOR.clone().multiplyScalar(percent);
 		util.updateColors(this.mesh);
+		this.starMaterial.opacity = 1 - percent;
+
+		// might be done simpler since only 1 geo... oh well
 		for(let star of this.stars.children) {
-			star.material.opacity = 1 - percent;
 			util.updateColors(star);
 		}
 	}
