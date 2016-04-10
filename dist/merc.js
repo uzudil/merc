@@ -52,19 +52,23 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _game_map = __webpack_require__(3);
+	var _stats = __webpack_require__(3);
+	
+	var _stats2 = _interopRequireDefault(_stats);
+	
+	var _game_map = __webpack_require__(4);
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _jquery = __webpack_require__(5);
+	var _jquery = __webpack_require__(6);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -72,7 +76,7 @@
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
-	var _model = __webpack_require__(9);
+	var _model = __webpack_require__(10);
 	
 	var model = _interopRequireWildcard(_model);
 	
@@ -92,7 +96,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(7);
+	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -109,7 +113,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.3; // todo: git hook this
+	var VERSION = 0.4; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -118,13 +122,48 @@
 			_classCallCheck(this, Merc);
 	
 			console.log('Merc (c) 2016 v' + VERSION);
+	
+			var h = window.innerHeight * .75;
+			var w = h * ASPECT_RATIO;
+			(0, _jquery2.default)("#title").css({
+				width: w + "px",
+				height: h + "px"
+			});
+			(0, _jquery2.default)("#version").empty().append("v" + VERSION);
+	
 			window.escapeUsed = false;
 			this.lastLightPercent = 0;
 			this.updateLight = true;
+			this.tmpColor = new _three2.default.Color();
 			window.cb = "" + VERSION;
+	
 			util.initBinaryLoader();
+	
 			new model.Models(function (models) {
-				return _this.init(models);
+				_this.init(models);
+	
+				_this._game_map = new game_map.GameMap(_this.scene, _this.models, _this.renderer.getMaxAnisotropy());
+				util.execWithProgress([function () {
+					return _this._game_map.initModels();
+				}, function () {
+					return _this._game_map.compressSectors();
+				}, function () {
+					return _this._game_map.addXenoBase();
+				}, function () {
+					return _this._game_map.addRoads();
+				}, function () {
+					return _this._game_map.finishInit();
+				}, function () {
+					(0, _jquery2.default)("#title .start").show();
+					(0, _jquery2.default)(document).keydown(function (event) {
+						(0, _jquery2.default)(document).unbind("keydown");
+						_this.setupUI();
+						//this.startGame();
+						//this.startGame(true);
+						_this.startIntro();
+						_this.animate();
+					});
+				}], "wait-world");
 			});
 		}
 	
@@ -143,15 +182,8 @@
 	
 				this.benson = new benson.Benson();
 	
-				this.setupUI();
-	
 				this.space = null;
 				this.movement = null;
-				//this.startGame();
-				//this.startGame(true);
-				this.startIntro();
-	
-				this.animate();
 			}
 		}, {
 			key: 'startIntro',
@@ -160,7 +192,7 @@
 	
 				var skipping = false;
 				(0, _jquery2.default)(document).keyup(function (event) {
-					if (event.keyCode == 27 && window.escapeUsed == false) {
+					if (event.keyCode == 27 && window.escapeUsed == false && constants.DEV_MODE) {
 						window.escapeUsed = true; // only once
 						if (!skipping) {
 							skipping = true;
@@ -215,20 +247,28 @@
 				console.log("game starting");
 				// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
 				// lights
-				this.ambientLight = new _three2.default.AmbientLight(0x404040);
+				this.ambientLight = new _three2.default.AmbientLight(constants.AMBIENT_COLOR.getHex());
 				this.scene.add(this.ambientLight);
 	
-				this.dirLight1 = new _three2.default.DirectionalLight(0xffffff, 0.5);
-				this.dirLight1.position.set(0, 0, 1);
+				this.dirLight1 = new _three2.default.DirectionalLight(constants.DIR1_COLOR.getHex(), 0.4);
+				this.dirLight1.position.set(1, 1, .8);
 				this.scene.add(this.dirLight1);
+	
+				this.dirLight2 = new _three2.default.DirectionalLight(constants.DIR2_COLOR.getHex(), 0.25);
+				this.dirLight2.position.set(-.8, 1, -.5);
+				this.scene.add(this.dirLight2);
+	
+				//window.light1 = this.dirLight1;
+				//window.light2 = this.dirLight2;
+				//window.ambient = this.ambientLight;
 	
 				this.renderer.setClearColor(constants.GRASS_COLOR);
 				this.movement = new movement.Movement(this);
 	
+				this.game_map = this._game_map;
+	
 				// maybe use real planet movement instead
 				this.skybox = new skybox.Skybox(this.movement.player, FAR_DIST);
-	
-				this.game_map = new game_map.GameMap(this.scene, this.models, this.movement.player, this.renderer.getMaxAnisotropy());
 	
 				this.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 				if (skipLanding) {
@@ -243,7 +283,7 @@
 				//	sectorX: 0xf8, sectorY: 0xc9,
 				//	//sectorX: 9, sectorY: 2,
 				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
-				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: 10000,
+				//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
 				//	vehicle: this.models.models["ufo"].createObject(),
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 				//	state: Object.assign(events.Events.getStartState(), {
@@ -263,13 +303,47 @@
 				//	state: Object.assign(events.Events.getStartState(), {
 				//		"lightcar-keys": true,
 				//		"override-17a": true,
-				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.25,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
+				//	})
+				//});
+	
+				// inside
+				//this.movement.loadGame({
+				//	sectorX: 0xd9, sectorY: 0x42,
+				//	//sectorX: 9, sectorY: 2,
+				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.ROOM_DEPTH,
+				//	vehicle: null,
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"override-17a": true,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
 				//	})
 				//});
 			}
 		}, {
 			key: 'setupUI',
 			value: function setupUI() {
+	
+				if (constants.DEV_MODE) {
+					this.statsFPS = new _stats2.default();
+					this.statsFPS.setMode(0); // 0: fps, 1: ms, 2: mb
+					this.statsFPS.domElement.style.position = 'absolute';
+					this.statsFPS.domElement.style.left = '0px';
+					this.statsFPS.domElement.style.top = '0px';
+					document.body.appendChild(this.statsFPS.domElement);
+	
+					this.statsMB = new _stats2.default();
+					this.statsMB.setMode(2); // 0: fps, 1: ms, 2: mb
+					this.statsMB.domElement.style.position = 'absolute';
+					this.statsMB.domElement.style.left = '0px';
+					this.statsMB.domElement.style.top = '50px';
+					document.body.appendChild(this.statsMB.domElement);
+				}
+	
+				(0, _jquery2.default)("#title-container").hide();
+				(0, _jquery2.default)("#ui").show();
+	
 				window.loadingComplex = false;
 	
 				var h = this.height;
@@ -345,7 +419,7 @@
 				} else {
 					console.log("+++ unhandled hour: " + hour);
 				}
-				return Math.max(0.15, p);
+				return Math.max(constants.MIN_LIGHT, p);
 			}
 		}, {
 			key: 'setLightPercentWorld',
@@ -355,10 +429,28 @@
 					//console.log("SETTING LIGHT: Hour of day=" + this.movement.events.hourOfDay + " percent=" + percent);
 					this.renderer.setClearColor(constants.GRASS_COLOR.clone().multiplyScalar(percent));
 					this.skybox.setLightPercent(percent);
-					this.models.setLightPercent(percent);
-					if (this.movement.level) {
-						this.movement.level.setElevatorLightPercent(percent);
+				}
+	
+				// just dim
+				this.dirLight1.color.set(constants.DIR1_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+				this.dirLight2.color.set(constants.DIR2_COLOR.getHex()).multiplyScalar(percent * .5 + .5);
+	
+				// cycle thru a dawn/dusk color set
+				constants.calcLight(this.movement.events.hourOfDay, this.tmpColor, constants.AMBIENT_COLOR);
+	
+				// adjust light color for inside
+				if (this.movement.level) {
+					if (this.movement.liftDirection != 0) {
+						this.tmpColor.r = this.tmpColor.r + (0.6 - this.tmpColor.r) * percent;
+						this.tmpColor.g = this.tmpColor.g + (0.6 - this.tmpColor.g) * percent;
+						this.tmpColor.b = this.tmpColor.b + (0.6 - this.tmpColor.b) * percent;
+					} else {
+						this.tmpColor.r = this.tmpColor.g = this.tmpColor.b = 0.6;
 					}
+				}
+	
+				if (this.tmpColor.getHex() != this.ambientLight.color.getHex()) {
+					this.ambientLight.color.setHex(this.tmpColor.getHex());
 				}
 			}
 		}, {
@@ -366,8 +458,13 @@
 			value: function animate() {
 				var _this3 = this;
 	
+				if (constants.DEV_MODE) {
+					this.statsFPS.begin();
+					this.statsMB.begin();
+				}
+	
 				this.benson.update();
-				if (this.movement) {
+				if (this.movement && this.game_map) {
 					this.movement.update();
 					this.skybox.update(this.movement.player.rotation.z);
 	
@@ -380,7 +477,7 @@
 				}
 				this.renderer.render(this.scene, this.camera);
 	
-				if (this.movement) {
+				if (this.movement && this.game_map) {
 					var x, y;
 					if (this.movement.level) {
 						x = this.movement.sectorX;
@@ -400,6 +497,11 @@
 					this.horizon.update(this.movement.getPitchAngle());
 				} else if (this.space) {
 					(0, _jquery2.default)("#speed .value").text("" + this.space.getSpeed());
+				}
+	
+				if (constants.DEV_MODE) {
+					this.statsFPS.end();
+					this.statsMB.end();
 				}
 	
 				if (FPS_LIMITS[this.fpsLimitIndex] != 0) {
@@ -36646,6 +36748,196 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
+	/**
+	 * @author mrdoob / http://mrdoob.com/
+	 */
+	
+	var Stats = function () {
+	
+		var now = ( self.performance && self.performance.now ) ? self.performance.now.bind( performance ) : Date.now;
+	
+		var startTime = now(), prevTime = startTime;
+		var frames = 0, mode = 0;
+	
+		function createElement( tag, id, css ) {
+	
+			var element = document.createElement( tag );
+			element.id = id;
+			element.style.cssText = css;
+			return element;
+	
+		}
+	
+		function createPanel( id, fg, bg ) {
+	
+			var div = createElement( 'div', id, 'padding:0 0 3px 3px;text-align:left;background:' + bg );
+	
+			var text = createElement( 'div', id + 'Text', 'font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:bold;line-height:15px;color:' + fg );
+			text.innerHTML = id.toUpperCase();
+			div.appendChild( text );
+	
+			var graph = createElement( 'div', id + 'Graph', 'width:74px;height:30px;background:' + fg );
+			div.appendChild( graph );
+	
+			for ( var i = 0; i < 74; i ++ ) {
+	
+				graph.appendChild( createElement( 'span', '', 'width:1px;height:30px;float:left;opacity:0.9;background:' + bg ) );
+	
+			}
+	
+			return div;
+	
+		}
+	
+		function setMode( value ) {
+	
+			var children = container.children;
+	
+			for ( var i = 0; i < children.length; i ++ ) {
+	
+				children[ i ].style.display = i === value ? 'block' : 'none';
+	
+			}
+	
+			mode = value;
+	
+		}
+	
+		function updateGraph( dom, value ) {
+	
+			var child = dom.appendChild( dom.firstChild );
+			child.style.height = Math.min( 30, 30 - value * 30 ) + 'px';
+	
+		}
+	
+		//
+	
+		var container = createElement( 'div', 'stats', 'width:80px;opacity:0.9;cursor:pointer' );
+		container.addEventListener( 'mousedown', function ( event ) {
+	
+			event.preventDefault();
+			setMode( ++ mode % container.children.length );
+	
+		}, false );
+	
+		// FPS
+	
+		var fps = 0, fpsMin = Infinity, fpsMax = 0;
+	
+		var fpsDiv = createPanel( 'fps', '#0ff', '#002' );
+		var fpsText = fpsDiv.children[ 0 ];
+		var fpsGraph = fpsDiv.children[ 1 ];
+	
+		container.appendChild( fpsDiv );
+	
+		// MS
+	
+		var ms = 0, msMin = Infinity, msMax = 0;
+	
+		var msDiv = createPanel( 'ms', '#0f0', '#020' );
+		var msText = msDiv.children[ 0 ];
+		var msGraph = msDiv.children[ 1 ];
+	
+		container.appendChild( msDiv );
+	
+		// MEM
+	
+		if ( self.performance && self.performance.memory ) {
+	
+			var mem = 0, memMin = Infinity, memMax = 0;
+	
+			var memDiv = createPanel( 'mb', '#f08', '#201' );
+			var memText = memDiv.children[ 0 ];
+			var memGraph = memDiv.children[ 1 ];
+	
+			container.appendChild( memDiv );
+	
+		}
+	
+		//
+	
+		setMode( mode );
+	
+		return {
+	
+			REVISION: 14,
+	
+			domElement: container,
+	
+			setMode: setMode,
+	
+			begin: function () {
+	
+				startTime = now();
+	
+			},
+	
+			end: function () {
+	
+				var time = now();
+	
+				ms = time - startTime;
+				msMin = Math.min( msMin, ms );
+				msMax = Math.max( msMax, ms );
+	
+				msText.textContent = ( ms | 0 ) + ' MS (' + ( msMin | 0 ) + '-' + ( msMax | 0 ) + ')';
+				updateGraph( msGraph, ms / 200 );
+	
+				frames ++;
+	
+				if ( time > prevTime + 1000 ) {
+	
+					fps = Math.round( ( frames * 1000 ) / ( time - prevTime ) );
+					fpsMin = Math.min( fpsMin, fps );
+					fpsMax = Math.max( fpsMax, fps );
+	
+					fpsText.textContent = fps + ' FPS (' + fpsMin + '-' + fpsMax + ')';
+					updateGraph( fpsGraph, fps / 100 );
+	
+					prevTime = time;
+					frames = 0;
+	
+					if ( mem !== undefined ) {
+	
+						var heapSize = performance.memory.usedJSHeapSize;
+						var heapSizeLimit = performance.memory.jsHeapSizeLimit;
+	
+						mem = Math.round( heapSize * 0.000000954 );
+						memMin = Math.min( memMin, mem );
+						memMax = Math.max( memMax, mem );
+	
+						memText.textContent = mem + ' MB (' + memMin + '-' + memMax + ')';
+						updateGraph( memGraph, heapSize / heapSizeLimit );
+	
+					}
+	
+				}
+	
+				return time;
+	
+			},
+	
+			update: function () {
+	
+				startTime = this.end();
+	
+			}
+	
+		};
+	
+	};
+	
+	if ( true ) {
+	
+		module.exports = Stats;
+	
+	}
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
 	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
@@ -36661,15 +36953,15 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _world = __webpack_require__(6);
+	var _world = __webpack_require__(7);
 	
 	var world = _interopRequireWildcard(_world);
 	
-	var _constants = __webpack_require__(7);
+	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -36684,11 +36976,12 @@
 	};
 	
 	var GameMap = exports.GameMap = function () {
-		function GameMap(scene, models, player, maxAnisotropy) {
+		function GameMap(scene, models, maxAnisotropy) {
 			_classCallCheck(this, GameMap);
 	
+			this.scene = scene;
 			this.models = models;
-			this.player = player;
+			this.maxAnisotropy = maxAnisotropy;
 			this.land = new _three2.default.Object3D();
 			this.sectors = {};
 			this.minSector = { x: 0, y: 0 };
@@ -36700,58 +36993,114 @@
 	
 			// add models
 			this.structures = [];
-			for (var name in models.models) {
-				var m = models.models[name];
-				if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
-					var _iteratorNormalCompletion = true;
-					var _didIteratorError = false;
-					var _iteratorError = undefined;
+			this.xenoBase = null;
+		}
 	
-					try {
-						for (var _iterator = world.WORLD.structures[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-							var pos = _step.value;
+		_createClass(GameMap, [{
+			key: 'initModels',
+			value: function initModels() {
+				for (var name in this.models.models) {
+					var m = this.models.models[name];
+					if (world.WORLD.structures[name] && world.WORLD.structures[name].length > 0) {
+						var _iteratorNormalCompletion = true;
+						var _didIteratorError = false;
+						var _iteratorError = undefined;
 	
-							pos[4] = util.angle2rad(pos[4]);
-							this.addStructure(m, pos);
-						}
-					} catch (err) {
-						_didIteratorError = true;
-						_iteratorError = err;
-					} finally {
 						try {
-							if (!_iteratorNormalCompletion && _iterator.return) {
-								_iterator.return();
+							for (var _iterator = world.WORLD.structures[name][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+								var pos = _step.value;
+	
+								pos[4] = util.angle2rad(pos[4]);
+								this.addStructure(m, pos);
 							}
+						} catch (err) {
+							_didIteratorError = true;
+							_iteratorError = err;
 						} finally {
-							if (_didIteratorError) {
-								throw _iteratorError;
+							try {
+								if (!_iteratorNormalCompletion && _iterator.return) {
+									_iterator.return();
+								}
+							} finally {
+								if (_didIteratorError) {
+									throw _iteratorError;
+								}
 							}
 						}
 					}
 				}
 			}
+		}, {
+			key: 'compressSectors',
+			value: function compressSectors() {
+				for (var _key in this.sectors) {
+					var sector = this.sectors[_key];
+					var meshes = sector.children.filter(function (child) {
+						return child.model.canCompress;
+					});
+					if (meshes.length > 0) {
+						sector.updateMatrix();
+						var geo = new _three2.default.Geometry();
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
 	
-			// add xeno base
-			this.xenoBase = this.addStructure(models.models["xeno"], [0xf8, 0xc9], 10000);
-			this.xenoBase.visible = false;
+						try {
+							for (var _iterator2 = meshes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var child = _step2.value;
 	
-			// roads
-			this.drawRoads(maxAnisotropy, models);
+								child.updateMatrix();
+								geo.merge(child.geometry, child.matrix);
+								child.parent.remove(child);
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
 	
-			scene.add(this.land);
-		}
-	
-		_createClass(GameMap, [{
+						util.compressGeo(geo);
+						var mesh = new _three2.default.Mesh(geo, constants.MATERIAL);
+						sector.add(mesh);
+					}
+				}
+			}
+		}, {
+			key: 'addXenoBase',
+			value: function addXenoBase() {
+				this.xenoBase = this.addStructure(this.models.models["xeno"], [0xf8, 0xc9], 10000);
+				this.xenoBase.visible = false;
+			}
+		}, {
+			key: 'addRoads',
+			value: function addRoads() {
+				this.drawRoads(this.maxAnisotropy, this.models);
+			}
+		}, {
+			key: 'finishInit',
+			value: function finishInit() {
+				this.scene.add(this.land);
+			}
+		}, {
 			key: 'drawRoads',
 			value: function drawRoads(maxAnisotropy, models) {
 				var roads = [];
-				var _iteratorNormalCompletion2 = true;
-				var _didIteratorError2 = false;
-				var _iteratorError2 = undefined;
+				var _iteratorNormalCompletion3 = true;
+				var _didIteratorError3 = false;
+				var _iteratorError3 = undefined;
 	
 				try {
-					for (var _iterator2 = world.WORLD.roads[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var road = _step2.value;
+					for (var _iterator3 = world.WORLD.roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+						var road = _step3.value;
 	
 						if (road.length == 4) {
 							roads.push(road);
@@ -36762,16 +37111,16 @@
 							var h = road[3];
 							//console.log("Original=", x, ",", y, "-", w, ",", h);
 							var r = void 0;
-							var _iteratorNormalCompletion4 = true;
-							var _didIteratorError4 = false;
-							var _iteratorError4 = undefined;
+							var _iteratorNormalCompletion5 = true;
+							var _didIteratorError5 = false;
+							var _iteratorError5 = undefined;
 	
 							try {
-								for (var _iterator4 = road[4][Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-									var _step4$value = _slicedToArray(_step4.value, 2);
+								for (var _iterator5 = road[4][Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+									var _step5$value = _slicedToArray(_step5.value, 2);
 	
-									var bx = _step4$value[0];
-									var by = _step4$value[1];
+									var bx = _step5$value[0];
+									var by = _step5$value[1];
 	
 									if (w > 0) {
 										this.addStructure(models.models["bridge"], [bx, by, 0.001, -0.01, Math.PI / 2]);
@@ -36788,16 +37137,16 @@
 									//console.log("\tH bridge at=", bx, ",", by, " road=", r);
 								}
 							} catch (err) {
-								_didIteratorError4 = true;
-								_iteratorError4 = err;
+								_didIteratorError5 = true;
+								_iteratorError5 = err;
 							} finally {
 								try {
-									if (!_iteratorNormalCompletion4 && _iterator4.return) {
-										_iterator4.return();
+									if (!_iteratorNormalCompletion5 && _iterator5.return) {
+										_iterator5.return();
 									}
 								} finally {
-									if (_didIteratorError4) {
-										throw _iteratorError4;
+									if (_didIteratorError5) {
+										throw _iteratorError5;
 									}
 								}
 							}
@@ -36815,29 +37164,29 @@
 	
 					// todo: handle overlaps (z-fighting)
 				} catch (err) {
-					_didIteratorError2 = true;
-					_iteratorError2 = err;
+					_didIteratorError3 = true;
+					_iteratorError3 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion2 && _iterator2.return) {
-							_iterator2.return();
+						if (!_iteratorNormalCompletion3 && _iterator3.return) {
+							_iterator3.return();
 						}
 					} finally {
-						if (_didIteratorError2) {
-							throw _iteratorError2;
+						if (_didIteratorError3) {
+							throw _iteratorError3;
 						}
 					}
 				}
 	
 				var roadQ = new _three2.default.Geometry();
 				var roadL = new _three2.default.Geometry();
-				var _iteratorNormalCompletion3 = true;
-				var _didIteratorError3 = false;
-				var _iteratorError3 = undefined;
+				var _iteratorNormalCompletion4 = true;
+				var _didIteratorError4 = false;
+				var _iteratorError4 = undefined;
 	
 				try {
-					for (var _iterator3 = roads[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-						var _road = _step3.value;
+					for (var _iterator4 = roads[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+						var _road = _step4.value;
 	
 						var geo = void 0;
 						var lineGeo = new _three2.default.Geometry();
@@ -36879,16 +37228,16 @@
 						roadL.merge(lineGeo, lines.matrix);
 					}
 				} catch (err) {
-					_didIteratorError3 = true;
-					_iteratorError3 = err;
+					_didIteratorError4 = true;
+					_iteratorError4 = err;
 				} finally {
 					try {
-						if (!_iteratorNormalCompletion3 && _iterator3.return) {
-							_iterator3.return();
+						if (!_iteratorNormalCompletion4 && _iterator4.return) {
+							_iterator4.return();
 						}
 					} finally {
-						if (_didIteratorError3) {
-							throw _iteratorError3;
+						if (_didIteratorError4) {
+							throw _iteratorError4;
 						}
 					}
 				}
@@ -36945,7 +37294,7 @@
 				var oy = y % constants.SECTOR_SIZE;
 	
 				var object = model.createObject();
-				this.structures.push(object);
+				if (model.hasBB()) this.structures.push(object);
 	
 				object.position.set(0, 0, z);
 				object.rotation.z = zRot;
@@ -36983,7 +37332,7 @@
 	}();
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -36994,20 +37343,24 @@
 	exports.bind = bind;
 	exports.rad2angle = rad2angle;
 	exports.angle2rad = angle2rad;
-	exports.shadeGeo = shadeGeo;
-	exports.setLightPercent = setLightPercent;
 	exports.getOppositeDir = getOppositeDir;
 	exports.findAnOverlap = findAnOverlap;
 	exports.toHex = toHex;
 	exports.toggleColor = toggleColor;
 	exports.updateColors = updateColors;
 	exports.initBinaryLoader = initBinaryLoader;
+	exports.startLoadingUI = startLoadingUI;
+	exports.stopLoadingUI = stopLoadingUI;
+	exports.setLoadingUIProgress = setLoadingUIProgress;
+	exports.execWithProgress = execWithProgress;
+	exports.invertGeo = invertGeo;
+	exports.compressGeo = compressGeo;
 	
 	var _three = __webpack_require__(1);
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jquery = __webpack_require__(5);
+	var _jquery = __webpack_require__(6);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -37025,38 +37378,6 @@
 	
 	function angle2rad(angle) {
 		return angle / 180.0 * Math.PI;
-	}
-	
-	// to use this, use a material with vertexColors: THREE.FaceColors
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	function shadeGeo(geo, light, color) {
-		if (!light) light = LIGHT;
-		for (var i = 0; i < geo.faces.length; i++) {
-			var f = geo.faces[i];
-			if (color) f.color = color.clone();else {
-				// use the first vertex colors, if given
-				if (f.vertexColors && f.vertexColors[0]) {
-					f.color.copy(f.vertexColors[0]);
-				}
-			}
-			var a = 0.75 + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
-			f["original_color"] = f.color.getHex();
-			f["light_mod"] = a;
-			f.color.multiplyScalar(a);
-			// do not use vertex colors
-			f.vertexColors = [];
-		}
-	}
-	
-	function setLightPercent(mesh, light, percent) {
-		var geo = mesh.geometry;
-		for (var i = 0; i < geo.faces.length; i++) {
-			var f = geo.faces[i];
-			var a = 0.75 * percent + Math.max(-1, Math.min(f.normal.dot(light), 1)) * 0.25;
-			f.color.setHex(f["original_color"]);
-			f.color.multiplyScalar(a);
-		}
-		updateColors(mesh);
 	}
 	
 	function getOppositeDir(dir) {
@@ -37102,15 +37423,14 @@
 		return s;
 	}
 	
+	// this will only work for the model "control". See model.js.
 	function toggleColor(object, colorFrom, colorTo) {
 		//console.log("Changing color!");
 		for (var i = 0; i < object.geometry.faces.length; i++) {
 			var f = object.geometry.faces[i];
 			//console.log("face color=" + f.original_color.toString(16) + " vs " + colorFrom.toString(16) + " eq=" + (f.original_color == colorFrom));
 			if (f.original_color == colorFrom) {
-				var c = new _three2.default.Color(colorTo);
-				c.multiplyScalar(f.light_mod);
-				f.color.setRGB(c.r, c.g, c.b);
+				f.color.setHex(colorTo);
 				f.original_color = colorTo;
 			}
 		}
@@ -37177,9 +37497,92 @@
 			}
 		});
 	}
+	
+	function startLoadingUI() {
+		var waitDivId = arguments.length <= 0 || arguments[0] === undefined ? "wait" : arguments[0];
+	
+		window.loadingComplex = true;
+		(0, _jquery2.default)(".alert").hide();
+		(0, _jquery2.default)("#loading").show();
+		(0, _jquery2.default)("#" + waitDivId).show();
+	}
+	
+	function stopLoadingUI() {
+		(0, _jquery2.default)("#loading").hide();
+		(0, _jquery2.default)(".wait-alert").hide();
+		window.loadingComplex = false;
+	}
+	
+	function setLoadingUIProgress(percent, action) {
+		(0, _jquery2.default)("#progress-value").css("width", percent + "%");
+		setTimeout(action, 100);
+	}
+	
+	function execWithProgress(fxs) {
+		var waitDivId = arguments.length <= 1 || arguments[1] === undefined ? "wait" : arguments[1];
+	
+		startLoadingUI(waitDivId);
+		runWithProgress(fxs, 0);
+	}
+	
+	function runWithProgress(fxs, index) {
+		var p = (index + 1) / fxs.length * 100 | 0;
+		console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+		setLoadingUIProgress(p, function () {
+			fxs[index]();
+			if (++index < fxs.length) {
+				runWithProgress(fxs, index);
+			} else {
+				stopLoadingUI();
+			}
+		});
+	}
+	
+	function invertGeo(geometry) {
+		for (var i = 0; i < geometry.faces.length; i++) {
+			var face = geometry.faces[i];
+			var temp = face.a;
+			face.a = face.c;
+			face.c = temp;
+		}
+		geometry.computeFaceNormals();
+	}
+	
+	function compressGeo(geometry) {
+		var _iteratorNormalCompletion = true;
+		var _didIteratorError = false;
+		var _iteratorError = undefined;
+	
+		try {
+			for (var _iterator = geometry.faces[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				var face = _step.value;
+	
+				face.vertexNormals = [];
+				if (face.vertexColors && face.vertexColors.length > 0) {
+					face.color = face.vertexColors[0].clone();
+					face.vertexColors = [];
+				}
+			}
+		} catch (err) {
+			_didIteratorError = true;
+			_iteratorError = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion && _iterator.return) {
+					_iterator.return();
+				}
+			} finally {
+				if (_didIteratorError) {
+					throw _iteratorError;
+				}
+			}
+		}
+	
+		geometry.faceVertexUvs = [[]];
+	}
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -47027,7 +47430,7 @@
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -47035,18 +47438,19 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, [[48, 90]]], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, [[105, 51], [140, 51], [190, 51]]], [67, 51, 0, 18, []], [84, 68, 0, 69, [[84, 131]]], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []], [15, 90, 70, 0, []], [136, 195, 68, 0, []], [186, 195, 0, 11, []], [186, 205, 18, 0, []], [203, 221, 53, 0, []], [223, 221, 0, 35, []], [105, 0, 0, 81, []], [84, 80, 22, 0, []], [140, 29, 0, 52, []], [105, 29, 36, 0, []], [151, 80, 0, 57, []], [140, 80, 12, 0, []], [84, 120, 20, 0, []], [103, 120, 0, 17, []], [219, 67, 0, 129, [[219, 106]]], [203, 195, 17, 0, []], [190, 0, 0, 81, []], [151, 106, 105, 0, []], [190, 80, 30, 0, []], [25, 90, 0, 81, [[25, 153]]], [25, 170, 32, 0, []], [40, 170, 0, 32, []], [40, 201, 14, 0, []], [53, 201, 0, 55, [[53, 232]]], [0, 232, 137, 0, []], [25, 131, 60, 0, []], [19, 210, 0, 23, []], [12, 210, 42, 0, []], [12, 153, 0, 58, []], [12, 153, 14, 0, []], [25, 153, 34, 0, []], [119, 100, 0, 5, []], [119, 104, 5, 0, []], [123, 100, 0, 5, []], [119, 100, 5, 0, []], [121, 91, 0, 10, []], [121, 91, 31, 0, []]], "structures": { "car": [], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180], [54, 201, 0, 0, 90]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0], [14, 90, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0], [26, 133, 0, 0, 180], [26, 135, 0, 0, 180], [26, 137, 0, 0, 180], [24, 137, 0, 0, 0], [24, 135, 0, 0, 0], [24, 133, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]], "plant": [[57, 170, 0, 0, 180]], "stadium": [[12, 152, 0, 0, -90]], "ufo": [[121, 102, 0, 0, 0]] } };
+	var WORLD = exports.WORLD = { "roads": [[0, 0, 256, 0, []], [0, 0, 0, 256, []], [255, 0, 0, 256, []], [0, 255, 256, 0, []], [10, 2, 0, 67, [[10, 11]]], [0, 11, 15, 0, []], [48, 36, 0, 68, [[48, 90]]], [0, 68, 85, 0, [[48, 68]]], [48, 103, 4, 0, []], [204, 67, 16, 0, []], [204, 51, 0, 17, []], [67, 51, 138, 0, [[105, 51], [140, 51], [190, 51]]], [67, 51, 0, 18, []], [84, 68, 0, 69, [[84, 131]]], [84, 136, 68, 0, []], [136, 239, 119, 0, [[184, 239]]], [136, 136, 0, 119, [[136, 184], [136, 212]]], [203, 195, 0, 45, []], [38, 36, 21, 0, []], [58, 26, 0, 11, []], [38, 26, 0, 11, []], [38, 26, 21, 0, []], [15, 90, 70, 0, []], [136, 195, 68, 0, []], [186, 195, 0, 11, []], [186, 205, 18, 0, []], [203, 221, 53, 0, []], [223, 221, 0, 35, []], [105, 0, 0, 81, []], [84, 80, 22, 0, []], [140, 29, 0, 52, []], [105, 29, 36, 0, []], [151, 80, 0, 57, []], [140, 80, 12, 0, []], [84, 120, 20, 0, []], [103, 120, 0, 17, []], [219, 67, 0, 129, [[219, 106]]], [203, 195, 17, 0, []], [190, 0, 0, 81, []], [151, 106, 105, 0, []], [190, 80, 30, 0, []], [25, 90, 0, 81, [[25, 153]]], [25, 170, 32, 0, []], [40, 170, 0, 32, []], [40, 201, 14, 0, []], [53, 201, 0, 55, [[53, 232]]], [0, 232, 137, 0, []], [25, 131, 60, 0, []], [19, 210, 0, 23, []], [12, 210, 42, 0, []], [12, 153, 0, 58, []], [12, 153, 14, 0, []], [25, 153, 34, 0, []], [119, 100, 0, 5, []], [119, 104, 5, 0, []], [123, 100, 0, 5, []], [119, 100, 5, 0, []], [121, 91, 0, 10, []], [121, 91, 31, 0, []], [190, 37, 66, 0, []], [42, 26, 0, 11, []], [42, 29, 17, 0, []], [116, 136, 0, 31, []], [92, 166, 25, 0, []], [92, 166, 0, 67, []], [14, 11, 42, 0, []], [55, 11, 0, 16, []]], "structures": { "car": [[49, 29, 0, 0, 0]], "plane": [[50, 102, 0.25, 0.15, 180], [200, 240, 0, 0, 0]], "elevator": [[9, 2, 0, 0, 0], [217, 66, 0, 0, 0], [200, 240, 0, 0, 180], [54, 201, 0, 0, 90]], "light": [[9, 3, 0, 0, 0]], "ruins": [[218, 66, 0, 0, 0], [14, 90, 0, 0, 0]], "opera": [[1, 1, 0, 0, 0], [1, 254, 0, 0, 0], [254, 1, 0, 0, 0], [254, 254, 0, 0, 0], [44, 34, 0, 0, 0], [39, 30, 0, 0, 0], [55, 27, 0, 0, 0], [57, 31, 0, 0, 0]], "asha": [[64, 67, 0, 0, 0], [66, 67, 0, 0, 0], [68, 67, 0, 0, 0], [26, 133, 0, 0, 180], [26, 135, 0, 0, 180], [26, 137, 0, 0, 180], [24, 137, 0, 0, 0], [24, 135, 0, 0, 0], [24, 133, 0, 0, 0]], "tower": [[65, 69, 0, 0, 0], [68, 69, 0, 0, 0], [199, 241, 0, 0, 0], [52, 31, 0, 0, 0], [44, 25, 0, 0, 0], [47, 39, 0, 0, 0], [195, 199, 0, 0, 0]], "port": [[50, 102, 0, 0, 0]], "tower2": [[135, 137, 0, 0, 0], [137, 135, 0, 0, 180], [139, 137, 0, 0, 0], [204, 206, 0, 0, 0], [206, 204, 0, 0, 0]], "bldg": [[204, 204, 0, 0, 45], [200, 241, 0, 0, -30], [201, 240, 0, 0, -45]], "plant": [[57, 170, 0, 0, 180]], "stadium": [[12, 152, 0, 0, -90]], "ufo": [[121, 102, 0, 0, 0]], "pine": [[67, 170, 0, 0, 0], [69, 170, 0, 0, 0], [68, 171, 0, 0, 0], [67, 172, 0, 0, 0], [69, 172, 0, 0, 0], [70, 173, 0, 0, 0], [68, 174, 0, 0, 0], [70, 176, 0, 0, 0], [66, 177, 0, 0, 0], [67, 178, 0, 0, 0], [65, 169, 0, 0, 0], [68, 168, 0, 0, 0], [54, 168, 0, 0, 0], [55, 167, 0, 0, 0], [56, 168, 0, 0, 0], [59, 168, 0, 0, 0], [59, 170, 0, 0, 0], [58, 171, 0, 0, 0], [57, 172, 0, 0, 0], [56, 171, 0, 0, 0], [54, 171, 0, 0, 0], [55, 172, 0, 0, 0], [54, 173, 0, 0, 0], [53, 172, 0, 0, 0], [51, 169, 0, 0, 0], [58, 174, 0, 0, 0], [61, 174, 0, 0, 0], [60, 175, 0, 0, 0], [58, 177, 0, 0, 0], [60, 178, 0, 0, 0], [62, 172, 0, 0, 0], [59, 165, 0, 0, 0], [61, 164, 0, 0, 0], [63, 163, 0, 0, 0], [62, 165, 0, 0, 0], [62, 168, 0, 0, 0], [66, 166, 0, 0, 0], [67, 164, 0, 0, 0], [69, 165, 0, 0, 0], [48, 169, 0, 0, 0], [49, 168, 0, 0, 0], [46, 167, 0, 0, 0], [45, 168, 0, 0, 0], [46, 169, 0, 0, 0], [47, 168, 0, 0, 0], [47, 171, 0, 0, 0], [46, 172, 0, 0, 0], [48, 172, 0, 0, 0], [50, 171, 0, 0, 0], [51, 172, 0, 0, 0], [43, 171, 0, 0, 0], [41, 169, 0, 0, 0], [40, 168, 0, 0, 0], [38, 169, 0, 0, 0], [39, 171, 0, 0, 0], [41, 172, 0, 0, 0], [58, 169, 0, 0, 0], [188, 204, 0, 0, 0], [187, 202, 0, 0, 0], [189, 203, 0, 0, 0], [189, 201, 0, 0, 0], [188, 199, 0, 0, 0], [187, 200, 0, 0, 0], [185, 200, 0, 0, 0], [184, 202, 0, 0, 0], [185, 204, 0, 0, 0], [187, 206, 0, 0, 0], [191, 203, 0, 0, 0], [188, 196, 0, 0, 0], [185, 197, 0, 0, 0], [188, 194, 0, 0, 0], [190, 193, 0, 0, 0], [191, 194, 0, 0, 0], [192, 197, 0, 0, 0], [190, 197, 0, 0, 0], [190, 199, 0, 0, 0], [196, 194, 0, 0, 0], [194, 192, 0, 0, 0], [193, 194, 0, 0, 0], [195, 196, 0, 0, 0], [198, 194, 0, 0, 0], [200, 193, 0, 0, 0], [200, 196, 0, 0, 0], [197, 197, 0, 0, 0], [192, 204, 0, 0, 0], [193, 206, 0, 0, 0], [195, 203, 0, 0, 0], [193, 202, 0, 0, 0], [198, 204, 0, 0, 0], [197, 202, 0, 0, 0], [199, 201, 0, 0, 0], [200, 203, 0, 0, 0], [202, 204, 0, 0, 0], [202, 202, 0, 0, 0], [201, 201, 0, 0, 0], [202, 199, 0, 0, 0], [201, 197, 0, 0, 0], [204, 196, 0, 0, 0], [204, 194, 0, 0, 0], [202, 193, 0, 0, 0], [205, 200, 0, 0, 0], [118, 105, 0, 0, 0], [117, 103, 0, 0, 0], [118, 101, 0, 0, 0], [118, 99, 0, 0, 0], [116, 98, 0, 0, 0], [115, 100, 0, 0, 0], [114, 103, 0, 0, 0], [115, 104, 0, 0, 0], [116, 106, 0, 0, 0], [120, 105, 0, 0, 0], [121, 106, 0, 0, 0], [123, 105, 0, 0, 0], [124, 107, 0, 0, 0], [124, 104, 0, 0, 0], [125, 103, 0, 0, 0], [124, 101, 0, 0, 0], [125, 100, 0, 0, 0], [123, 99, 0, 0, 0], [122, 98, 0, 0, 0], [120, 98, 0, 0, 0], [119, 97, 0, 0, 0], [118, 95, 0, 0, 0], [120, 94, 0, 0, 0], [122, 96, 0, 0, 0], [123, 97, 0, 0, 0], [125, 97, 0, 0, 0], [127, 101, 0, 0, 0], [126, 106, 0, 0, 0], [121, 108, 0, 0, 0], [118, 107, 0, 0, 0], [112, 98, 0, 0, 0], [112, 105, 0, 0, 0], [115, 110, 0, 0, 0], [119, 109, 0, 0, 0], [122, 92, 0, 0, 0], [120, 90, 0, 0, 0], [119, 91, 0, 0, 0], [117, 93, 0, 0, 0], [123, 89, 0, 0, 0], [125, 92, 0, 0, 0], [124, 93, 0, 0, 0], [124, 90, 0, 0, 0], [126, 88, 0, 0, 0], [127, 90, 0, 0, 0], [123, 94, 0, 0, 0], [126, 95, 0, 0, 0], [206, 40, 0, 0, 0], [208, 42, 0, 0, 0], [207, 41, 0, 0, 0], [209, 38, 0, 0, 0], [210, 39, 0, 0, 0], [211, 36, 0, 0, 0], [207, 35, 0, 0, 0], [205, 36, 0, 0, 0], [202, 38, 0, 0, 0], [204, 38, 0, 0, 0], [201, 35, 0, 0, 0], [199, 36, 0, 0, 0], [197, 35, 0, 0, 0], [195, 36, 0, 0, 0], [193, 35, 0, 0, 0], [192, 36, 0, 0, 0], [192, 38, 0, 0, 0], [194, 38, 0, 0, 0], [191, 40, 0, 0, 0], [191, 34, 0, 0, 0], [197, 38, 0, 0, 0], [203, 39, 0, 0, 0], [207, 39, 0, 0, 0], [213, 35, 0, 0, 0], [214, 36, 0, 0, 0], [214, 39, 0, 0, 0], [213, 38, 0, 0, 0], [216, 38, 0, 0, 0], [215, 36, 0, 0, 0], [216, 35, 0, 0, 0], [218, 36, 0, 0, 0], [218, 39, 0, 0, 0], [219, 38, 0, 0, 0], [222, 36, 0, 0, 0], [220, 35, 0, 0, 0], [221, 38, 0, 0, 0], [224, 39, 0, 0, 0], [225, 38, 0, 0, 0], [224, 36, 0, 0, 0], [227, 36, 0, 0, 0], [226, 35, 0, 0, 0], [228, 39, 0, 0, 0], [229, 38, 0, 0, 0], [231, 36, 0, 0, 0], [229, 35, 0, 0, 0], [231, 38, 0, 0, 0], [233, 38, 0, 0, 0], [234, 39, 0, 0, 0], [236, 36, 0, 0, 0], [238, 35, 0, 0, 0], [239, 36, 0, 0, 0], [238, 38, 0, 0, 0], [240, 38, 0, 0, 0], [242, 36, 0, 0, 0], [244, 34, 0, 0, 0], [246, 36, 0, 0, 0], [245, 36, 0, 0, 0], [245, 38, 0, 0, 0], [248, 36, 0, 0, 0], [250, 35, 0, 0, 0], [251, 36, 0, 0, 0], [250, 38, 0, 0, 0], [253, 36, 0, 0, 0], [254, 35, 0, 0, 0], [254, 38, 0, 0, 0], [58, 89, 0, 0, 0], [60, 89, 0, 0, 0], [61, 88, 0, 0, 0], [62, 91, 0, 0, 0], [59, 91, 0, 0, 0], [54, 91, 0, 0, 0], [55, 92, 0, 0, 0], [58, 93, 0, 0, 0], [106, 73, 0, 0, 0], [106, 71, 0, 0, 0], [104, 72, 0, 0, 0], [104, 68, 0, 0, 0], [107, 67, 0, 0, 0], [107, 64, 0, 0, 0], [104, 65, 0, 0, 0], [215, 68, 0, 0, 0], [217, 68, 0, 0, 0], [217, 70, 0, 0, 0], [221, 67, 0, 0, 0], [220, 66, 0, 0, 0], [217, 64, 0, 0, 0], [214, 65, 0, 0, 0], [212, 68, 0, 0, 0], [184, 105, 0, 0, 0], [186, 105, 0, 0, 0], [188, 105, 0, 0, 0], [190, 104, 0, 0, 0], [187, 104, 0, 0, 0], [185, 107, 0, 0, 0], [188, 107, 0, 0, 0], [190, 108, 0, 0, 0], [182, 108, 0, 0, 0], [27, 139, 0, 0, 0], [23, 140, 0, 0, 0], [24, 141, 0, 0, 0], [24, 143, 0, 0, 0], [22, 144, 0, 0, 0], [23, 145, 0, 0, 0], [24, 147, 0, 0, 0], [26, 145, 0, 0, 0], [27, 143, 0, 0, 0], [29, 142, 0, 0, 0], [117, 164, 0, 0, 0], [117, 166, 0, 0, 0], [118, 167, 0, 0, 0], [116, 168, 0, 0, 0], [114, 167, 0, 0, 0], [115, 167, 0, 0, 0], [114, 165, 0, 0, 0], [112, 164, 0, 0, 0], [113, 164, 0, 0, 0], [113, 163, 0, 0, 0], [111, 165, 0, 0, 0], [112, 168, 0, 0, 0], [217, 165, 0, 0, 0], [218, 164, 0, 0, 0], [218, 162, 0, 0, 0], [218, 160, 0, 0, 0], [217, 158, 0, 0, 0], [220, 158, 0, 0, 0], [220, 160, 0, 0, 0], [221, 161, 0, 0, 0], [220, 163, 0, 0, 0], [220, 166, 0, 0, 0], [221, 165, 0, 0, 0], [20, 214, 0, 0, 0], [20, 212, 0, 0, 0], [21, 211, 0, 0, 0], [20, 208, 0, 0, 0], [19, 209, 0, 0, 0], [18, 208, 0, 0, 0], [18, 211, 0, 0, 0], [17, 213, 0, 0, 0], [18, 215, 0, 0, 0], [18, 217, 0, 0, 0], [20, 216, 0, 0, 0], [21, 215, 0, 0, 0], [22, 213, 0, 0, 0], [18, 233, 0, 0, 0], [19, 234, 0, 0, 0], [20, 233, 0, 0, 0], [20, 231, 0, 0, 0], [18, 230, 0, 0, 0], [16, 230, 0, 0, 0], [94, 225, 0, 0, 0], [93, 226, 0, 0, 0], [95, 223, 0, 0, 0], [94, 222, 0, 0, 0], [95, 221, 0, 0, 0], [94, 219, 0, 0, 0], [96, 217, 0, 0, 0], [94, 217, 0, 0, 0], [93, 215, 0, 0, 0], [91, 216, 0, 0, 0], [89, 217, 0, 0, 0], [90, 219, 0, 0, 0], [88, 220, 0, 0, 0], [89, 222, 0, 0, 0], [90, 223, 0, 0, 0], [90, 226, 0, 0, 0], [91, 228, 0, 0, 0], [91, 230, 0, 0, 0], [89, 230, 0, 0, 0], [90, 231, 0, 0, 0], [93, 229, 0, 0, 0], [138, 237, 0, 0, 0], [137, 238, 0, 0, 0], [135, 237, 0, 0, 0], [135, 240, 0, 0, 0], [134, 239, 0, 0, 0], [137, 240, 0, 0, 0], [139, 241, 0, 0, 0], [205, 238, 0, 0, 0], [204, 237, 0, 0, 0], [204, 235, 0, 0, 0], [206, 235, 0, 0, 0], [206, 237, 0, 0, 0], [208, 238, 0, 0, 0], [206, 240, 0, 0, 0], [208, 241, 0, 0, 0], [209, 240, 0, 0, 0], [211, 238, 0, 0, 0], [210, 237, 0, 0, 0], [205, 234, 0, 0, 0], [202, 234, 0, 0, 0], [201, 236, 0, 0, 0], [202, 237, 0, 0, 0], [202, 238, 0, 0, 0], [200, 238, 0, 0, 0]], "mill": [[91, 224, 0, 0, -90], [91, 222, 0, 0, -90], [91, 220, 0, 0, -90], [91, 218, 0, 0, -90], [93, 218, 0, 0, 90], [93, 220, 0, 0, 90], [93, 222, 0, 0, 90], [93, 224, 0, 0, 90], [117, 138, 0, 0, 90], [85, 90, 0, 0, 90], [106, 66, 0, 0, 90], [139, 61, 0, 0, -90], [189, 80, 0, 0, -90], [189, 37, 0, 0, -90]] } };
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	Object.defineProperty(exports, "__esModule", {
-	  value: true
+		value: true
 	});
-	exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = undefined;
+	exports.DOOR_NS = exports.DOOR_EW = exports.CAVE_RAND_FACTOR = exports.WALL_SEGMENTS = exports.CAVES_ENABLED = exports.WALL_THICKNESS = exports.DOOR_HEIGHT = exports.DOOR_WIDTH = exports.ROOM_SIZE = exports.DOOR_MATERIAL = exports.MATERIAL = exports.LIGHT1 = exports.MIN_LIGHT = exports.DIR2_COLOR = exports.DIR1_COLOR = exports.AMBIENT_COLOR = exports.GAME_DAY = exports.SKY_COLOR = exports.GRASS_COLOR = exports.SECTOR_SIZE = exports.START_Z = exports.START_Y = exports.START_X = exports.DEV_MODE = undefined;
+	exports.calcLight = calcLight;
 	
 	var _three = __webpack_require__(1);
 	
@@ -47054,6 +47458,7 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
+	var DEV_MODE = exports.DEV_MODE = location.hostname == "localhost";
 	var START_X = exports.START_X = 0x33;
 	var START_Y = exports.START_Y = 0x66;
 	var START_Z = exports.START_Z = 50000;
@@ -47062,9 +47467,79 @@
 	var SKY_COLOR = exports.SKY_COLOR = new _three2.default.Color("rgb(157,159,250)");
 	var GAME_DAY = exports.GAME_DAY = 15 * 60 * 1000; // 15 mins = 1 game day
 	//export const GAME_DAY = 1 * 40 * 1000; // 15 mins = 1 game day
+	
+	var AMBIENT_COLOR = exports.AMBIENT_COLOR = new _three2.default.Color(0x999999);
+	var DIR1_COLOR = exports.DIR1_COLOR = new _three2.default.Color(0xffffff);
+	var DIR2_COLOR = exports.DIR2_COLOR = new _three2.default.Color(0xffe0cc);
+	
+	var MIN_LIGHT = exports.MIN_LIGHT = 0.15;
+	
+	var LIGHT1 = exports.LIGHT1 = {
+		0: [38, 38, 38],
+		3: [38, 38, 38],
+		5: [180, 80, 30],
+		8: [255, 255, 255],
+		16: [255, 255, 255],
+		18: [180, 80, 30],
+		20: [38, 38, 38],
+		23: [38, 38, 38]
+	};
+	
+	function calcLight(hourOfDay, color, baseColor) {
+		var hour = hourOfDay | 0;
+		var lowHour = void 0,
+		    highHour = void 0;
+		var low = void 0,
+		    high = void 0;
+		for (lowHour = hour; lowHour >= 0; lowHour--) {
+			low = LIGHT1[lowHour];
+			if (low) break;
+		}
+		if (lowHour == 23) {
+			high = low;
+			highHour = 24;
+		} else {
+			for (highHour = hour + 1; highHour < 24; highHour++) {
+				high = LIGHT1[highHour];
+				if (high) break;
+			}
+		}
+		var t = highHour == lowHour ? 1 : (hourOfDay - lowHour) / (highHour - lowHour);
+		//console.log("h=" + hourOfDay + " low=" + low + "," + lowHour + " high=" + high + "," + highHour + " t=" + t + " color=" + color.getHexString());
+		color.setRGB((low[0] + (high[0] - low[0]) * t) / 0xff * baseColor.r, (low[1] + (high[1] - low[1]) * t) / 0xff * baseColor.g, (low[2] + (high[2] - low[2]) * t) / 0xff * baseColor.b);
+	}
+	
+	var MATERIAL = exports.MATERIAL = new _three2.default.MeshPhongMaterial({
+		color: 0xffffff,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
+		//overdraw: true
+	});
+	var DOOR_MATERIAL = exports.DOOR_MATERIAL = new _three2.default.MeshPhongMaterial({
+		color: 0xffcc22,
+		side: _three2.default.DoubleSide,
+		vertexColors: _three2.default.FaceColors,
+		shading: _three2.default.FlatShading
+		//overdraw: true
+	});
+	
+	var ROOM_SIZE = exports.ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
+	var DOOR_WIDTH = exports.DOOR_WIDTH = ROOM_SIZE * .35;
+	var DOOR_HEIGHT = exports.DOOR_HEIGHT = ROOM_SIZE * .7;
+	var WALL_THICKNESS = exports.WALL_THICKNESS = 10;
+	
+	var CAVES_ENABLED = exports.CAVES_ENABLED = true; // caves disabled for now: it causes page to crash
+	var WALL_SEGMENTS = exports.WALL_SEGMENTS = 2; // making this bigger takes forever to compute
+	var CAVE_RAND_FACTOR = exports.CAVE_RAND_FACTOR = 1.25;
+	
+	var DOOR_EW = exports.DOOR_EW = new _three2.default.CubeGeometry(WALL_THICKNESS * .5, DOOR_WIDTH * 1.5, DOOR_HEIGHT);
+	DOOR_EW.name = "door_ew";
+	var DOOR_NS = exports.DOOR_NS = new _three2.default.CubeGeometry(DOOR_WIDTH * 1.5, WALL_THICKNESS * .5, DOOR_HEIGHT);
+	DOOR_NS.name = "door_ns";
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -47086,31 +47561,27 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jquery = __webpack_require__(5);
+	var _jquery = __webpack_require__(6);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _model = __webpack_require__(9);
+	var _model = __webpack_require__(10);
 	
 	var models = _interopRequireWildcard(_model);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _noise = __webpack_require__(10);
+	var _noise = __webpack_require__(11);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
-	var _room = __webpack_require__(11);
-	
-	var room_package = _interopRequireWildcard(_room);
-	
-	var _compounds = __webpack_require__(13);
+	var _compounds = __webpack_require__(12);
 	
 	var compounds = _interopRequireWildcard(_compounds);
 	
-	var _game_map = __webpack_require__(3);
+	var _game_map = __webpack_require__(4);
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
@@ -47118,7 +47589,7 @@
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _constants = __webpack_require__(7);
+	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -47285,7 +47756,7 @@
 				//console.log(event.keyCode);
 				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
-					case 27 && _this.landing && window.escapeUsed == false:
+					case 27 && _this.landing && window.escapeUsed == false && constants.DEV_MODE:
 						window.escapeUsed = true; // only once
 						_this.noise.stop("pink");
 						_this.landing = Date.now() - LANDING_TIME;
@@ -47381,7 +47852,7 @@
 						if (_this2.level) {
 							var offsetX = _this2.player.position.x;
 							var offsetY = _this2.player.position.y;
-							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models);
+							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true);
 						}
 					});
 				}
@@ -47526,7 +47997,7 @@
 							_this3.teleportDir = 1;
 							_this3.teleportTime = Date.now() + TELEPORT_TIME;
 							_this3.baseMove = 1;
-							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models);
+							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true);
 						}
 					});
 				} else {
@@ -47798,6 +48269,12 @@
 					this.main.setLightPercentWorld(percent);
 				}
 	
+				// toggle level visibility while in the elevator (so we don't see it above ground)
+				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH / 2 && !this.level.mesh.visible || this.liftDirection > 0 && this.player.position.z >= ROOM_DEPTH / 2 && this.level.mesh.visible) {
+					this.level.mesh.visible = !this.level.mesh.visible;
+					//console.log("Level is not visible=" + this.level.mesh.visible);
+				}
+	
 				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
 					this.player.position.z = ROOM_DEPTH;
 					this.liftDirection = 0;
@@ -48050,10 +48527,10 @@
 					var _loop = function _loop(_i) {
 						var door = _this4.doorsUp[_i];
 						door.getWorldPosition(_this4.worldPos);
-						var dz = ROOM_DEPTH + room_package.DOOR_HEIGHT * .8;
+						var dz = ROOM_DEPTH + constants.DOOR_HEIGHT * .8;
 						if (_this4.worldPos.z < dz) {
 							door.position.z += delta * 50;
-							_this4.noise.setLevel("door", (room_package.DOOR_HEIGHT - Math.abs(dz - _this4.worldPos.z)) / room_package.DOOR_HEIGHT);
+							_this4.noise.setLevel("door", (constants.DOOR_HEIGHT - Math.abs(dz - _this4.worldPos.z)) / constants.DOOR_HEIGHT);
 						} else {
 							door.moving = "down";
 							_this4.doorsUp.splice(_i, 1);
@@ -48077,7 +48554,7 @@
 							// todo: check for player...
 							_door.position.z -= delta * 50;
 							if (_door.position.z < _door.original_z) _door.position.z = _door.original_z;
-							this.noise.setLevel("door", (_door.position.z - _door.original_z) / room_package.DOOR_HEIGHT);
+							this.noise.setLevel("door", (_door.position.z - _door.original_z) / constants.DOOR_HEIGHT);
 						} else {
 							_door.position.z = _door.original_z;
 							_door.moving = null;
@@ -48373,7 +48850,7 @@
 	}();
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48389,13 +48866,17 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _game_map = __webpack_require__(3);
+	var _game_map = __webpack_require__(4);
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
+	
+	var _constants = __webpack_require__(8);
+	
+	var constants = _interopRequireWildcard(_constants);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -48411,7 +48892,7 @@
 		To use colors, use the "vertex paint" feature of blender.
 		Then, export with vertex colors on (no materials needed.)
 	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core"];
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine", "mill"];
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
@@ -48489,7 +48970,8 @@
 		"trans": 10,
 		"control": 10,
 		"engine": 15,
-		"core": 10
+		"core": 10,
+		"pine": 50
 	};
 	
 	var DESCRIPTIONS = {
@@ -48513,80 +48995,61 @@
 		bridge: true
 	};
 	
-	//const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, wireframeLinewidth: 4 });
-	var MATERIAL = new _three2.default.MeshBasicMaterial({
-		color: 0xffffff,
-		side: _three2.default.DoubleSide,
-		vertexColors: _three2.default.FaceColors
-		//overdraw: true
-	});
-	var LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
+	var Models = exports.Models = function Models(onLoad) {
+		var _this = this;
 	
-	var Models = exports.Models = function () {
-		function Models(onLoad) {
-			var _this = this;
+		_classCallCheck(this, Models);
 	
-			_classCallCheck(this, Models);
+		this.onLoad = onLoad;
+		this.models = {};
+		util.startLoadingUI("wait-models");
 	
-			this.onLoad = onLoad;
-			this.models = {};
-			var _iteratorNormalCompletion = true;
-			var _didIteratorError = false;
-			var _iteratorError = undefined;
+		var _iteratorNormalCompletion = true;
+		var _didIteratorError = false;
+		var _iteratorError = undefined;
 	
-			try {
-				for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-					var name = _step.value;
+		try {
+			var _loop = function _loop() {
+				var name = _step.value;
 	
-					var model = void 0;
-					if (name in VEHICLES) {
-						model = new Vehicle(name, VEHICLES[name]);
-					} else {
-						model = new Model(name);
-					}
-					model.load(function (m) {
-						return _this.modelLoaded(m);
-					});
+				var model = void 0;
+				if (name in VEHICLES) {
+					model = new Vehicle(name, VEHICLES[name]);
+				} else {
+					model = new Model(name, name !== "elevator");
 				}
-			} catch (err) {
-				_didIteratorError = true;
-				_iteratorError = err;
+				model.load(function (m) {
+					console.log("Model loaded: " + model);
+					_this.models[model.name] = model;
+					util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
+					if (Object.keys(_this.models).length == MODELS.length) {
+						util.stopLoadingUI();
+						_this.onLoad(_this);
+					}
+				});
+			};
+	
+			for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				_loop();
+			}
+		} catch (err) {
+			_didIteratorError = true;
+			_iteratorError = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion && _iterator.return) {
+					_iterator.return();
+				}
 			} finally {
-				try {
-					if (!_iteratorNormalCompletion && _iterator.return) {
-						_iterator.return();
-					}
-				} finally {
-					if (_didIteratorError) {
-						throw _iteratorError;
-					}
+				if (_didIteratorError) {
+					throw _iteratorError;
 				}
 			}
 		}
-	
-		_createClass(Models, [{
-			key: 'modelLoaded',
-			value: function modelLoaded(model) {
-				console.log("Model loaded: " + model);
-				this.models[model.name] = model;
-				if (Object.keys(this.models).length == MODELS.length) {
-					this.onLoad(this);
-				}
-			}
-		}, {
-			key: 'setLightPercent',
-			value: function setLightPercent(percent) {
-				for (var m in this.models) {
-					this.models[m].setLightPercent(percent);
-				}
-			}
-		}]);
-	
-		return Models;
-	}();
+	};
 	
 	var Model = exports.Model = function () {
-		function Model(name) {
+		function Model(name, canCompress) {
 			_classCallCheck(this, Model);
 	
 			this.name = name;
@@ -48594,6 +49057,7 @@
 			this.mesh = null;
 			this.bbox = null;
 			this.description = DESCRIPTIONS[name] || name;
+			this.canCompress = canCompress;
 		}
 	
 		_createClass(Model, [{
@@ -48604,6 +49068,36 @@
 				var loader = new _three2.default.JSONLoader();
 				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
 	
+					// compress the model a bit by removing stuff we don't need
+					util.compressGeo(geometry);
+	
+					if (_this2.name == "control") {
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
+	
+						try {
+							for (var _iterator2 = geometry.faces[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var face = _step2.value;
+	
+								face["original_color"] = face.color.getHex();
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
+					}
+	
 					// put the geom. on the ground
 					geometry.center();
 					geometry.rotateX(Math.PI / 2);
@@ -48611,16 +49105,10 @@
 					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
 					var scale = SCALE[_this2.name] || 60;
 					geometry.scale(scale, scale, scale);
-					util.shadeGeo(geometry, LIGHT);
-					_this2.mesh = new _three2.default.Mesh(geometry, MATERIAL);
+					_this2.mesh = new _three2.default.Mesh(geometry, constants.MATERIAL);
 					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
 					onLoad(_this2);
 				});
-			}
-		}, {
-			key: 'setLightPercent',
-			value: function setLightPercent(percent) {
-				util.setLightPercent(this.mesh, LIGHT, percent);
 			}
 		}, {
 			key: 'getBoundingBox',
@@ -48633,6 +49121,11 @@
 				var m = this.mesh.clone();
 				m["model"] = this;
 				return m;
+			}
+		}, {
+			key: 'hasBB',
+			value: function hasBB() {
+				return !this.canCompress;
 			}
 		}]);
 	
@@ -48652,6 +49145,7 @@
 			_this3.exp = vehicle.exp;
 			_this3.noise = vehicle.noise;
 			_this3.vehicle = vehicle;
+			_this3.canCompress = false;
 			return _this3;
 		}
 	
@@ -48660,13 +49154,18 @@
 			value: function enterCheck(movement) {
 				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
 			}
+		}, {
+			key: 'hasBB',
+			value: function hasBB() {
+				return true;
+			}
 		}]);
 	
 		return Vehicle;
 	}(Model);
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -48678,7 +49177,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -49440,7 +49939,7 @@
 	}();
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49448,19 +49947,210 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	exports.Level = exports.Room = exports.Door = exports.CAVE_RAND_FACTOR = exports.WALL_SEGMENTS = exports.LIGHT = exports.DOOR_THICKNESS = exports.WALL_THICKNESS = exports.DOOR_HEIGHT = exports.DOOR_WIDTH = exports.ROOM_SIZE = undefined;
+	exports.LEVELS = undefined;
+	exports.loadLevel = loadLevel;
+	
+	var _room = __webpack_require__(13);
+	
+	var room = _interopRequireWildcard(_room);
+	
+	var _compound_generator = __webpack_require__(15);
+	
+	var generator = _interopRequireWildcard(_compound_generator);
+	
+	var _util = __webpack_require__(5);
+	
+	var util = _interopRequireWildcard(_util);
+	
+	var _jquery = __webpack_require__(6);
+	
+	var _jquery2 = _interopRequireDefault(_jquery);
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _jszip = __webpack_require__(16);
+	
+	var _jszip2 = _interopRequireDefault(_jszip);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	// edit these via: http://localhost:8000/compound_editor/rooms.html
+	var LEVELS = exports.LEVELS = {
+		// info room
+		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] },
+	
+		// xeno ruins
+		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": false }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": false }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": false }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 30, "y": 42, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 14, "y": 35, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 44, "y": 36, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 40, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 37, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 7, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 7, "roomB": 8, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 8, "roomB": 9, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 9, "roomB": 10, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 9, "roomB": 30, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 9, "roomB": 39, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 11, "roomB": 26, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 12, "roomB": 31, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 12, "roomB": 32, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 13, "roomB": 14, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 13, "roomB": 32, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 14, "roomB": 17, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 14, "roomB": 19, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 15, "roomB": 16, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 16, "roomB": 24, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 16, "roomB": 25, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 17, "roomB": 18, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 18, "roomB": 21, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 19, "roomB": 20, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 20, "roomB": 36, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 20, "roomB": 47, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 21, "roomB": 23, "key": "" }, { "x": 40, "y": 29, "dir": "s", "roomA": 21, "roomB": 47, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 24, "roomB": 33, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 25, "roomB": 33, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 26, "roomB": 27, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 27, "roomB": 28, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 27, "roomB": 29, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 28, "roomB": 31, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 28, "roomB": 41, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 29, "roomB": 30, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 30, "roomB": 43, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 31, "roomB": 34, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 34, "roomB": 35, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 43, "y": 37, "dir": "e", "roomA": 35, "roomB": 46, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 37, "roomB": 40, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 38, "roomB": 40, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 39, "roomB": 42, "key": "" }, { "x": 31, "y": 41, "dir": "s", "roomA": 41, "roomB": 44, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 42, "roomB": 43, "key": "" }, { "x": 17, "y": 35, "dir": "w", "roomA": 43, "roomB": 45, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 33, "y": 31, "object": "trans", "room": 17, "rot": -90 }, { "x": 14, "y": 36, "object": "core", "room": 53, "rot": null }, { "x": 46, "y": 37, "object": "core", "room": 54, "rot": null }, { "x": 11, "y": 22, "object": "art2", "room": 40, "rot": null }], "teleporters": [{ "roomA": 44, "roomB": 24 }, { "roomA": 45, "roomB": 46 }] },
+	
+		// defense council
+		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }, { "x": 66, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 69, "y": 37, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 52, "y": 30, "w": 1, "h": 17, "color": "#cccccc", "cave": true }, { "x": 53, "y": 34, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 44, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 58, "y": 37, "w": 1, "h": 7, "color": "#cccccc", "cave": true }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 25, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 26, "key": "" }, { "x": 52, "y": 47, "dir": "n", "roomA": 18, "roomB": 38, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 27, "key": "" }, { "x": 52, "y": 29, "dir": "s", "roomA": 22, "roomB": 38, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 23, "roomB": 24, "key": "" }, { "x": 57, "y": 34, "dir": "w", "roomA": 23, "roomB": 39, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 23, "roomB": 41, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 24, "roomB": 25, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 24, "roomB": 26, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 24, "roomB": 33, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 26, "roomB": 27, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 28, "roomB": 29, "key": "" }, { "x": 62, "y": 44, "dir": "w", "roomA": 28, "roomB": 40, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 29, "roomB": 30, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 30, "roomB": 31, "key": "" }, { "x": 65, "y": 38, "dir": "e", "roomA": 30, "roomB": 36, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 31, "roomB": 32, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 32, "roomB": 33, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 32, "roomB": 34, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 34, "roomB": 35, "key": "" }, { "x": 68, "y": 38, "dir": "e", "roomA": 36, "roomB": 37, "key": "" }, { "x": 52, "y": 34, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 52, "y": 44, "dir": "e", "roomA": 38, "roomB": 40, "key": "" }, { "x": 58, "y": 44, "dir": "n", "roomA": 40, "roomB": 41, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }], "teleporters": [{ "roomA": 7, "roomB": 8 }, { "roomA": 37, "roomB": 6 }] },
+	
+		// xeno lab
+		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
+	
+		// xeno base
+		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 28, "y": 26, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 37, "y": 26, "w": 4, "h": 2, "color": "#cccccc", "cave": false }, { "x": 41, "y": 25, "w": 4, "h": 4, "color": "#ff8866", "cave": false }, { "x": 77, "y": 26, "w": 3, "h": 3, "color": "#ff8866", "cave": false }, { "x": 73, "y": 24, "w": 4, "h": 7, "color": "#ffccff", "cave": false }, { "x": 70, "y": 25, "w": 3, "h": 2, "color": "#ccffff", "cave": false }, { "x": 70, "y": 28, "w": 3, "h": 2, "color": "#ffcc88", "cave": false }, { "x": 74, "y": 22, "w": 2, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 69, "y": 51, "w": 2, "h": 2, "color": "#ccffcc", "cave": false }, { "x": 68, "y": 46, "w": 4, "h": 5, "color": "#ccccff", "cave": false }, { "x": 65, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 72, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 69, "y": 35, "w": 1, "h": 11, "color": "#cccccc", "cave": false }, { "x": 66, "y": 36, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 70, "y": 36, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 66, "y": 40, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 70, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 68, "y": 32, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 33, "y": 30, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 32, "y": 20, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 45, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 52, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 54, "y": 25, "w": 8, "h": 4, "color": "#cccccc", "cave": false }], "doors": [{ "x": 31, "y": 27, "dir": "w", "roomA": 0, "roomB": 1, "key": "" }, { "x": 36, "y": 27, "dir": "e", "roomA": 0, "roomB": 2, "key": "" }, { "x": 34, "y": 29, "dir": "s", "roomA": 0, "roomB": 19, "key": "" }, { "x": 34, "y": 24, "dir": "n", "roomA": 0, "roomB": 20, "key": "" }, { "x": 40, "y": 27, "dir": "e", "roomA": 2, "roomB": 3, "key": "" }, { "x": 44, "y": 27, "dir": "e", "roomA": 3, "roomB": 21, "key": "" }, { "x": 77, "y": 27, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 73, "y": 26, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 73, "y": 29, "dir": "w", "roomA": 5, "roomB": 7, "key": "" }, { "x": 75, "y": 24, "dir": "n", "roomA": 5, "roomB": 8, "key": "" }, { "x": 70, "y": 51, "dir": "n", "roomA": 9, "roomB": 10, "key": "" }, { "x": 68, "y": 48, "dir": "w", "roomA": 10, "roomB": 11, "key": "" }, { "x": 71, "y": 48, "dir": "e", "roomA": 10, "roomB": 12, "key": "" }, { "x": 69, "y": 46, "dir": "n", "roomA": 10, "roomB": 13, "key": "" }, { "x": 69, "y": 37, "dir": "w", "roomA": 13, "roomB": 14, "key": "" }, { "x": 69, "y": 37, "dir": "e", "roomA": 13, "roomB": 15, "key": "" }, { "x": 69, "y": 41, "dir": "w", "roomA": 13, "roomB": 16, "key": "" }, { "x": 69, "y": 41, "dir": "e", "roomA": 13, "roomB": 17, "key": "" }, { "x": 69, "y": 35, "dir": "n", "roomA": 13, "roomB": 18, "key": "" }, { "x": 53, "y": 27, "dir": "e", "roomA": 22, "roomB": 23, "key": "" }], "objects": [{ "x": 33, "y": 20, "object": "xenterm", "room": 20, "rot": null }, { "x": 42, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 43, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 67, "y": 36, "object": "control", "room": 14, "rot": null }, { "x": 57, "y": 26, "object": "engine", "room": 23, "rot": 90 }, { "x": 57, "y": 27, "object": "engine", "room": 23, "rot": 90 }], "teleporters": [{ "roomA": 4, "roomB": 1 }, { "roomA": 8, "roomB": 9 }, { "roomA": 19, "roomB": 18 }, { "roomA": 21, "roomB": 22 }] }
+	};
+	
+	var LEVEL_CACHE = {};
+	function loadLevel(sectorX, sectorY, onload) {
+		var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+		if (LEVEL_CACHE[name]) {
+			onload(LEVEL_CACHE[name]);
+		} else {
+			util.startLoadingUI();
+			util.setLoadingUIProgress(0, function () {
+				console.log("Loading model=" + name);
+				var zipName = "models/compounds/" + name + ".zip";
+				//console.log("Loading zip=" + zipName);
+				_jquery2.default.ajax({
+					dataType: "binary",
+					processData: false,
+					responseType: "arraybuffer",
+					type: 'GET',
+					url: zipName + "?cb=" + window.cb,
+					progress: function progress(percentComplete) {
+						//console.log(percentComplete);
+						(0, _jquery2.default)("#progress-value").css("width", 80 * percentComplete + "%");
+					},
+					success: function success(data) {
+						decompressLevel(name, data, sectorX, sectorY, onload);
+					},
+					error: function error(err) {
+						console.log("Error downloading zip file: " + zipName + " error=" + err);
+					}
+				});
+			});
+		}
+	}
+	
+	function parseGeometry(index, geometries, jsonGeometries, loader, onload) {
+		setTimeout(function () {
+			console.log("Parsing geometry " + index + " of " + jsonGeometries.length);
+			var geo = jsonGeometries[index];
+			console.log("1");
+			var g = loader.parseGeometries([geo]);
+			console.log("2");
+			Object.assign(geometries, g);
+			console.log("3");
+	
+			index++;
+			if (index < jsonGeometries.length) {
+				parseGeometry(index, geometries, jsonGeometries, loader, onload);
+			} else {
+				console.log("Done loading geos.");
+				onload();
+			}
+		}, 100);
+	}
+	
+	function decompressLevel(name, data, sectorX, sectorY, onload) {
+		util.setLoadingUIProgress(80, function () {
+			console.log("Starting worker");
+			var worker = new Worker('dist/zip_worker.js?v=' + window.cb);
+			console.log("Listening for worker");
+			worker.addEventListener('message', function (e) {
+				var jsonContent = e.data;
+				util.setLoadingUIProgress(90, function () {
+					console.log("Deleting worker.");
+					worker = undefined;
+	
+					console.log("Parsing JSON... json size=", jsonContent.length);
+					var json = JSON.parse(jsonContent);
+					console.log("JSON parsed");
+	
+					var loader = new _three2.default.ObjectLoader();
+					console.log("Constructing object...");
+					//let obj = loader.parse(json);
+	
+					var geometries = {};
+					parseGeometry(0, geometries, json.geometries, loader, function () {
+						console.log("parsing materials");
+						var materials = loader.parseMaterials(json.materials, null);
+	
+						console.log("parsing object");
+						var obj = loader.parseObject(json.object, geometries, materials);
+	
+						console.log("constructed=", obj);
+						util.setLoadingUIProgress(100, function () {
+							console.log("done loading level 1");
+							util.stopLoadingUI();
+							console.log("done loading level 2");
+							var level = getLevel(sectorX, sectorY, obj);
+							LEVEL_CACHE[name] = level;
+							onload(level);
+						});
+					});
+				});
+			}, false);
+			console.log("Messaging worker");
+			worker.postMessage({ data: data, name: name });
+			console.log("Waiting...");
+		});
+	}
+	
+	function getLevel(sectorX, sectorY) {
+		var obj = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+	
+		var key = "" + sectorX.toString(16) + "," + sectorY.toString(16);
+		console.log("Looking for compound=" + key + " found=" + LEVELS[key]);
+		return new room.Level(LEVELS[key], obj);
+	}
+	
+	window.generate = function (sectorX, sectorY) {
+		var level = getLevel(sectorX, sectorY);
+		var gen = new generator.CompoundGenerator(level.rooms, level.doors, level.objects, window.models, level.w, level.h);
+		console.log("Generating...");
+		gen.generate();
+		console.log("JSONifying...");
+		var s = JSON.stringify(gen.mesh.toJSON());
+		console.log("JSON size=" + s.length);
+	
+		// timeout so the page doesn't crash (yield to main thread)
+		setTimeout(function () {
+			console.log("Uploading...");
+			_jquery2.default.ajax({
+				type: 'POST',
+				url: "http://localhost:9090/cgi-bin/upload.py",
+				data: "name=" + util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + "&file=" + s,
+				success: function success() {
+					console.log("Success!");
+				},
+				error: function error(_error) {
+					console.log("error: ", _error);
+				},
+				dataType: "text/json"
+			});
+			console.log("Stored on server.");
+		}, 500);
+	};
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Level = exports.Room = exports.Door = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _game_map = __webpack_require__(3);
+	var _game_map = __webpack_require__(4);
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -49468,26 +50158,19 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(12);
+	var _ThreeCSG = __webpack_require__(14);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
+	
+	var _constants = __webpack_require__(8);
+	
+	var constants = _interopRequireWildcard(_constants);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var ROOM_SIZE = exports.ROOM_SIZE = 50; //game_map.SECTOR_SIZE / 10;
-	var DOOR_WIDTH = exports.DOOR_WIDTH = ROOM_SIZE * .35;
-	var DOOR_HEIGHT = exports.DOOR_HEIGHT = ROOM_SIZE * .7;
-	var WALL_THICKNESS = exports.WALL_THICKNESS = 10;
-	var DOOR_THICKNESS = exports.DOOR_THICKNESS = WALL_THICKNESS * .25;
-	
-	var LIGHT = exports.LIGHT = new _three2.default.Vector3(0.5, 0.75, 1.0);
-	
-	var WALL_SEGMENTS = exports.WALL_SEGMENTS = 3; // making this bigger takes forever to compute
-	var CAVE_RAND_FACTOR = exports.CAVE_RAND_FACTOR = 1.25;
 	
 	var Door = exports.Door = function Door(x, y, dir, roomAName, roomBName, color, key) {
 		_classCallCheck(this, Door);
@@ -49507,24 +50190,24 @@
 	
 		this.dx = 0;
 		this.dy = 0;
-		this.w = WALL_THICKNESS * .5;
-		this.h = WALL_THICKNESS * .5;
+		this.w = constants.WALL_THICKNESS * .5;
+		this.h = constants.WALL_THICKNESS * .5;
 		switch (dir) {
 			case "e":
-				this.dx = ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "w":
-				this.dx = -ROOM_SIZE / 2;
-				this.h = DOOR_WIDTH;
+				this.dx = -constants.ROOM_SIZE / 2;
+				this.h = constants.DOOR_WIDTH;
 				break;
 			case "s":
-				this.dy = ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 			case "n":
-				this.dy = -ROOM_SIZE / 2;
-				this.w = DOOR_WIDTH;
+				this.dy = -constants.ROOM_SIZE / 2;
+				this.w = constants.DOOR_WIDTH;
 				break;
 		}
 	};
@@ -49546,6 +50229,8 @@
 		this.caveMesh = null;
 		this.elevator = roomCount == 0;
 		this.teleportToRoom = teleportToRoom;
+		this.minPoint = new _three2.default.Vector2();
+		this.maxPoint = new _three2.default.Vector2();
 		roomCount++;
 	};
 	
@@ -49659,6 +50344,7 @@
 			}
 	
 			this.mesh = obj;
+			this.initialized = false;
 		}
 	
 		_createClass(Level, [{
@@ -49680,8 +50366,8 @@
 					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 						var room = _step4.value;
 	
-						var min = new _three2.default.Vector3(room.x * ROOM_SIZE, room.y * ROOM_SIZE, movement.ROOM_DEPTH - ROOM_SIZE / 2);
-						var max = new _three2.default.Vector3((room.x + room.w) * ROOM_SIZE, (room.y + room.h) * ROOM_SIZE, movement.ROOM_DEPTH + ROOM_SIZE / 2);
+						var min = new _three2.default.Vector3(room.x * constants.ROOM_SIZE, room.y * constants.ROOM_SIZE, movement.ROOM_DEPTH - constants.ROOM_SIZE / 2);
+						var max = new _three2.default.Vector3((room.x + room.w) * constants.ROOM_SIZE, (room.y + room.h) * constants.ROOM_SIZE, movement.ROOM_DEPTH + constants.ROOM_SIZE / 2);
 						if (debug) console.log("...vs " + room.name + " min=", min, " max=", max);
 						var box = new _three2.default.Box3(min, max);
 						if (box.containsPoint(point)) {
@@ -49709,125 +50395,97 @@
 		}, {
 			key: 'moveToRoom',
 			value: function moveToRoom(room, position) {
-				position.x = (room.x + room.w / 2) * ROOM_SIZE + this.offsetX;
-				position.y = (room.y + room.h / 2) * ROOM_SIZE + this.offsetY;
+				position.x = (room.x + room.w / 2) * constants.ROOM_SIZE + this.offsetX;
+				position.y = (room.y + room.h / 2) * constants.ROOM_SIZE + this.offsetY;
 			}
 		}, {
 			key: 'create',
 			value: function create(scene, x, y, liftX, liftY, models) {
-				var progressUpdate = arguments.length <= 6 || arguments[6] === undefined ? null : arguments[6];
+				var visible = arguments.length <= 6 || arguments[6] === undefined ? false : arguments[6];
 	
 				this.liftX = liftX;
 				this.liftY = liftY;
 				this.scene = scene;
 	
 				this.targetMesh = this.mesh.children[0];
-				this.targetMesh["name"] = "room_wall";
-				this.targetMesh["type"] = "wall";
-				this.mat = this.targetMesh.material;
 				this.geo = this.targetMesh.geometry;
-				this.geo.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
-				this.caveMeshObj = this.mesh.children[1];
-				var _iteratorNormalCompletion5 = true;
-				var _didIteratorError5 = false;
-				var _iteratorError5 = undefined;
 	
-				try {
-					for (var _iterator5 = this.caveMeshObj.children[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-						var c = _step5.value;
+				if (constants.CAVES_ENABLED) {
+					this.caveMeshObj = this.mesh.children[1];
+				}
 	
-						c.geometry.translate(this.w / 2 * ROOM_SIZE + WALL_THICKNESS, this.h / 2 * ROOM_SIZE + WALL_THICKNESS, 0);
-					}
-	
-					//let t, t2; t = Date.now();
-	
+				if (!this.initialized) {
+					this.initialized = true;
 					// actual doors
-				} catch (err) {
-					_didIteratorError5 = true;
-					_iteratorError5 = err;
-				} finally {
+					var _iteratorNormalCompletion5 = true;
+					var _didIteratorError5 = false;
+					var _iteratorError5 = undefined;
+	
 					try {
-						if (!_iteratorNormalCompletion5 && _iterator5.return) {
-							_iterator5.return();
+						for (var _iterator5 = this.doors[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+							var door = _step5.value;
+	
+	
+							var dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
+							var dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
+							var dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
+	
+							var door_geo = door.w > door.h ? constants.DOOR_NS : constants.DOOR_EW;
+							var door_mesh = new _three2.default.Mesh(door_geo, constants.DOOR_MATERIAL);
+	
+							door_mesh.position.set(dx, dy, dz);
+							door_mesh["name"] = "door_" + door.dir;
+							door_mesh["type"] = "door";
+							door_mesh["door"] = door;
+	
+							this.targetMesh.add(door_mesh);
 						}
+	
+						// objects
+					} catch (err) {
+						_didIteratorError5 = true;
+						_iteratorError5 = err;
 					} finally {
-						if (_didIteratorError5) {
-							throw _iteratorError5;
+						try {
+							if (!_iteratorNormalCompletion5 && _iterator5.return) {
+								_iterator5.return();
+							}
+						} finally {
+							if (_didIteratorError5) {
+								throw _iteratorError5;
+							}
 						}
 					}
-				}
 	
-				var _iteratorNormalCompletion6 = true;
-				var _didIteratorError6 = false;
-				var _iteratorError6 = undefined;
+					var _iteratorNormalCompletion6 = true;
+					var _didIteratorError6 = false;
+					var _iteratorError6 = undefined;
 	
-				try {
-					for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-						var door = _step6.value;
-	
-	
-						var dx = (door.x + .5) * ROOM_SIZE + WALL_THICKNESS + door.dx;
-						var dy = (door.y + .5) * ROOM_SIZE + WALL_THICKNESS + door.dy;
-						var dz = -(ROOM_SIZE - DOOR_HEIGHT - WALL_THICKNESS) * .5;
-	
-						var door_geo = new _three2.default.CubeGeometry(door.w * (door.w > door.h ? 1.5 : 1), door.h * (door.h > door.w ? 1.5 : 1), DOOR_HEIGHT);
-						var door_mesh = new _three2.default.Mesh(door_geo, new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors }));
-						util.shadeGeo(door_mesh.geometry, LIGHT, door.color);
-	
-						door_mesh.position.set(dx, dy, dz);
-						door_mesh["name"] = "door_" + door.dir;
-						door_mesh["type"] = "door";
-						door_mesh["door"] = door;
-	
-						this.targetMesh.add(door_mesh);
-					}
-					//t2 = Date.now(); console.log("5. " + (t2 - t)); t = t2;
-	
-					// objects
-				} catch (err) {
-					_didIteratorError6 = true;
-					_iteratorError6 = err;
-				} finally {
 					try {
-						if (!_iteratorNormalCompletion6 && _iterator6.return) {
-							_iterator6.return();
+						for (var _iterator6 = this.objects[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+							var object = _step6.value;
+	
+							var m = models.models[object.object];
+							var mesh = m.createObject();
+							var _dx = (object.x + .5) * constants.ROOM_SIZE;
+							var _dy = (object.y + .5) * constants.ROOM_SIZE;
+							var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
+							mesh.rotation.z = util.angle2rad(object["rot"] || 0);
+							mesh.position.set(_dx, _dy, _dz);
+							this.targetMesh.add(mesh);
 						}
+					} catch (err) {
+						_didIteratorError6 = true;
+						_iteratorError6 = err;
 					} finally {
-						if (_didIteratorError6) {
-							throw _iteratorError6;
-						}
-					}
-				}
-	
-				var _iteratorNormalCompletion7 = true;
-				var _didIteratorError7 = false;
-				var _iteratorError7 = undefined;
-	
-				try {
-					for (var _iterator7 = this.objects[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var object = _step7.value;
-	
-						var m = models.models[object.object];
-						var mesh = m.createObject();
-						var _dx = (object.x + .5) * ROOM_SIZE;
-						var _dy = (object.y + .5) * ROOM_SIZE;
-						var _dz = -(ROOM_SIZE - WALL_THICKNESS) * .5;
-						mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-						mesh.position.set(_dx, _dy, _dz);
-						this.targetMesh.add(mesh);
-					}
-					//t2 = Date.now(); console.log("6. " + (t2 - t)); t = t2;
-				} catch (err) {
-					_didIteratorError7 = true;
-					_iteratorError7 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion7 && _iterator7.return) {
-							_iterator7.return();
-						}
-					} finally {
-						if (_didIteratorError7) {
-							throw _iteratorError7;
+						try {
+							if (!_iteratorNormalCompletion6 && _iterator6.return) {
+								_iterator6.return();
+							}
+						} finally {
+							if (_didIteratorError6) {
+								throw _iteratorError6;
+							}
 						}
 					}
 				}
@@ -49836,17 +50494,18 @@
 	
 				// center in start room
 				var start = this.rooms[0];
-				this.offsetX = x + (-start.x - start.w / 2) * ROOM_SIZE;
-				this.offsetY = y + (-start.y - start.h / 2) * ROOM_SIZE;
+				this.offsetX = x + (-start.x - start.w / 2) * constants.ROOM_SIZE;
+				this.offsetY = y + (-start.y - start.h / 2) * constants.ROOM_SIZE;
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
+				this.mesh.visible = visible;
 				scene.add(this.mesh);
 			}
 		}, {
 			key: 'makeElevator',
 			value: function makeElevator(x, y) {
-				var z = -movement.ROOM_DEPTH - ROOM_SIZE * .5;
+				var z = -movement.ROOM_DEPTH - (constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
 				var stripes = 15;
-				this.lift_geo = new _three2.default.BoxGeometry(ROOM_SIZE, ROOM_SIZE, z, 1, 1, stripes);
+				this.lift_geo = new _three2.default.BoxGeometry(constants.ROOM_SIZE, constants.ROOM_SIZE, z, 1, 1, stripes);
 				var dark = new _three2.default.Color("#cccc88");
 				var light = new _three2.default.Color("#ffffcc");
 				var faces = [];
@@ -49862,19 +50521,11 @@
 				}
 				// remove top/bottom face
 				this.lift_geo.faces = faces;
-				this.lift_mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
-				util.shadeGeo(this.lift_geo, LIGHT);
-				this.lift_mesh = new _three2.default.Mesh(this.lift_geo, this.lift_mat);
+				util.compressGeo(this.lift_geo);
+				this.lift_mesh = new _three2.default.Mesh(this.lift_geo, constants.MATERIAL);
 				this.lift_mesh.position.set(x, y, -z / 2);
 	
 				this.scene.add(this.lift_mesh);
-			}
-		}, {
-			key: 'setElevatorLightPercent',
-			value: function setElevatorLightPercent(percent) {
-				if (this.lift_mesh) {
-					util.setLightPercent(this.lift_mesh, LIGHT, percent);
-				}
 			}
 		}, {
 			key: 'setPosition',
@@ -49889,33 +50540,33 @@
 			value: function destroy() {
 				this.scene.remove(this.lift_mesh);
 				this.lift_geo.dispose();
-				this.lift_mat.dispose();
 	
 				this.scene.remove(this.mesh);
 				this.geo.dispose();
-				this.mat.dispose();
 	
-				var _iteratorNormalCompletion8 = true;
-				var _didIteratorError8 = false;
-				var _iteratorError8 = undefined;
+				if (constants.CAVES_ENABLED) {
+					var _iteratorNormalCompletion7 = true;
+					var _didIteratorError7 = false;
+					var _iteratorError7 = undefined;
 	
-				try {
-					for (var _iterator8 = this.caveMeshObj.children[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-						var c = _step8.value;
-	
-						c.geometry.dispose();
-					}
-				} catch (err) {
-					_didIteratorError8 = true;
-					_iteratorError8 = err;
-				} finally {
 					try {
-						if (!_iteratorNormalCompletion8 && _iterator8.return) {
-							_iterator8.return();
+						for (var _iterator7 = this.caveMeshObj.children[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+							var c = _step7.value;
+	
+							c.geometry.dispose();
 						}
+					} catch (err) {
+						_didIteratorError7 = true;
+						_iteratorError7 = err;
 					} finally {
-						if (_didIteratorError8) {
-							throw _iteratorError8;
+						try {
+							if (!_iteratorNormalCompletion7 && _iterator7.return) {
+								_iterator7.return();
+							}
+						} finally {
+							if (_didIteratorError7) {
+								throw _iteratorError7;
+							}
 						}
 					}
 				}
@@ -49926,7 +50577,7 @@
 	}();
 
 /***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50498,173 +51149,7 @@
 	};
 
 /***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports.LEVELS = undefined;
-	exports.loadLevel = loadLevel;
-	
-	var _room = __webpack_require__(11);
-	
-	var room = _interopRequireWildcard(_room);
-	
-	var _compound_generator = __webpack_require__(14);
-	
-	var generator = _interopRequireWildcard(_compound_generator);
-	
-	var _util = __webpack_require__(4);
-	
-	var util = _interopRequireWildcard(_util);
-	
-	var _jquery = __webpack_require__(5);
-	
-	var _jquery2 = _interopRequireDefault(_jquery);
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	var _jszip = __webpack_require__(15);
-	
-	var _jszip2 = _interopRequireDefault(_jszip);
-	
-	var _jszipUtils = __webpack_require__(58);
-	
-	var _jszipUtils2 = _interopRequireDefault(_jszipUtils);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-	
-	// edit these via: http://localhost:8000/compound_editor/rooms.html
-	var LEVELS = exports.LEVELS = {
-		// info room
-		"9,2": { "rooms": [{ "x": 23, "y": 11, "w": 8, "h": 10, "color": "#ffcccc" }, { "x": 31, "y": 14, "w": 15, "h": 4, "color": "#ccffcc" }, { "x": 20, "y": 13, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 20, "y": 17, "w": 3, "h": 3, "color": "#ccccff" }, { "x": 46, "y": 15, "w": 2, "h": 2, "color": "#ccffff" }, { "x": 33, "y": 12, "w": 2, "h": 2, "color": "#ccccff" }, { "x": 37, "y": 12, "w": 2, "h": 2, "color": "#ffcccc" }, { "x": 41, "y": 12, "w": 2, "h": 2, "color": "#ffffcc" }, { "x": 41, "y": 18, "w": 2, "h": 2, "color": "#ffccff" }, { "x": 37, "y": 18, "w": 2, "h": 2, "color": "#ffcc88" }, { "x": 33, "y": 18, "w": 2, "h": 2, "color": "#ff8866" }, { "x": 25, "y": 21, "w": 4, "h": 12, "color": "#ffffcc" }, { "x": 29, "y": 29, "w": 5, "h": 2, "color": "#ff8866" }, { "x": 29, "y": 25, "w": 5, "h": 2, "color": "#ffcc88" }, { "x": 20, "y": 25, "w": 5, "h": 2, "color": "#cccccc" }, { "x": 20, "y": 29, "w": 5, "h": 2, "color": "#ccffff" }], "doors": [{ "x": 30, "y": 16, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 23, "y": 14, "dir": "w", "roomA": 0, "roomB": 2, "key": "" }, { "x": 23, "y": 18, "dir": "w", "roomA": 0, "roomB": 3, "key": "keyb" }, { "x": 27, "y": 20, "dir": "s", "roomA": 0, "roomB": 11, "key": "keya" }, { "x": 45, "y": 16, "dir": "e", "roomA": 1, "roomB": 4, "key": "" }, { "x": 34, "y": 14, "dir": "n", "roomA": 1, "roomB": 5, "key": "" }, { "x": 38, "y": 14, "dir": "n", "roomA": 1, "roomB": 6, "key": "" }, { "x": 42, "y": 14, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 42, "y": 17, "dir": "s", "roomA": 1, "roomB": 8, "key": "" }, { "x": 38, "y": 17, "dir": "s", "roomA": 1, "roomB": 9, "key": "" }, { "x": 34, "y": 17, "dir": "s", "roomA": 1, "roomB": 10, "key": "" }, { "x": 28, "y": 30, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 28, "y": 26, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 25, "y": 26, "dir": "w", "roomA": 11, "roomB": 14, "key": "" }, { "x": 25, "y": 30, "dir": "w", "roomA": 11, "roomB": 15, "key": "" }], "objects": [{ "x": 41, "y": 12, "object": "keya", "room": 7 }, { "x": 20, "y": 30, "object": "keyb", "room": 15 }, { "x": 20, "y": 18, "object": "pres", "room": 3 }, { "x": 29, "y": 25, "object": "pres", "room": 13 }, { "x": 20, "y": 25, "object": "pres", "room": 14 }] },
-	
-		// xeno ruins
-		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 28, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 31, "y": 15, "w": 3, "h": 3, "color": "#ffccff" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": true }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 26, "y": 32, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": true }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": true }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": true }, { "x": 41, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 40, "y": 33, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": true }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 22, "y": 27, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": true }, { "x": 38, "y": 36, "w": 1, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 19, "y": 28, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 30, "y": 42, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 14, "y": 35, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 44, "y": 36, "w": 3, "h": 3, "color": "#ccffff", "cave": false }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 44, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 27, "y": 16, "dir": "e", "roomA": 4, "roomB": 6, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 9, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 30, "y": 16, "dir": "e", "roomA": 6, "roomB": 7, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 9, "roomB": 10, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 10, "roomB": 11, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 25, "y": 32, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 11, "roomB": 35, "key": "" }, { "x": 23, "y": 27, "dir": "w", "roomA": 11, "roomB": 36, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 11, "roomB": 46, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 12, "roomB": 18, "key": "" }, { "x": 28, "y": 32, "dir": "e", "roomA": 13, "roomB": 14, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 14, "roomB": 15, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 14, "roomB": 16, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 14, "roomB": 31, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 15, "roomB": 37, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 15, "roomB": 39, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 16, "roomB": 17, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 16, "roomB": 39, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 17, "roomB": 20, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 17, "roomB": 22, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 19, "roomB": 27, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 19, "roomB": 29, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 19, "roomB": 30, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 21, "roomB": 24, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 23, "roomB": 26, "key": "" }, { "x": 38, "y": 35, "dir": "s", "roomA": 23, "roomB": 38, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 23, "roomB": 43, "key": "" }, { "x": 41, "y": 29, "dir": "s", "roomA": 24, "roomB": 25, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 24, "roomB": 28, "key": "" }, { "x": 41, "y": 33, "dir": "w", "roomA": 25, "roomB": 26, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 27, "roomB": 28, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 29, "roomB": 40, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 30, "roomB": 40, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 31, "roomB": 32, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 32, "roomB": 33, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 32, "roomB": 34, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 33, "roomB": 37, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 33, "roomB": 48, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 34, "roomB": 35, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 35, "roomB": 51, "key": "" }, { "x": 38, "y": 37, "dir": "n", "roomA": 37, "roomB": 38, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 37, "roomB": 41, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 41, "roomB": 42, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 43, "y": 37, "dir": "e", "roomA": 42, "roomB": 54, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 44, "roomB": 47, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 45, "roomB": 46, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 45, "roomB": 47, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 46, "roomB": 49, "key": "" }, { "x": 19, "y": 31, "dir": "n", "roomA": 46, "roomB": 50, "key": "" }, { "x": 31, "y": 41, "dir": "s", "roomA": 48, "roomB": 52, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 49, "roomB": 51, "key": "" }, { "x": 17, "y": 35, "dir": "w", "roomA": 51, "roomB": 53, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 11, "y": 22, "object": "art2", "room": 47, "rot": 45 }, { "x": 33, "y": 31, "object": "trans", "room": 17, "rot": -90 }, { "x": 14, "y": 36, "object": "core", "room": 53, "rot": null }, { "x": 46, "y": 37, "object": "core", "room": 54, "rot": null }], "teleporters": [{ "roomA": 52, "roomB": 29 }, { "roomA": 53, "roomB": 54 }] },
-	
-		// defense council
-		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 30, "w": 1, "h": 9, "color": "#cccccc", "cave": true }, { "x": 54, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 50, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 51, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 52, "y": 40, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 52, "y": 38, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 37, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 55, "y": 41, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 54, "y": 47, "w": 1, "h": 1, "color": "#cccccc", "cave": false }, { "x": 56, "y": 44, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 59, "y": 26, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 59, "y": 41, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }, { "x": 66, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 69, "y": 37, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 32, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 33, "key": "" }, { "x": 53, "y": 47, "dir": "e", "roomA": 18, "roomB": 36, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 53, "y": 29, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 34, "key": "" }, { "x": 53, "y": 33, "dir": "e", "roomA": 23, "roomB": 24, "key": "" }, { "x": 53, "y": 35, "dir": "w", "roomA": 23, "roomB": 25, "key": "" }, { "x": 53, "y": 38, "dir": "w", "roomA": 23, "roomB": 28, "key": "" }, { "x": 56, "y": 33, "dir": "e", "roomA": 24, "roomB": 29, "key": "" }, { "x": 51, "y": 35, "dir": "s", "roomA": 25, "roomB": 26, "key": "" }, { "x": 51, "y": 40, "dir": "e", "roomA": 26, "roomB": 27, "key": "" }, { "x": 51, "y": 38, "dir": "e", "roomA": 26, "roomB": 28, "key": "" }, { "x": 57, "y": 40, "dir": "e", "roomA": 27, "roomB": 30, "key": "" }, { "x": 55, "y": 40, "dir": "s", "roomA": 27, "roomB": 35, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 29, "roomB": 30, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 29, "roomB": 31, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 31, "roomB": 32, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 31, "roomB": 33, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 31, "roomB": 43, "key": "" }, { "x": 58, "y": 26, "dir": "e", "roomA": 31, "roomB": 44, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 33, "roomB": 34, "key": "" }, { "x": 55, "y": 47, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 55, "y": 44, "dir": "e", "roomA": 35, "roomB": 37, "key": "" }, { "x": 61, "y": 44, "dir": "e", "roomA": 37, "roomB": 38, "key": "" }, { "x": 59, "y": 44, "dir": "n", "roomA": 37, "roomB": 46, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 39, "roomB": 40, "key": "" }, { "x": 64, "y": 40, "dir": "s", "roomA": 39, "roomB": 45, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 40, "roomB": 41, "key": "" }, { "x": 65, "y": 38, "dir": "e", "roomA": 40, "roomB": 49, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 41, "roomB": 42, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 42, "roomB": 43, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 42, "roomB": 47, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 47, "roomB": 48, "key": "" }, { "x": 68, "y": 38, "dir": "e", "roomA": 49, "roomB": 50, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 61, "y": 34, "object": "term", "room": 29, "rot": 90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }], "teleporters": [{ "roomA": 7, "roomB": 8 }, { "roomA": 50, "roomB": 6 }] },
-	
-		// xeno lab
-		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
-	
-		// xeno base
-		"f8,c9": { "rooms": [{ "x": 31, "y": 24, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 28, "y": 26, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 37, "y": 26, "w": 4, "h": 2, "color": "#cccccc", "cave": false }, { "x": 41, "y": 25, "w": 4, "h": 4, "color": "#ff8866", "cave": false }, { "x": 77, "y": 26, "w": 3, "h": 3, "color": "#ff8866", "cave": false }, { "x": 73, "y": 24, "w": 4, "h": 7, "color": "#ffccff", "cave": false }, { "x": 70, "y": 25, "w": 3, "h": 2, "color": "#ccffff", "cave": false }, { "x": 70, "y": 28, "w": 3, "h": 2, "color": "#ffcc88", "cave": false }, { "x": 74, "y": 22, "w": 2, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 69, "y": 51, "w": 2, "h": 2, "color": "#ccffcc", "cave": false }, { "x": 68, "y": 46, "w": 4, "h": 5, "color": "#ccccff", "cave": false }, { "x": 65, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 72, "y": 47, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 69, "y": 35, "w": 1, "h": 11, "color": "#cccccc", "cave": false }, { "x": 66, "y": 36, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 70, "y": 36, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 66, "y": 40, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 70, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 68, "y": 32, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 33, "y": 30, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 32, "y": 20, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 45, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 52, "y": 26, "w": 2, "h": 2, "color": "#cccccc", "cave": false }, { "x": 54, "y": 25, "w": 8, "h": 4, "color": "#cccccc", "cave": false }], "doors": [{ "x": 31, "y": 27, "dir": "w", "roomA": 0, "roomB": 1, "key": "" }, { "x": 36, "y": 27, "dir": "e", "roomA": 0, "roomB": 2, "key": "" }, { "x": 34, "y": 29, "dir": "s", "roomA": 0, "roomB": 19, "key": "" }, { "x": 34, "y": 24, "dir": "n", "roomA": 0, "roomB": 20, "key": "" }, { "x": 40, "y": 27, "dir": "e", "roomA": 2, "roomB": 3, "key": "" }, { "x": 44, "y": 27, "dir": "e", "roomA": 3, "roomB": 21, "key": "" }, { "x": 77, "y": 27, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 73, "y": 26, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 73, "y": 29, "dir": "w", "roomA": 5, "roomB": 7, "key": "" }, { "x": 75, "y": 24, "dir": "n", "roomA": 5, "roomB": 8, "key": "" }, { "x": 70, "y": 51, "dir": "n", "roomA": 9, "roomB": 10, "key": "" }, { "x": 68, "y": 48, "dir": "w", "roomA": 10, "roomB": 11, "key": "" }, { "x": 71, "y": 48, "dir": "e", "roomA": 10, "roomB": 12, "key": "" }, { "x": 69, "y": 46, "dir": "n", "roomA": 10, "roomB": 13, "key": "" }, { "x": 69, "y": 37, "dir": "w", "roomA": 13, "roomB": 14, "key": "" }, { "x": 69, "y": 37, "dir": "e", "roomA": 13, "roomB": 15, "key": "" }, { "x": 69, "y": 41, "dir": "w", "roomA": 13, "roomB": 16, "key": "" }, { "x": 69, "y": 41, "dir": "e", "roomA": 13, "roomB": 17, "key": "" }, { "x": 69, "y": 35, "dir": "n", "roomA": 13, "roomB": 18, "key": "" }, { "x": 53, "y": 27, "dir": "e", "roomA": 22, "roomB": 23, "key": "" }], "objects": [{ "x": 33, "y": 20, "object": "xenterm", "room": 20, "rot": null }, { "x": 42, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 43, "y": 25, "object": "xenterm", "room": 3, "rot": null }, { "x": 67, "y": 36, "object": "control", "room": 14, "rot": null }, { "x": 57, "y": 26, "object": "engine", "room": 23, "rot": 90 }, { "x": 57, "y": 27, "object": "engine", "room": 23, "rot": 90 }], "teleporters": [{ "roomA": 4, "roomB": 1 }, { "roomA": 8, "roomB": 9 }, { "roomA": 19, "roomB": 18 }, { "roomA": 21, "roomB": 22 }] }
-	};
-	
-	function loadLevel(sectorX, sectorY, onload) {
-		startLoadingUI();
-	
-		setLoadingUIProgress(0, function () {
-			var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
-			console.log("Loading model=" + name);
-	
-			var zipName = "models/compounds/" + name + ".zip";
-			//console.log("Loading zip=" + zipName);
-	
-			_jquery2.default.ajax({
-				dataType: "binary",
-				processData: false,
-				responseType: "arraybuffer",
-				type: 'GET',
-				url: zipName + "?cb=" + window.cb,
-				progress: function progress(percentComplete) {
-					//console.log(percentComplete);
-					(0, _jquery2.default)("#progress-value").css("width", 80 * percentComplete + "%");
-				},
-				success: function success(data) {
-					decompressLevel(name, data, sectorX, sectorY, onload);
-				},
-				error: function error(err) {
-					console.log("Error downloading zip file: " + zipName + " error=" + err);
-				}
-			});
-		});
-	}
-	
-	function decompressLevel(name, data, sectorX, sectorY, onload) {
-		setLoadingUIProgress(80, function () {
-			//console.log("Loaded. Decompressing...");
-			var zip = new _jszip2.default(data);
-			//console.log("zip data=", zip);
-			var jsonContent = zip.file(name).asText();
-	
-			setLoadingUIProgress(90, function () {
-				//console.log("Constructing object... json size=", jsonContent.length);
-				var obj = new _three2.default.ObjectLoader().parse(JSON.parse(jsonContent));
-				//console.log("constructed=", obj);
-	
-				setLoadingUIProgress(100, function () {
-					stopLoadingUI();
-					onload(getLevel(sectorX, sectorY, obj));
-				});
-			});
-		});
-	}
-	
-	function startLoadingUI() {
-		window.loadingComplex = true;
-		(0, _jquery2.default)(".alert").hide();
-		(0, _jquery2.default)("#loading").show();
-		(0, _jquery2.default)("#wait").show();
-	}
-	
-	function stopLoadingUI() {
-		(0, _jquery2.default)("#loading").hide();
-		(0, _jquery2.default)("#wait").hide();
-		window.loadingComplex = false;
-	}
-	
-	function setLoadingUIProgress(percent, action) {
-		(0, _jquery2.default)("#progress-value").css("width", percent + "%");
-		setTimeout(action, 100);
-	}
-	
-	function getLevel(sectorX, sectorY) {
-		var obj = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
-	
-		var key = "" + sectorX.toString(16) + "," + sectorY.toString(16);
-		console.log("Looking for compound=" + key + " found=" + LEVELS[key]);
-		return new room.Level(LEVELS[key], obj);
-	}
-	
-	window.generate = function (sectorX, sectorY) {
-		var level = getLevel(sectorX, sectorY);
-		var gen = new generator.CompoundGenerator(level.rooms, level.doors, level.objects, window.models, level.w, level.h);
-		console.log("Generating...");
-		gen.generate();
-		console.log("JSONifying...");
-		var s = JSON.stringify(gen.mesh.toJSON());
-		console.log("JSON size=" + s.length);
-	
-		// timeout so the page doesn't crash (yield to main thread)
-		setTimeout(function () {
-			console.log("Uploading...");
-			_jquery2.default.ajax({
-				type: 'POST',
-				url: "http://localhost:9090/cgi-bin/upload.py",
-				data: "name=" + util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + "&file=" + s,
-				success: function success() {
-					console.log("Success!");
-				},
-				error: function error(_error) {
-					console.log("error: ", _error);
-				},
-				dataType: "text/json"
-			});
-			console.log("Stored on server.");
-		}, 500);
-	};
-
-/***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50676,15 +51161,15 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(8);
+	var _movement = __webpack_require__(9);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _game_map = __webpack_require__(3);
+	var _game_map = __webpack_require__(4);
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -50692,13 +51177,13 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(12);
+	var _ThreeCSG = __webpack_require__(14);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
-	var _room3 = __webpack_require__(11);
+	var _constants = __webpack_require__(8);
 	
-	var constants = _interopRequireWildcard(_room3);
+	var constants = _interopRequireWildcard(_constants);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -50725,34 +51210,31 @@
 				    t2 = void 0;
 				t = Date.now();
 	
-				var level_geometry = new _three2.default.CubeGeometry(this.w * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, this.h * constants.ROOM_SIZE + constants.WALL_THICKNESS * 2, constants.ROOM_SIZE);
-				level_geometry.computeVertexNormals();
-				util.shadeGeo(level_geometry, constants.LIGHT, new _three2.default.Color("#ffffcc"));
-				var level_mesh = new _three2.default.Mesh(level_geometry);
-				level_mesh.position.set(this.w * constants.ROOM_SIZE / 2 + constants.WALL_THICKNESS, this.h * constants.ROOM_SIZE / 2 + constants.WALL_THICKNESS, 0);
-				var level_bsp = new csg.ThreeBSP(level_mesh);
-	
-				t2 = Date.now();console.log("1. " + (t2 - t));t = t2;
-	
 				// cut out the rooms
+				var compoundGeo = new _three2.default.Geometry();
 				var _iteratorNormalCompletion = true;
 				var _didIteratorError = false;
 				var _iteratorError = undefined;
 	
 				try {
 					for (var _iterator = this.rooms[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-						var room = _step.value;
+						var _room2 = _step.value;
 	
-						var inner_geometry = new _three2.default.CubeGeometry(room.w * constants.ROOM_SIZE - constants.WALL_THICKNESS, room.h * constants.ROOM_SIZE - constants.WALL_THICKNESS, constants.ROOM_SIZE - constants.WALL_THICKNESS);
+						var inner_geometry = new _three2.default.CubeGeometry(_room2.w * constants.ROOM_SIZE - constants.WALL_THICKNESS, _room2.h * constants.ROOM_SIZE - constants.WALL_THICKNESS, constants.ROOM_SIZE - constants.WALL_THICKNESS);
+						// invert normals
+						util.invertGeo(inner_geometry);
+	
 						var inner_mesh = new _three2.default.Mesh(inner_geometry);
 	
-						var rx = (room.x + room.w / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
-						var ry = (room.y + room.h / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+						var rx = (_room2.x + _room2.w / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+						var ry = (_room2.y + _room2.h / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
 						inner_mesh.position.set(rx, ry, 0);
 	
-						var inner_bsp = new csg.ThreeBSP(inner_mesh);
+						_room2.minPoint.set(_room2.x * constants.ROOM_SIZE + constants.WALL_THICKNESS, _room2.y * constants.ROOM_SIZE + constants.WALL_THICKNESS);
+						_room2.maxPoint.set((_room2.x + _room2.w) * constants.ROOM_SIZE + constants.WALL_THICKNESS, (_room2.y + _room2.h) * constants.ROOM_SIZE + constants.WALL_THICKNESS);
 	
-						level_bsp = level_bsp.subtract(inner_bsp);
+						inner_mesh.updateMatrix();
+						compoundGeo.merge(inner_mesh.geometry, inner_mesh.matrix);
 					}
 				} catch (err) {
 					_didIteratorError = true;
@@ -50769,6 +51251,8 @@
 					}
 				}
 	
+				var level_mesh = new _three2.default.Mesh(compoundGeo);
+				var level_bsp = new csg.ThreeBSP(level_mesh);
 				t2 = Date.now();console.log("2. " + (t2 - t));t = t2;
 	
 				// door cutouts
@@ -50778,33 +51262,33 @@
 	
 				try {
 					for (var _iterator2 = this.doors[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-						var door = _step2.value;
+						var _door = _step2.value;
 	
 						//console.log("Drawing door: " + door.x + "," + door.y + " dir=" + door.dir + " dx/dy=" + door.dx + "," + door.dy);
 	
-						var dx = (door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dx;
-						var dy = (door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + door.dy;
+						var dx = (_door.x + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + _door.dx;
+						var dy = (_door.y + .5) * constants.ROOM_SIZE + constants.WALL_THICKNESS + _door.dy;
 						var dz = -(constants.ROOM_SIZE - constants.DOOR_HEIGHT - constants.WALL_THICKNESS) * .5;
 	
 						var shell_mesh = void 0;
-						if (door.key == "") {
+						if (_door.key == "") {
 							var shell_geo = new _three2.default.CubeGeometry(constants.DOOR_WIDTH, constants.DOOR_WIDTH, constants.DOOR_HEIGHT);
 							shell_mesh = new _three2.default.Mesh(shell_geo);
 						} else {
-							var keyModel = models.models[door.key];
+							var keyModel = models.models[_door.key];
 							shell_mesh = keyModel.createObject();
 							shell_mesh.geometry = shell_mesh.geometry.clone();
 	
 							// sizing and position by trial-and-error...
 							var w = void 0,
 							    h = void 0;
-							if (door.dir == "n" || door.dir == "s") {
+							if (_door.dir == "n" || _door.dir == "s") {
 								shell_mesh.geometry.rotateZ(Math.PI / 2);
-								w = keyModel.bbox.size().x / door.h * 1.25;
-								h = keyModel.bbox.size().y / door.w * 2;
+								w = keyModel.bbox.size().x / _door.h * 1.25;
+								h = keyModel.bbox.size().y / _door.w * 2;
 							} else {
-								w = keyModel.bbox.size().x / door.w * 2;
-								h = keyModel.bbox.size().y / door.h;
+								w = keyModel.bbox.size().x / _door.w * 2;
+								h = keyModel.bbox.size().y / _door.h;
 							}
 	
 							var modelZ = keyModel.bbox.size().z;
@@ -50815,7 +51299,7 @@
 						}
 	
 						shell_mesh.position.set(dx, dy, dz);
-						door.shell_mesh = shell_mesh.clone();
+						_door.shell_mesh = shell_mesh.clone();
 	
 						var shell_bsp = new csg.ThreeBSP(shell_mesh);
 						level_bsp = level_bsp.subtract(shell_bsp);
@@ -50837,13 +51321,12 @@
 	
 				t2 = Date.now();console.log("3. " + (t2 - t));t = t2;
 	
-				this.mat = new _three2.default.MeshBasicMaterial({ side: _three2.default.DoubleSide, vertexColors: _three2.default.FaceColors });
 				// this is the mesh targeted by the raycasters
-				this.targetMesh = level_bsp.toMesh(this.mat);
+				this.targetMesh = level_bsp.toMesh(constants.MATERIAL);
 				this.targetMesh["merc_name"] = "room_wall";
 				this.targetMesh["merc_type"] = "wall";
 				this.geo = this.targetMesh.geometry;
-				this.geo.computeVertexNormals();
+				util.compressGeo(this.geo);
 	
 				// the uber-mesh that contains everything
 				this.mesh = new _three2.default.Object3D();
@@ -50852,8 +51335,6 @@
 				// add the cave meshes
 				this.caveMeshObj = new _three2.default.Object3D();
 				this.mesh.add(this.caveMeshObj);
-	
-				this.caveMeshes = [];
 	
 				// color the rooms
 				var _iteratorNormalCompletion3 = true;
@@ -50865,12 +51346,10 @@
 						var face = _step3.value;
 	
 						var p = this.geo.vertices[face.a].clone();
-						p.x += this.w * constants.ROOM_SIZE * .5;
-						p.y += this.h * constants.ROOM_SIZE * .5;
 						p.z += movement.ROOM_DEPTH;
-						var _room = this.getRoomAtPos(p);
-						if (_room) {
-							face.color = _room.color.clone();
+						var _room3 = this.getRoomAtPos(p);
+						if (_room3) {
+							face.color = _room3.color.clone();
 						}
 					}
 				} catch (err) {
@@ -50888,30 +51367,93 @@
 					}
 				}
 	
-				util.shadeGeo(this.geo, constants.LIGHT);
 				t2 = Date.now();console.log("8. " + (t2 - t));t = t2;
 	
-				var _iteratorNormalCompletion4 = true;
-				var _didIteratorError4 = false;
-				var _iteratorError4 = undefined;
+				if (constants.CAVES_ENABLED) {
+					var caveGeo = new _three2.default.Geometry();
+					var hasCaves = false;
+					var _iteratorNormalCompletion4 = true;
+					var _didIteratorError4 = false;
+					var _iteratorError4 = undefined;
 	
-				try {
-					for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-						var _room2 = _step4.value;
-	
-						this.makeCaveRoom(_room2);
-					}
-				} catch (err) {
-					_didIteratorError4 = true;
-					_iteratorError4 = err;
-				} finally {
 					try {
-						if (!_iteratorNormalCompletion4 && _iterator4.return) {
-							_iterator4.return();
+						for (var _iterator4 = this.rooms[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+							var room = _step4.value;
+	
+							var mesh = this.makeCaveRoom(room);
+							if (mesh) {
+								hasCaves = true;
+								mesh.updateMatrix();
+								caveGeo.merge(mesh.geometry, mesh.matrix);
+							}
 						}
+					} catch (err) {
+						_didIteratorError4 = true;
+						_iteratorError4 = err;
 					} finally {
-						if (_didIteratorError4) {
-							throw _iteratorError4;
+						try {
+							if (!_iteratorNormalCompletion4 && _iterator4.return) {
+								_iterator4.return();
+							}
+						} finally {
+							if (_didIteratorError4) {
+								throw _iteratorError4;
+							}
+						}
+					}
+	
+					if (hasCaves) {
+						util.compressGeo(caveGeo);
+						this.caveMeshObj.add(new _three2.default.Mesh(caveGeo, constants.MATERIAL));
+					}
+					// free memory
+					var _iteratorNormalCompletion5 = true;
+					var _didIteratorError5 = false;
+					var _iteratorError5 = undefined;
+	
+					try {
+						for (var _iterator5 = this.rooms[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+							var _room = _step5.value;
+	
+							_room.caveMesh = null;
+						}
+					} catch (err) {
+						_didIteratorError5 = true;
+						_iteratorError5 = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion5 && _iterator5.return) {
+								_iterator5.return();
+							}
+						} finally {
+							if (_didIteratorError5) {
+								throw _iteratorError5;
+							}
+						}
+					}
+	
+					var _iteratorNormalCompletion6 = true;
+					var _didIteratorError6 = false;
+					var _iteratorError6 = undefined;
+	
+					try {
+						for (var _iterator6 = this.doors[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+							var door = _step6.value;
+	
+							door.shell_mesh = null;
+						}
+					} catch (err) {
+						_didIteratorError6 = true;
+						_iteratorError6 = err;
+					} finally {
+						try {
+							if (!_iteratorNormalCompletion6 && _iterator6.return) {
+								_iterator6.return();
+							}
+						} finally {
+							if (_didIteratorError6) {
+								throw _iteratorError6;
+							}
 						}
 					}
 				}
@@ -50922,103 +51464,23 @@
 				var debug = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 	
 				if (debug) console.log("point=", point);
-				var _iteratorNormalCompletion5 = true;
-				var _didIteratorError5 = false;
-				var _iteratorError5 = undefined;
-	
-				try {
-					for (var _iterator5 = this.rooms[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-						var room = _step5.value;
-	
-						var min = new _three2.default.Vector3(room.x * constants.ROOM_SIZE, room.y * constants.ROOM_SIZE, movement.ROOM_DEPTH - constants.ROOM_SIZE / 2);
-						var max = new _three2.default.Vector3((room.x + room.w) * constants.ROOM_SIZE, (room.y + room.h) * constants.ROOM_SIZE, movement.ROOM_DEPTH + constants.ROOM_SIZE / 2);
-						if (debug) console.log("...vs " + room.name + " min=", min, " max=", max);
-						var box = new _three2.default.Box3(min, max);
-						if (box.containsPoint(point)) {
-							if (debug) console.log("!!!");
-							return room;
-						}
-					}
-				} catch (err) {
-					_didIteratorError5 = true;
-					_iteratorError5 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion5 && _iterator5.return) {
-							_iterator5.return();
-						}
-					} finally {
-						if (_didIteratorError5) {
-							throw _iteratorError5;
-						}
-					}
-				}
-	
-				return null;
-			}
-		}, {
-			key: 'makeCaveRoom',
-			value: function makeCaveRoom(room) {
-				if (!room.cave || room.caveMesh) {
-					return;
-				}
-	
-				var rx = (room.x + room.w / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
-				var ry = (room.y + room.h / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
-				var w = room.w * constants.ROOM_SIZE - constants.WALL_THICKNESS - constants.CAVE_RAND_FACTOR * 2;
-				var h = room.h * constants.ROOM_SIZE - constants.WALL_THICKNESS - constants.CAVE_RAND_FACTOR * 2;
-				var d = constants.ROOM_SIZE - constants.WALL_THICKNESS;
-				var geo = new _three2.default.BoxGeometry(w, h, d, room.w * constants.WALL_SEGMENTS, room.h * constants.WALL_SEGMENTS, constants.WALL_SEGMENTS);
-				var _iteratorNormalCompletion6 = true;
-				var _didIteratorError6 = false;
-				var _iteratorError6 = undefined;
-	
-				try {
-					for (var _iterator6 = geo.vertices[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-						var v = _step6.value;
-	
-						v.x += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
-						v.y += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
-						v.z += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
-					}
-				} catch (err) {
-					_didIteratorError6 = true;
-					_iteratorError6 = err;
-				} finally {
-					try {
-						if (!_iteratorNormalCompletion6 && _iterator6.return) {
-							_iterator6.return();
-						}
-					} finally {
-						if (_didIteratorError6) {
-							throw _iteratorError6;
-						}
-					}
-				}
-	
-				var mesh = new _three2.default.Mesh(geo);
-				mesh.position.set(rx, ry, 0);
-				var bsp = new csg.ThreeBSP(mesh);
-	
-				geo = new _three2.default.BoxGeometry(w + constants.CAVE_RAND_FACTOR * 3, h + constants.CAVE_RAND_FACTOR * 3, d);
-				mesh = new _three2.default.Mesh(geo);
-				mesh.position.set(rx, ry, constants.CAVE_RAND_FACTOR / 2);
-				bsp = new csg.ThreeBSP(mesh).subtract(bsp);
-	
-				mesh = bsp.toMesh(this.mat);
-				room.caveMesh = mesh;
-	
-				// cutout doors
 				var _iteratorNormalCompletion7 = true;
 				var _didIteratorError7 = false;
 				var _iteratorError7 = undefined;
 	
 				try {
-					for (var _iterator7 = this.doors[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-						var door = _step7.value;
+					for (var _iterator7 = this.rooms[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+						var room = _step7.value;
 	
-						if (door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
-						if (door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
+						var min = new _three2.default.Vector3(room.minPoint.x, room.minPoint.y, movement.ROOM_DEPTH - constants.ROOM_SIZE / 2);
+						var max = new _three2.default.Vector3(room.maxPoint.x, room.maxPoint.y, movement.ROOM_DEPTH + constants.ROOM_SIZE / 2);
+	
+						if (debug) console.log("...vs " + room.name + " min=", min, " max=", max, " room=", room.x, ",", room.y, " dim=", room.w, ",", room.h);
+						var box = new _three2.default.Box3(min, max);
+						if (box.containsPoint(point)) {
+							if (debug) console.log("!!!");
+							return room;
+						}
 					}
 				} catch (err) {
 					_didIteratorError7 = true;
@@ -51035,22 +51497,32 @@
 					}
 				}
 	
-				var dx = (room.x + room.w / 2 - this.w / 2) * constants.ROOM_SIZE;
-				var dy = (room.y + room.h / 2 - this.h / 2) * constants.ROOM_SIZE;
-				var dz = 0;
-				room.caveMesh.position.set(dx, dy, dz);
-				room.caveMesh.updateMatrix();
+				return null;
+			}
+		}, {
+			key: 'makeCaveRoom',
+			value: function makeCaveRoom(room) {
+				if (!room.cave || room.caveMesh) {
+					return null;
+				}
 	
+				var rx = (room.x + room.w / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+				var ry = (room.y + room.h / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+				var w = room.w * constants.ROOM_SIZE - constants.WALL_THICKNESS - constants.CAVE_RAND_FACTOR * 2;
+				var h = room.h * constants.ROOM_SIZE - constants.WALL_THICKNESS - constants.CAVE_RAND_FACTOR * 2;
+				var d = constants.ROOM_SIZE - constants.WALL_THICKNESS;
+				var geo = new _three2.default.BoxGeometry(w, h, d, room.w * constants.WALL_SEGMENTS, room.h * constants.WALL_SEGMENTS, constants.WALL_SEGMENTS);
 				var _iteratorNormalCompletion8 = true;
 				var _didIteratorError8 = false;
 				var _iteratorError8 = undefined;
 	
 				try {
-					for (var _iterator8 = room.caveMesh.geometry.faces[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-						var face = _step8.value;
+					for (var _iterator8 = geo.vertices[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+						var v = _step8.value;
 	
-						face.color = room.color.clone();
-						face.vertexColors = [room.color.clone()];
+						v.x += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
+						v.y += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
+						v.z += Math.random() * constants.CAVE_RAND_FACTOR * 2 - constants.CAVE_RAND_FACTOR;
 					}
 				} catch (err) {
 					_didIteratorError8 = true;
@@ -51067,29 +51539,29 @@
 					}
 				}
 	
-				room.caveMesh.geometry.computeVertexNormals();
-				room.caveMesh.geometry.computeFaceNormals();
-				util.shadeGeo(room.caveMesh.geometry, constants.LIGHT);
-				this.caveMeshObj.add(room.caveMesh);
-				this.caveMeshes.push(room.caveMesh);
-			}
-		}, {
-			key: 'cutoutCaveDoor',
-			value: function cutoutCaveDoor(door, room) {
-				var t = Date.now();
-				var shell_bsp = new csg.ThreeBSP(door.shell_mesh);
-				var bsp = new csg.ThreeBSP(room.caveMesh);
-				bsp = bsp.subtract(shell_bsp);
-				room.caveMesh = bsp.toMesh(this.mat);
+				var mesh = new _three2.default.Mesh(geo);
+				mesh.position.set(rx, ry, 0);
+				var bsp = new csg.ThreeBSP(mesh);
+	
+				geo = new _three2.default.BoxGeometry(w + constants.CAVE_RAND_FACTOR * 3, h + constants.CAVE_RAND_FACTOR * 3, d);
+				mesh = new _three2.default.Mesh(geo);
+				mesh.position.set(rx, ry, constants.CAVE_RAND_FACTOR / 2);
+				bsp = new csg.ThreeBSP(mesh).subtract(bsp);
+	
+				mesh = bsp.toMesh(constants.MATERIAL);
+				room.caveMesh = mesh;
+	
+				// cutout doors
 				var _iteratorNormalCompletion9 = true;
 				var _didIteratorError9 = false;
 				var _iteratorError9 = undefined;
 	
 				try {
-					for (var _iterator9 = room.caveMesh.geometry.faces[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-						var face = _step9.value;
+					for (var _iterator9 = this.doors[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+						var door = _step9.value;
 	
-						face.color = room.color.clone();
+						if (door.roomA == room) this.cutoutCaveDoor(door, door.roomA);
+						if (door.roomB == room) this.cutoutCaveDoor(door, door.roomB);
 					}
 				} catch (err) {
 					_didIteratorError9 = true;
@@ -51106,6 +51578,73 @@
 					}
 				}
 	
+				var dx = (room.x + room.w / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+				var dy = (room.y + room.h / 2) * constants.ROOM_SIZE + constants.WALL_THICKNESS;
+				var dz = 0;
+				room.caveMesh.position.set(dx, dy, dz);
+				room.caveMesh.updateMatrix();
+	
+				var _iteratorNormalCompletion10 = true;
+				var _didIteratorError10 = false;
+				var _iteratorError10 = undefined;
+	
+				try {
+					for (var _iterator10 = room.caveMesh.geometry.faces[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+						var face = _step10.value;
+	
+						face.color = room.color.clone();
+					}
+				} catch (err) {
+					_didIteratorError10 = true;
+					_iteratorError10 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion10 && _iterator10.return) {
+							_iterator10.return();
+						}
+					} finally {
+						if (_didIteratorError10) {
+							throw _iteratorError10;
+						}
+					}
+				}
+	
+				room.caveMesh.geometry.computeFaceNormals();
+				return room.caveMesh;
+			}
+		}, {
+			key: 'cutoutCaveDoor',
+			value: function cutoutCaveDoor(door, room) {
+				var t = Date.now();
+				var shell_bsp = new csg.ThreeBSP(door.shell_mesh);
+				var bsp = new csg.ThreeBSP(room.caveMesh);
+				bsp = bsp.subtract(shell_bsp);
+				room.caveMesh = bsp.toMesh(constants.MATERIAL);
+				var _iteratorNormalCompletion11 = true;
+				var _didIteratorError11 = false;
+				var _iteratorError11 = undefined;
+	
+				try {
+					for (var _iterator11 = room.caveMesh.geometry.faces[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+						var face = _step11.value;
+	
+						face.color = room.color.clone();
+					}
+				} catch (err) {
+					_didIteratorError11 = true;
+					_iteratorError11 = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion11 && _iterator11.return) {
+							_iterator11.return();
+						}
+					} finally {
+						if (_didIteratorError11) {
+							throw _iteratorError11;
+						}
+					}
+				}
+	
 				console.log("cutoutCaveDoor time=" + (Date.now() - t) + " room=" + room.name + " door=" + door.x + "," + door.y);
 			}
 		}]);
@@ -51114,12 +51653,12 @@
 	}();
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(16);
+	var base64 = __webpack_require__(17);
 	
 	/**
 	Usage:
@@ -51167,16 +51706,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(17);
-	JSZip.prototype.load = __webpack_require__(50);
-	JSZip.support = __webpack_require__(18);
-	JSZip.defaults = __webpack_require__(45);
+	JSZip.prototype = __webpack_require__(18);
+	JSZip.prototype.load = __webpack_require__(51);
+	JSZip.support = __webpack_require__(19);
+	JSZip.defaults = __webpack_require__(46);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(57);
+	JSZip.utils = __webpack_require__(58);
 	
 	JSZip.base64 = {
 	    /**
@@ -51194,12 +51733,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(24);
+	JSZip.compressions = __webpack_require__(25);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -51275,22 +51814,22 @@
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(18);
-	var utils = __webpack_require__(23);
-	var crc32 = __webpack_require__(43);
-	var signature = __webpack_require__(44);
-	var defaults = __webpack_require__(45);
-	var base64 = __webpack_require__(16);
-	var compressions = __webpack_require__(24);
-	var CompressedObject = __webpack_require__(46);
-	var nodeBuffer = __webpack_require__(42);
-	var utf8 = __webpack_require__(47);
-	var StringWriter = __webpack_require__(48);
-	var Uint8ArrayWriter = __webpack_require__(49);
+	var support = __webpack_require__(19);
+	var utils = __webpack_require__(24);
+	var crc32 = __webpack_require__(44);
+	var signature = __webpack_require__(45);
+	var defaults = __webpack_require__(46);
+	var base64 = __webpack_require__(17);
+	var compressions = __webpack_require__(25);
+	var CompressedObject = __webpack_require__(47);
+	var nodeBuffer = __webpack_require__(43);
+	var utf8 = __webpack_require__(48);
+	var StringWriter = __webpack_require__(49);
+	var Uint8ArrayWriter = __webpack_require__(50);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -52164,7 +52703,7 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -52202,10 +52741,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -52218,9 +52757,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(20)
-	var ieee754 = __webpack_require__(21)
-	var isArray = __webpack_require__(22)
+	var base64 = __webpack_require__(21)
+	var ieee754 = __webpack_require__(22)
+	var isArray = __webpack_require__(23)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -53757,10 +54296,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -53890,7 +54429,7 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -53980,7 +54519,7 @@
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -53991,13 +54530,13 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(18);
-	var compressions = __webpack_require__(24);
-	var nodeBuffer = __webpack_require__(42);
+	var support = __webpack_require__(19);
+	var compressions = __webpack_require__(25);
+	var nodeBuffer = __webpack_require__(43);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -54323,7 +54862,7 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54338,17 +54877,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(25);
+	exports.DEFLATE = __webpack_require__(26);
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(26);
+	var pako = __webpack_require__(27);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -54364,17 +54903,17 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(27).assign;
+	var assign    = __webpack_require__(28).assign;
 	
-	var deflate   = __webpack_require__(28);
-	var inflate   = __webpack_require__(36);
-	var constants = __webpack_require__(40);
+	var deflate   = __webpack_require__(29);
+	var inflate   = __webpack_require__(37);
+	var constants = __webpack_require__(41);
 	
 	var pako = {};
 	
@@ -54384,7 +54923,7 @@
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -54492,17 +55031,17 @@
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(29);
-	var utils = __webpack_require__(27);
-	var strings = __webpack_require__(34);
-	var msg = __webpack_require__(33);
-	var zstream = __webpack_require__(35);
+	var zlib_deflate = __webpack_require__(30);
+	var utils = __webpack_require__(28);
+	var strings = __webpack_require__(35);
+	var msg = __webpack_require__(34);
+	var zstream = __webpack_require__(36);
 	
 	var toString = Object.prototype.toString;
 	
@@ -54874,16 +55413,16 @@
 
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(27);
-	var trees   = __webpack_require__(30);
-	var adler32 = __webpack_require__(31);
-	var crc32   = __webpack_require__(32);
-	var msg   = __webpack_require__(33);
+	var utils   = __webpack_require__(28);
+	var trees   = __webpack_require__(31);
+	var adler32 = __webpack_require__(32);
+	var crc32   = __webpack_require__(33);
+	var msg   = __webpack_require__(34);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -56645,13 +57184,13 @@
 
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(27);
+	var utils = __webpack_require__(28);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -57850,7 +58389,7 @@
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57888,7 +58427,7 @@
 
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57935,7 +58474,7 @@
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -57954,14 +58493,14 @@
 
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(27);
+	var utils = __webpack_require__(28);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -58145,7 +58684,7 @@
 
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58180,19 +58719,19 @@
 
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(37);
-	var utils = __webpack_require__(27);
-	var strings = __webpack_require__(34);
-	var c = __webpack_require__(40);
-	var msg = __webpack_require__(33);
-	var zstream = __webpack_require__(35);
-	var gzheader = __webpack_require__(41);
+	var zlib_inflate = __webpack_require__(38);
+	var utils = __webpack_require__(28);
+	var strings = __webpack_require__(35);
+	var c = __webpack_require__(41);
+	var msg = __webpack_require__(34);
+	var zstream = __webpack_require__(36);
+	var gzheader = __webpack_require__(42);
 	
 	var toString = Object.prototype.toString;
 	
@@ -58586,17 +59125,17 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(27);
-	var adler32 = __webpack_require__(31);
-	var crc32   = __webpack_require__(32);
-	var inflate_fast = __webpack_require__(38);
-	var inflate_table = __webpack_require__(39);
+	var utils = __webpack_require__(28);
+	var adler32 = __webpack_require__(32);
+	var crc32   = __webpack_require__(33);
+	var inflate_fast = __webpack_require__(39);
+	var inflate_table = __webpack_require__(40);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -60095,7 +60634,7 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60427,13 +60966,13 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(27);
+	var utils = __webpack_require__(28);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -60760,7 +61299,7 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -60813,7 +61352,7 @@
 
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60859,7 +61398,7 @@
 
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -60870,15 +61409,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(23);
+	var utils = __webpack_require__(24);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -60981,7 +61520,7 @@
 
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -60994,7 +61533,7 @@
 
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61011,7 +61550,7 @@
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61045,14 +61584,14 @@
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(23);
-	var support = __webpack_require__(18);
-	var nodeBuffer = __webpack_require__(42);
+	var utils = __webpack_require__(24);
+	var support = __webpack_require__(19);
+	var nodeBuffer = __webpack_require__(43);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -61258,12 +61797,12 @@
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(23);
+	var utils = __webpack_require__(24);
 	
 	/**
 	 * An object to write any content to a string.
@@ -61294,12 +61833,12 @@
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(23);
+	var utils = __webpack_require__(24);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -61336,12 +61875,12 @@
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(16);
-	var ZipEntries = __webpack_require__(51);
+	var base64 = __webpack_require__(17);
+	var ZipEntries = __webpack_require__(52);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -61373,18 +61912,18 @@
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(52);
-	var NodeBufferReader = __webpack_require__(54);
-	var Uint8ArrayReader = __webpack_require__(55);
-	var utils = __webpack_require__(23);
-	var sig = __webpack_require__(44);
-	var ZipEntry = __webpack_require__(56);
-	var support = __webpack_require__(18);
-	var jszipProto = __webpack_require__(17);
+	var StringReader = __webpack_require__(53);
+	var NodeBufferReader = __webpack_require__(55);
+	var Uint8ArrayReader = __webpack_require__(56);
+	var utils = __webpack_require__(24);
+	var sig = __webpack_require__(45);
+	var ZipEntry = __webpack_require__(57);
+	var support = __webpack_require__(19);
+	var jszipProto = __webpack_require__(18);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -61600,12 +62139,12 @@
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(53);
-	var utils = __webpack_require__(23);
+	var DataReader = __webpack_require__(54);
+	var utils = __webpack_require__(24);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -61642,11 +62181,11 @@
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(23);
+	var utils = __webpack_require__(24);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -61755,11 +62294,11 @@
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(55);
+	var Uint8ArrayReader = __webpack_require__(56);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -61781,11 +62320,11 @@
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(53);
+	var DataReader = __webpack_require__(54);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -61834,14 +62373,14 @@
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(52);
-	var utils = __webpack_require__(23);
-	var CompressedObject = __webpack_require__(46);
-	var jszipProto = __webpack_require__(17);
+	var StringReader = __webpack_require__(53);
+	var utils = __webpack_require__(24);
+	var CompressedObject = __webpack_require__(47);
+	var jszipProto = __webpack_require__(18);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -62150,11 +62689,11 @@
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(23);
+	var utils = __webpack_require__(24);
 	
 	/**
 	 * @deprecated
@@ -62261,115 +62800,6 @@
 
 
 /***/ },
-/* 58 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	var JSZipUtils = {};
-	// just use the responseText with xhr1, response with xhr2.
-	// The transformation doesn't throw away high-order byte (with responseText)
-	// because JSZip handles that case. If not used with JSZip, you may need to
-	// do it, see https://developer.mozilla.org/En/Using_XMLHttpRequest#Handling_binary_data
-	JSZipUtils._getBinaryFromXHR = function (xhr) {
-	    // for xhr.responseText, the 0xFF mask is applied by JSZip
-	    return xhr.response || xhr.responseText;
-	};
-	
-	// taken from jQuery
-	function createStandardXHR() {
-	    try {
-	        return new window.XMLHttpRequest();
-	    } catch( e ) {}
-	}
-	
-	function createActiveXHR() {
-	    try {
-	        return new window.ActiveXObject("Microsoft.XMLHTTP");
-	    } catch( e ) {}
-	}
-	
-	// Create the request object
-	var createXHR = window.ActiveXObject ?
-	    /* Microsoft failed to properly
-	     * implement the XMLHttpRequest in IE7 (can't request local files),
-	     * so we use the ActiveXObject when it is available
-	     * Additionally XMLHttpRequest can be disabled in IE7/IE8 so
-	     * we need a fallback.
-	     */
-	    function() {
-	    return createStandardXHR() || createActiveXHR();
-	} :
-	    // For all other browsers, use the standard XMLHttpRequest object
-	    createStandardXHR;
-	
-	
-	
-	JSZipUtils.getBinaryContent = function(path, callback) {
-	    /*
-	     * Here is the tricky part : getting the data.
-	     * In firefox/chrome/opera/... setting the mimeType to 'text/plain; charset=x-user-defined'
-	     * is enough, the result is in the standard xhr.responseText.
-	     * cf https://developer.mozilla.org/En/XMLHttpRequest/Using_XMLHttpRequest#Receiving_binary_data_in_older_browsers
-	     * In IE <= 9, we must use (the IE only) attribute responseBody
-	     * (for binary data, its content is different from responseText).
-	     * In IE 10, the 'charset=x-user-defined' trick doesn't work, only the
-	     * responseType will work :
-	     * http://msdn.microsoft.com/en-us/library/ie/hh673569%28v=vs.85%29.aspx#Binary_Object_upload_and_download
-	     *
-	     * I'd like to use jQuery to avoid this XHR madness, but it doesn't support
-	     * the responseType attribute : http://bugs.jquery.com/ticket/11461
-	     */
-	    try {
-	
-	        var xhr = createXHR();
-	
-	        xhr.open('GET', path, true);
-	
-	        // recent browsers
-	        if ("responseType" in xhr) {
-	            xhr.responseType = "arraybuffer";
-	        }
-	
-	        // older browser
-	        if(xhr.overrideMimeType) {
-	            xhr.overrideMimeType("text/plain; charset=x-user-defined");
-	        }
-	
-	        xhr.onreadystatechange = function(evt) {
-	            var file, err;
-	            // use `xhr` and not `this`... thanks IE
-	            if (xhr.readyState === 4) {
-	                if (xhr.status === 200 || xhr.status === 0) {
-	                    file = null;
-	                    err = null;
-	                    try {
-	                        file = JSZipUtils._getBinaryFromXHR(xhr);
-	                    } catch(e) {
-	                        err = new Error(e);
-	                    }
-	                    callback(err, file);
-	                } else {
-	                    callback(new Error("Ajax error for " + path + " : " + this.status + " " + this.statusText), null);
-	                }
-	            }
-	        };
-	
-	        xhr.send();
-	
-	    } catch (e) {
-	        callback(new Error(e), null);
-	    }
-	};
-	
-	// export
-	module.exports = JSZipUtils;
-	
-	// enforcing Stuk's coding style
-	// vim: set shiftwidth=4 softtabstop=4:
-
-
-/***/ },
 /* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -62382,11 +62812,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _constants = __webpack_require__(7);
+	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
@@ -62766,11 +63196,11 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _constants = __webpack_require__(7);
+	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
 	
-	var _util = __webpack_require__(4);
+	var _util = __webpack_require__(5);
 	
 	var util = _interopRequireWildcard(_util);
 	
@@ -62797,6 +63227,9 @@
 			this.mesh.position.z = far_dist / 4;
 			player.add(this.mesh);
 	
+			var starGeo = new _three2.default.BoxGeometry(70, 70, 70);
+			util.compressGeo(starGeo);
+	
 			// add some stars
 			this.stars = new _three2.default.Object3D();
 			this.starMaterial = new _three2.default.MeshBasicMaterial({ color: new _three2.default.Color("rgb(240,220,16)"), opacity: 0, transparent: true });
@@ -62807,8 +63240,9 @@
 				var x = r * Math.cos(a) * Math.sin(b);
 				var y = r * Math.sin(a) * Math.sin(b);
 				var z = r * Math.cos(b);
-				var size = Math.random() * 70 + 70;
-				var star = new _three2.default.Mesh(new _three2.default.BoxGeometry(size, size, size), this.starMaterial);
+				var star = new _three2.default.Mesh(starGeo, this.starMaterial);
+				var size = Math.random() + 1;
+				star.scale.set(size, size, size);
 				star.position.set(x, y, z);
 				this.stars.add(star);
 			}
@@ -62828,6 +63262,9 @@
 				// show stars at night - sun during day
 				this.material.color = constants.SKY_COLOR.clone().multiplyScalar(percent);
 				util.updateColors(this.mesh);
+				this.starMaterial.opacity = 1 - percent;
+	
+				// might be done simpler since only 1 geo... oh well
 				var _iteratorNormalCompletion = true;
 				var _didIteratorError = false;
 				var _iteratorError = undefined;
@@ -62836,7 +63273,6 @@
 					for (var _iterator = this.stars.children[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 						var star = _step.value;
 	
-						star.material.opacity = 1 - percent;
 						util.updateColors(star);
 					}
 				} catch (err) {
@@ -62872,7 +63308,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(5);
+	var _jquery = __webpack_require__(6);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
@@ -62985,11 +63421,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _jquery = __webpack_require__(5);
+	var _jquery = __webpack_require__(6);
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _noise = __webpack_require__(10);
+	var _noise = __webpack_require__(11);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
@@ -63096,7 +63532,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _noise = __webpack_require__(10);
+	var _noise = __webpack_require__(11);
 	
 	var noise = _interopRequireWildcard(_noise);
 	

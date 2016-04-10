@@ -31,6 +31,7 @@
 			border-bottom: 10px solid black;
 			background: #888;
 			z-index: 100;
+			display: none;
 		}
 
 		#ui .title {
@@ -171,7 +172,7 @@
 		#alert {
 			position: absolute;
 			width: 100%;
-			height: 100%;
+			/*height: 100%;*/
 
 		}
 
@@ -242,18 +243,59 @@
 			margin-left: -25%;
 			margin-top: -100px;
 		}
+
+		#title-container {
+			text-align: center;
+			padding: 20px;
+		}
+
+		#title {
+			border: 20px solid #226;
+			border-radius: 50px;
+			color: #228;
+			font-size: 20px;
+			text-align: center;
+			margin: auto;
+			line-height: 3;
+			background: #000;
+		}
+
+		#title .label {
+			font-size: 52px;
+			margin-top: 15%;
+		}
+
+		#title .label span:nth-child(1) { color: #626; }
+		#title .label span:nth-child(2) { color: #262; }
+		#title .label span:nth-child(3) { color: #622; }
+		#title .label span:nth-child(4) { color: #642; }
+
+		#title .start {
+			color: #256;
+			display: none;
+		}
 	</style>
 </head>
 <body>
 	<script src="dist/merc.js?v=27"></script>
 	<div id="loading"><div id="progress"><div id="progress-value"></div></div></div>
 	<div id="alert">
-		<div id="wait" class="alert">Loading complex...</div>
+		<div id="wait-models" class="alert wait-alert">Loading models...</div>
+		<div id="wait-world" class="alert wait-alert">Loading game...</div>
+		<div id="wait" class="alert wait-alert">Loading complex...</div>
 		<div id="enter" class="alert">Press E to enter</div>
 		<div id="exit" class="alert">Press E to exit</div>
 		<div id="vehicle" class="alert">Press SPACE to drive</div>
 		<div id="pickup" class="alert">Press P to use</div>
 		<div id="teleport" class="alert">Press T to teleport</div>
+	</div>
+	<div id="title-container">
+		<div id="title">
+			<div class="label"><span>M</span><span>E</span><span>R</span><span>C</span></div>
+			<div>2016 (c) Gabor Torok</div>
+			<div id="version"></div>
+			<div class="start">Press any key to start</div>
+		</div>
 	</div>
 	<div id="ui">
 		<div class="title"><div class="text">Benson 5000: H for help</div></div>
