@@ -296,18 +296,18 @@
 				//});
 	
 				// by a base
-				this.movement.loadGame({
-					sectorX: 0xd9, sectorY: 0x42,
-					//sectorX: 9, sectorY: 2,
-					x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: movement.DEFAULT_Z,
-					vehicle: null,
-					inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
-					state: Object.assign(events.Events.getStartState(), {
-						"lightcar-keys": true,
-						"override-17a": true,
-						"next-game-day": Date.now() + constants.GAME_DAY * 0.65
-					})
-				});
+				//this.movement.loadGame({
+				//	sectorX: 0xd9, sectorY: 0x42,
+				//	//sectorX: 9, sectorY: 2,
+				//	x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z:movement.DEFAULT_Z,
+				//	vehicle: null,
+				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
+				//	state: Object.assign(events.Events.getStartState(), {
+				//		"lightcar-keys": true,
+				//		"override-17a": true,
+				//		"next-game-day": Date.now() + constants.GAME_DAY * 0.65,
+				//	})
+				//});
 	
 				// inside
 				//this.movement.loadGame({
@@ -47854,7 +47854,7 @@
 						if (_this2.level) {
 							var offsetX = _this2.player.position.x;
 							var offsetY = _this2.player.position.y;
-							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models);
+							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true);
 						}
 					});
 				}
@@ -47999,7 +47999,7 @@
 							_this3.teleportDir = 1;
 							_this3.teleportTime = Date.now() + TELEPORT_TIME;
 							_this3.baseMove = 1;
-							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models);
+							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true);
 						}
 					});
 				} else {
@@ -48269,6 +48269,12 @@
 					var percent = outside + (1 - outside) * pz;
 					//console.log("outside=" + outside + " pz=" + pz + " final=" + percent);
 					this.main.setLightPercentWorld(percent);
+				}
+	
+				// toggle level visibility while in the elevator (so we don't see it above ground)
+				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH / 2 && !this.level.mesh.visible || this.liftDirection > 0 && this.player.position.z >= ROOM_DEPTH / 2 && this.level.mesh.visible) {
+					this.level.mesh.visible = !this.level.mesh.visible;
+					//console.log("Level is not visible=" + this.level.mesh.visible);
 				}
 	
 				if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
@@ -48892,7 +48898,7 @@
 	
 	var VEHICLES = {
 		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-		"plane": { speed: 80000, flies: true, exp: false, noise: "jet", hovers: false },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
 		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 			onEnter: function onEnter(movement) {
 				if (movement.inInventory("art") && movement.inInventory("art2")) {
@@ -50370,7 +50376,7 @@
 		}, {
 			key: 'create',
 			value: function create(scene, x, y, liftX, liftY, models) {
-				var progressUpdate = arguments.length <= 6 || arguments[6] === undefined ? null : arguments[6];
+				var visible = arguments.length <= 6 || arguments[6] === undefined ? false : arguments[6];
 	
 				this.liftX = liftX;
 				this.liftY = liftY;
@@ -50466,6 +50472,7 @@
 				this.offsetX = x + (-start.x - start.w / 2) * constants.ROOM_SIZE;
 				this.offsetY = y + (-start.y - start.h / 2) * constants.ROOM_SIZE;
 				this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
+				this.mesh.visible = visible;
 				scene.add(this.mesh);
 			}
 		}, {

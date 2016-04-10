@@ -128,7 +128,7 @@ export class Level {
 		position.y = (room.y + room.h/2) * constants.ROOM_SIZE + this.offsetY;
 	}
 
-	create(scene, x, y, liftX, liftY, models, progressUpdate=null) {
+	create(scene, x, y, liftX, liftY, models, visible=false) {
 		this.liftX = liftX;
 		this.liftY = liftY;
 		this.scene = scene;
@@ -181,6 +181,7 @@ export class Level {
 		this.offsetX = x + (- start.x - start.w/2) * constants.ROOM_SIZE;
 		this.offsetY = y + (- start.y - start.h/2) * constants.ROOM_SIZE;
 		this.mesh.position.set(this.offsetX, this.offsetY, movement.ROOM_DEPTH);
+		this.mesh.visible = visible;
 		scene.add( this.mesh );
 	}
 

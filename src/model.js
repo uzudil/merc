@@ -18,7 +18,7 @@ const MODELS = [
 
 const VEHICLES = {
 	"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-	"plane": { speed: 80000, flies: true, exp: false, noise: "jet", hovers: false },
+	"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
 	"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {

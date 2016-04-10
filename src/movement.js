@@ -240,7 +240,8 @@ export class Movement {
 						offsetX, offsetY,
 						offsetX - this.main.models.models["elevator"].bbox.size().x/2,
 						offsetY - this.main.models.models["elevator"].bbox.size().y/2,
-						this.main.models);
+						this.main.models,
+						true);
 				}
 			});
 		}
@@ -366,7 +367,7 @@ export class Movement {
 					this.teleportDir = 1;
 					this.teleportTime = Date.now() + TELEPORT_TIME;
 					this.baseMove = 1;
-					this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models);
+					this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models, true);
 				}
 			});
 		} else {
@@ -590,6 +591,13 @@ export class Movement {
 			let percent = outside + (1 - outside) * pz;
 			//console.log("outside=" + outside + " pz=" + pz + " final=" + percent);
 			this.main.setLightPercentWorld(percent);
+		}
+
+		// toggle level visibility while in the elevator (so we don't see it above ground)
+		if ((this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH / 2 && !this.level.mesh.visible) ||
+			(this.liftDirection > 0 && this.player.position.z >= ROOM_DEPTH / 2 && this.level.mesh.visible)) {
+			this.level.mesh.visible = !this.level.mesh.visible;
+			//console.log("Level is not visible=" + this.level.mesh.visible);
 		}
 
 		if (this.liftDirection < 0 && this.player.position.z <= ROOM_DEPTH) {
