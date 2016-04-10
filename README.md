@@ -13,6 +13,10 @@ From an early age, you knew one day you'd be a mercenary. Motivated only by mone
 
 http://uzudil.github.io/merc/
 
+## Wiki
+
+More info about the game is available on the [wiki](https://github.com/uzudil/merc/wiki).
+
 ## Development
 
 Uses ES6, webpack, npm and three.js.
