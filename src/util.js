@@ -50,15 +50,14 @@ export function toHex(num, digits) {
 	return s;
 }
 
+// this will only work for the model "control". See model.js.
 export function toggleColor(object, colorFrom, colorTo) {
 	//console.log("Changing color!");
 	for (var i = 0; i < object.geometry.faces.length; i++) {
 		let f = object.geometry.faces[i];
 		//console.log("face color=" + f.original_color.toString(16) + " vs " + colorFrom.toString(16) + " eq=" + (f.original_color == colorFrom));
 		if(f.original_color == colorFrom) {
-			let c = new THREE.Color(colorTo);
-			c.multiplyScalar(f.light_mod);
-			f.color.setRGB(c.r, c.g, c.b);
+			f.color.setHex(colorTo);
 			f.original_color = colorTo;
 		}
 	}

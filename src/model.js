@@ -162,6 +162,12 @@ export class Model {
 			// compress the model a bit by removing stuff we don't need
 			util.compressGeo(geometry);
 
+			if(this.name == "control") {
+				for (let face of geometry.faces) {
+					face["original_color"] = face.color.getHex();
+				}
+			}
+
 			// put the geom. on the ground
 			geometry.center();
 			geometry.rotateX(Math.PI/2);

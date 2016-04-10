@@ -37423,15 +37423,14 @@
 		return s;
 	}
 	
+	// this will only work for the model "control". See model.js.
 	function toggleColor(object, colorFrom, colorTo) {
 		//console.log("Changing color!");
 		for (var i = 0; i < object.geometry.faces.length; i++) {
 			var f = object.geometry.faces[i];
 			//console.log("face color=" + f.original_color.toString(16) + " vs " + colorFrom.toString(16) + " eq=" + (f.original_color == colorFrom));
 			if (f.original_color == colorFrom) {
-				var c = new _three2.default.Color(colorTo);
-				c.multiplyScalar(f.light_mod);
-				f.color.setRGB(c.r, c.g, c.b);
+				f.color.setHex(colorTo);
 				f.original_color = colorTo;
 			}
 		}
@@ -49071,6 +49070,33 @@
 	
 					// compress the model a bit by removing stuff we don't need
 					util.compressGeo(geometry);
+	
+					if (_this2.name == "control") {
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
+	
+						try {
+							for (var _iterator2 = geometry.faces[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var face = _step2.value;
+	
+								face["original_color"] = face.color.getHex();
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
+					}
 	
 					// put the geom. on the ground
 					geometry.center();
