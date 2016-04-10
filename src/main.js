@@ -19,9 +19,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.31; // todo: git hook this
-
-const DEV_MODE = location.hostname == "localhost";
+const VERSION = 0.4; // todo: git hook this
 
 class Merc {
 	constructor() {
@@ -88,7 +86,7 @@ class Merc {
 	startIntro() {
 		let skipping = false;
 		$(document).keyup(( event ) => {
-			if(event.keyCode == 27 && window.escapeUsed == false) {
+			if(event.keyCode == 27 && window.escapeUsed == false && constants.DEV_MODE) {
 				window.escapeUsed = true; // only once
 				if(!skipping) {
 					skipping = true;
@@ -221,7 +219,7 @@ class Merc {
 
 	setupUI() {
 
-		if(DEV_MODE) {
+		if(constants.DEV_MODE) {
 			this.statsFPS = new Stats();
 			this.statsFPS.setMode(0); // 0: fps, 1: ms, 2: mb
 			this.statsFPS.domElement.style.position = 'absolute';
@@ -348,7 +346,7 @@ class Merc {
 	}
 
 	animate() {
-		if(DEV_MODE) {
+		if(constants.DEV_MODE) {
 			this.statsFPS.begin();
 			this.statsMB.begin();
 		}
@@ -390,7 +388,7 @@ class Merc {
 			$("#speed .value").text("" + this.space.getSpeed());
 		}
 
-		if(DEV_MODE) {
+		if(constants.DEV_MODE) {
 			this.statsFPS.end();
 			this.statsMB.end();
 		}
