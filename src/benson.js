@@ -16,6 +16,19 @@ export class Benson {
 		this.noise = new noise.Noise();
 	}
 
+	_showMessage(message) {
+		let div = "<div class='message'>" +
+			"<span class='log_marker'>" + window.merc.getLogMarker() + "</span>" +
+			"<span class='log_message'>" + message + "</span>" +
+			"</div>";
+		$("#log_display .log_break").eq(0).before(div);
+		this.el.empty().append(message);
+	}
+
+	addLogBreak() {
+		$("#log_display").prepend("<div class='log_break'></div>");
+	}
+
 	addMessage(message, onComplete) {
 		// skip dupes
 		if(this.messages.length > 0 && this.messages[this.messages.length - 1][0] == message) {
@@ -24,7 +37,7 @@ export class Benson {
 
 		this.messages.push([message, onComplete]);
 		if(this.messages.length == 1) {
-			this.el.empty().append(this.messages[0][0]);
+			this._showMessage(this.messages[0][0]);
 		}
 	}
 
@@ -47,8 +60,7 @@ export class Benson {
 						this.el.css("left", this.scroll * 100 + "%");
 
 						this.messages.splice(0, 1);
-						this.el.empty();
-						this.el.append(this.messages[0][0]);
+						this._showMessage(this.messages[0][0]);
 					}
 				}
 			} else {

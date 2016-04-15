@@ -19,7 +19,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.4; // todo: git hook this
+const VERSION = 0.5; // todo: git hook this
 
 class Merc {
 	constructor() {
@@ -367,21 +367,11 @@ class Merc {
 		this.renderer.render(this.scene, this.camera);
 
 		if(this.movement && this.game_map) {
-			var x, y;
-			if (this.movement.level) {
-				x = this.movement.sectorX;
-				y = this.movement.sectorY;
-			} else {
-				x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
-				y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
-				x = Math.min(Math.max(x, 0), 0xff);
-				y = Math.min(Math.max(y, 0), 0xff);
-			}
 			var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-			$("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
+			$("#loc .value").text("" + this.getLocation());
 			$("#alt .value").text("" + z);
 			$("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
-			$("#time .value").text("" + (11 - this.movement.events.state["allitus-ttl"]) + "-" + this.getAMPMHour());
+			$("#time .value").text("" + this.getTimestamp());
 			this.compass.update(this.movement.getHeadingAngle());
 			this.horizon.update(this.movement.getPitchAngle());
 		} else if(this.space) {
@@ -411,6 +401,32 @@ class Merc {
 		} else {
 			return (hour - 12) + "PM";
 		}
+	}
+
+	getLogMarker() {
+		if(this.movement) {
+			return this.getTimestamp() + ", " + this.getLocation() + ": ";
+		} else {
+			return "";
+		}
+	}
+
+	getTimestamp() {
+		return (11 - this.movement.events.state["allitus-ttl"]) + "-" + this.getAMPMHour();
+	}
+
+	getLocation() {
+		var x, y;
+		if (this.movement.level) {
+			x = this.movement.sectorX;
+			y = this.movement.sectorY;
+		} else {
+			x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
+			y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
+			x = Math.min(Math.max(x, 0), 0xff);
+			y = Math.min(Math.max(y, 0), 0xff);
+		}
+		return util.toHex(x, 2) + "-" + util.toHex(y, 2);
 	}
 }
 

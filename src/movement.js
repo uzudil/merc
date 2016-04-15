@@ -184,6 +184,7 @@ export class Movement {
 				case 48: {
 					this.power = 1.0;
 					if(this.vehicle && this.vehicle.model.name == "light") {
+						this.main.benson.addLogBreak();
 						this.main.benson.addMessage("Yee-haw!");
 					}
 					break;
@@ -205,7 +206,13 @@ export class Movement {
 					this.pickup();
 					break;
 				case 72: // h
+					$(".dialog:not(#help)").hide();
 					$("#help").toggle();
+					break;
+				case 76: // l
+					$(".dialog:not(#log)").hide();
+					$("#log").toggle();
+					if($("#log").is(":visible")) document.exitPointerLock();
 					break;
 				case 84: // t
 					this.teleport();
@@ -307,6 +314,7 @@ export class Movement {
 			if(!handled) {
 				this.inventory.push(this.pickupObject.model.name);
 				this.pickupObject.parent.remove(this.pickupObject);
+				this.main.benson.addLogBreak();
 				this.main.benson.addMessage(this.pickupObject.model.description);
 			}
 		}
@@ -448,6 +456,7 @@ export class Movement {
 					this.player.rotation.z = o.rotation.z;
 					this.vehicle = o;
 					this.vehicle.parent.remove(this.vehicle);
+					this.main.benson.addLogBreak();
 					this.main.benson.addMessage(o.model.description);
 					this.stop();
 
@@ -1061,12 +1070,13 @@ export class Movement {
 		// add ship behind player
 		this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 
+		this.main.benson.addLogBreak();
 		this.main.benson.addMessage("Welcome to Targ.");
 		this.main.benson.addMessage("Please take the jet");
-		this.main.benson.addMessage("and proceed to 9-2.");
-		this.main.benson.addMessage("[SPACE] to use the jet.");
-		this.main.benson.addMessage("[1]-[0] for power.");
-		this.main.benson.addMessage("[SPACE] to get out again.");
+		this.main.benson.addMessage("and proceed to <span class='log_important'>9-2</span>.");
+		this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to use the jet.");
+		this.main.benson.addMessage("<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.");
+		this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to get out again.");
 	}
 
 	startTakeoff() {

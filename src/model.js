@@ -23,6 +23,7 @@ const VEHICLES = {
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {
 				if(!movement.events.state["ufo-first"]) {
+					movement.main.benson.addLogBreak();
 					movement.main.benson.addMessage("The xeno artifacts");
 					movement.main.benson.addMessage("started the craft!");
 					movement.main.benson.addMessage("Try take-off and turns");
@@ -31,6 +32,7 @@ const VEHICLES = {
 				}
 				return true;
 			} else {
+				movement.main.benson.addLogBreak();
 				movement.main.benson.addMessage("This craft seems broken.");
 				return false;
 			}
@@ -41,6 +43,7 @@ const VEHICLES = {
 			// can't depart until either: allitus is stopped, or the xeno base left
 			if(!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
 				setTimeout(()=> {
+					movement.main.benson.addLogBreak();
 					movement.main.benson.addMessage("Preparing for takeoff...", ()=> {
 						movement.main.benson.addMessage("3...", ()=> {
 							movement.main.benson.addMessage("2...", ()=> {
@@ -55,6 +58,7 @@ const VEHICLES = {
 				}, 500);
 				return true;
 			} else {
+				movement.main.benson.addLogBreak();
 				movement.main.benson.addMessage("Until you complete");
 				movement.main.benson.addMessage("your mission, your");
 				movement.main.benson.addMessage("ship remains locked.");
