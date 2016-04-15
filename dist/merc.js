@@ -113,7 +113,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.4; // todo: git hook this
+	var VERSION = 0.5; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -478,21 +478,11 @@
 				this.renderer.render(this.scene, this.camera);
 	
 				if (this.movement && this.game_map) {
-					var x, y;
-					if (this.movement.level) {
-						x = this.movement.sectorX;
-						y = this.movement.sectorY;
-					} else {
-						x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
-						y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
-						x = Math.min(Math.max(x, 0), 0xff);
-						y = Math.min(Math.max(y, 0), 0xff);
-					}
 					var z = Math.round(this.movement.player.position.z) - movement.DEFAULT_Z;
-					(0, _jquery2.default)("#loc .value").text("" + util.toHex(x, 2) + "-" + util.toHex(y, 2));
+					(0, _jquery2.default)("#loc .value").text("" + this.getLocation());
 					(0, _jquery2.default)("#alt .value").text("" + z);
 					(0, _jquery2.default)("#speed .value").text("" + Math.round(this.movement.getSpeed() / 100.0));
-					(0, _jquery2.default)("#time .value").text("" + (11 - this.movement.events.state["allitus-ttl"]) + "-" + this.getAMPMHour());
+					(0, _jquery2.default)("#time .value").text("" + this.getTimestamp());
 					this.compass.update(this.movement.getHeadingAngle());
 					this.horizon.update(this.movement.getPitchAngle());
 				} else if (this.space) {
@@ -523,6 +513,35 @@
 				} else {
 					return hour - 12 + "PM";
 				}
+			}
+		}, {
+			key: 'getLogMarker',
+			value: function getLogMarker() {
+				if (this.movement) {
+					return this.getTimestamp() + ", " + this.getLocation() + ": ";
+				} else {
+					return "";
+				}
+			}
+		}, {
+			key: 'getTimestamp',
+			value: function getTimestamp() {
+				return 11 - this.movement.events.state["allitus-ttl"] + "-" + this.getAMPMHour();
+			}
+		}, {
+			key: 'getLocation',
+			value: function getLocation() {
+				var x, y;
+				if (this.movement.level) {
+					x = this.movement.sectorX;
+					y = this.movement.sectorY;
+				} else {
+					x = Math.round(this.movement.player.position.x / constants.SECTOR_SIZE);
+					y = Math.round(this.movement.player.position.y / constants.SECTOR_SIZE);
+					x = Math.min(Math.max(x, 0), 0xff);
+					y = Math.min(Math.max(y, 0), 0xff);
+				}
+				return util.toHex(x, 2) + "-" + util.toHex(y, 2);
 			}
 		}]);
 	
@@ -47795,6 +47814,7 @@
 						{
 							_this.power = 1.0;
 							if (_this.vehicle && _this.vehicle.model.name == "light") {
+								_this.main.benson.addLogBreak();
 								_this.main.benson.addMessage("Yee-haw!");
 							}
 							break;
@@ -47820,7 +47840,14 @@
 						break;
 					case 72:
 						// h
+						(0, _jquery2.default)(".dialog:not(#help)").hide();
 						(0, _jquery2.default)("#help").toggle();
+						break;
+					case 76:
+						// l
+						(0, _jquery2.default)(".dialog:not(#log)").hide();
+						(0, _jquery2.default)("#log").toggle();
+						if ((0, _jquery2.default)("#log").is(":visible")) document.exitPointerLock();
 						break;
 					case 84:
 						// t
@@ -47907,8 +47934,10 @@
 					var handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase(), this.pickupObject);
 	
 					if (!handled) {
+						ga("send", "event", "object", this.pickupObject.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 						this.inventory.push(this.pickupObject.model.name);
 						this.pickupObject.parent.remove(this.pickupObject);
+						this.main.benson.addLogBreak();
 						this.main.benson.addMessage(this.pickupObject.model.description);
 					}
 				}
@@ -48009,6 +48038,7 @@
 						var offsetX = _this3.player.position.x;
 						var offsetY = _this3.player.position.y;
 						if (_this3.enterMode == EXIT_COMPOUND) {
+							ga("send", "event", "compound", "exit", util.toHex(_this3.sectorX, 2) + util.toHex(_this3.sectorY, 2));
 							if (_this3.sectorX == ALIEN_BASE_POS[0] && _this3.sectorY == ALIEN_BASE_POS[1]) {
 								_this3.teleportDir = 1;
 								_this3.teleportTime = Date.now() + TELEPORT_TIME;
@@ -48094,11 +48124,13 @@
 								this.player.rotation.z = o.rotation.z;
 								this.vehicle = o;
 								this.vehicle.parent.remove(this.vehicle);
+								this.main.benson.addLogBreak();
 								this.main.benson.addMessage(o.model.description);
 								this.stop();
 	
 								// the alien base is only visible from the ufo
 								this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo" && !this.events.state["xeno_base_depart"];
+								ga("send", "event", "vehicle", this.vehicle.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 							} else {
 								this.noise.play("denied");
 							}
@@ -48810,12 +48842,13 @@
 				// add ship behind player
 				this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 	
+				this.main.benson.addLogBreak();
 				this.main.benson.addMessage("Welcome to Targ.");
 				this.main.benson.addMessage("Please take the jet");
-				this.main.benson.addMessage("and proceed to 9-2.");
-				this.main.benson.addMessage("[SPACE] to use the jet.");
-				this.main.benson.addMessage("[1]-[0] for power.");
-				this.main.benson.addMessage("[SPACE] to get out again.");
+				this.main.benson.addMessage("and proceed to <span class='log_important'>9-2</span>.");
+				this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to use the jet.");
+				this.main.benson.addMessage("<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.");
+				this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to get out again.");
 			}
 		}, {
 			key: 'startTakeoff',
@@ -48828,6 +48861,7 @@
 		}, {
 			key: 'runGameover',
 			value: function runGameover(gameoverId) {
+				ga("send", "event", "gameover", gameoverId);
 				this.gameover = true;
 				this.noise.stopAll();
 				(0, _jquery2.default)("#" + gameoverId).fadeIn();
@@ -48901,6 +48935,7 @@
 			onEnter: function onEnter(movement) {
 				if (movement.inInventory("art") && movement.inInventory("art2")) {
 					if (!movement.events.state["ufo-first"]) {
+						movement.main.benson.addLogBreak();
 						movement.main.benson.addMessage("The xeno artifacts");
 						movement.main.benson.addMessage("started the craft!");
 						movement.main.benson.addMessage("Try take-off and turns");
@@ -48909,6 +48944,7 @@
 					}
 					return true;
 				} else {
+					movement.main.benson.addLogBreak();
 					movement.main.benson.addMessage("This craft seems broken.");
 					return false;
 				}
@@ -48919,6 +48955,7 @@
 				// can't depart until either: allitus is stopped, or the xeno base left
 				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
 					setTimeout(function () {
+						movement.main.benson.addLogBreak();
 						movement.main.benson.addMessage("Preparing for takeoff...", function () {
 							movement.main.benson.addMessage("3...", function () {
 								movement.main.benson.addMessage("2...", function () {
@@ -48933,6 +48970,7 @@
 					}, 500);
 					return true;
 				} else {
+					movement.main.benson.addLogBreak();
 					movement.main.benson.addMessage("Until you complete");
 					movement.main.benson.addMessage("your mission, your");
 					movement.main.benson.addMessage("ship remains locked.");
@@ -49998,7 +50036,9 @@
 	
 	var LEVEL_CACHE = {};
 	function loadLevel(sectorX, sectorY, onload) {
-		var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+		var _name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2);
+		var name = _name + ".json";
+		ga("send", "event", "compound", "enter", _name);
 		if (LEVEL_CACHE[name]) {
 			onload(LEVEL_CACHE[name]);
 		} else {
@@ -62824,7 +62864,7 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var X_FILES = [["File X-100: Xeno info", "The construct Allitus", "is set to destroy Targ.", "It was created by an", "alien race in order to", "ensure humanity doesn't", "evolve to discover the", "Xeno central base."], ["File X-110: Xeno info", "The alien artifact", "in this research lab, has", "an unknown purpose. It is", "thought to be related to", "the object at 79-66."], ["File X-120: Xeno info", "The location of the Xeno", "central base is debated.", "It may be shielded from our", "scanning equipment somehow."], ["File X-130: Xeno info", "Allitus cannot be", "disarmed at this location.", "However, we think the", "Xeno central base contains", "a shutoff mechanism."]];
+	var X_FILES = [["File X-100: Xeno info", "The construct Allitus", "is set to destroy Targ.", "It was created by an", "alien race in order to", "ensure humanity doesn't", "evolve to discover the", "Xeno central base."], ["File X-110: Xeno info", "The alien artifact", "in this research lab, has", "an unknown purpose. It is", "thought to be related to", "the object at <span class='log_important'>79-66</span>."], ["File X-120: Xeno info", "The location of the Xeno", "central base is debated.", "It may be shielded from our", "scanning equipment somehow."], ["File X-130: Xeno info", "Allitus cannot be", "disarmed at this location.", "However, we think the", "Xeno central base contains", "a shutoff mechanism."]];
 	
 	var XENO_FILES = [["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."], ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."], ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."], ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."]];
 	
@@ -62855,22 +62895,25 @@
 				"09,02": function _() {
 					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
 						_this.state["lift-9-2"] = true;
+						_this.movement.main.benson.addLogBreak();
 						_this.movement.main.benson.addMessage("Take the lift down.");
 						_this.movement.main.benson.addMessage("This complex houses all");
 						_this.movement.main.benson.addMessage("that we know about the");
 						_this.movement.main.benson.addMessage("current situation.");
-						_this.movement.main.benson.addMessage("[E] to use the lift.");
+						_this.movement.main.benson.addMessage("<span class='log_important'>[E]</span> to use the lift.");
 					}
 					if (!_this.state["in-lift-9-2"] && _this.movement.usingElevator()) {
 						_this.state["in-lift-9-2"] = true;
+						_this.movement.main.benson.addLogBreak();
 						_this.movement.main.benson.addMessage("You're welcome to take");
 						_this.movement.main.benson.addMessage("all you find with you.");
-						_this.movement.main.benson.addMessage("[P] to pick things up.");
+						_this.movement.main.benson.addMessage("<span class='log_important'>[P]</span> to pick things up.");
 					}
 				}
 			};
 			this.PICKUP_EVENTS = {
 				"09,02,CCCCFF": function CCCCFF() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("The xeno device Allitus");
 					_this.movement.main.benson.addMessage("was discovered a year ago.");
 					_this.movement.main.benson.addMessage("At first we didn't");
@@ -62888,19 +62931,21 @@
 					_this.movement.main.benson.addMessage("terminate Allitus.");
 					_this.movement.main.benson.addMessage("Next, meet with our");
 					_this.movement.main.benson.addMessage("defense counsil at");
-					_this.movement.main.benson.addMessage("coordinates c8-f0.");
+					_this.movement.main.benson.addMessage("coordinates <span class='log_important'>c8-f0</span>.");
 					return true;
 				},
 				"09,02,CCCCCC": function CCCCCC() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Since your last visit,");
 					_this.movement.main.benson.addMessage("Alien ruins have been");
 					_this.movement.main.benson.addMessage("discovered on Targ.");
 					_this.movement.main.benson.addMessage("An underground complex");
 					_this.movement.main.benson.addMessage("and cave system is");
-					_this.movement.main.benson.addMessage("located at d9-42.");
+					_this.movement.main.benson.addMessage("located at <span class='log_important'>d9-42</span>.");
 					return true;
 				},
 				"09,02,FFCC88": function FFCC88() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("We have requisitioned");
 					_this.movement.main.benson.addMessage("a Lightcar for your");
 					_this.movement.main.benson.addMessage("travels. It has now been");
@@ -62909,9 +62954,10 @@
 					return true;
 				},
 				"c8,f0,CCFFFF": function c8F0CCFFFF() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Terminal 100: report");
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
 						_this.movement.main.benson.addMessage("!System compromised!");
 						_this.movement.main.benson.addMessage("The intruder Allitus is");
 						_this.movement.main.benson.addMessage("taking over all Targ");
@@ -62922,23 +62968,25 @@
 					return true;
 				},
 				"c8,f0,FFCCFF": function c8F0FFCCFF() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Terminal 110: report");
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
 						_this.movement.main.benson.addMessage("!System compromised!");
 						_this.movement.main.benson.addMessage("Allitus has no known");
 						_this.movement.main.benson.addMessage("weakness. To learn more");
 						_this.movement.main.benson.addMessage("visit our Xeno studies");
-						_this.movement.main.benson.addMessage("lab at 36-c9.");
+						_this.movement.main.benson.addMessage("lab at <span class='log_important'>36-c9</span>.");
 					} else {
 						_this.okReport();
 					}
 					return true;
 				},
 				"c8,f0,CCFFCC": function c8F0CCFFCC() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Terminal 120: report");
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("Override 17A exec:");
+						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
 						_this.movement.main.benson.addMessage("!System compromised!");
 						_this.movement.main.benson.addMessage("Allitus is now armed.");
 						_this.movement.main.benson.addMessage("It is set to go critical");
@@ -62949,6 +62997,7 @@
 					return true;
 				},
 				"c8,f0,FFCCCC": function c8F0FFCCCC() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Defense Council Info:");
 					_this.movement.main.benson.addMessage("You're welcome to use");
 					_this.movement.main.benson.addMessage("the Defense Computer Array,");
@@ -62958,6 +63007,7 @@
 					return true;
 				},
 				"c8,f0,FF8866": function c8F0FF8866() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("You find a disk labeled");
 					_this.movement.main.benson.addMessage("Emergency Override 17A");
 					_this.movement.main.benson.addMessage("It looks like it fits");
@@ -62966,14 +63016,17 @@
 					return false;
 				},
 				"36,c9,CCCCFF": function c9CCCCFF() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Terminal 20A: report");
 					return _this.xFileTerm();
 				},
 				"36,c9,FFCC88": function c9FFCC88() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Terminal 20B: report");
 					return _this.xFileTerm();
 				},
 				"36,c9,FFCCCC": function c9FFCCCC() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("This area houses");
 					_this.movement.main.benson.addMessage("a Xeno artifact.");
 					_this.movement.main.benson.addMessage("Please observe posted");
@@ -62982,6 +63035,7 @@
 					return true;
 				},
 				"36,c9,FFCCFF": function c9FFCCFF() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("This area houses");
 					_this.movement.main.benson.addMessage("a Xeno artifact.");
 					_this.movement.main.benson.addMessage("Please observe posted");
@@ -62990,6 +63044,7 @@
 					return true;
 				},
 				"36,c9,CCCCCC": function c9CCCCCC() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Allitus: a device");
 					_this.movement.main.benson.addMessage("of alien origins.");
 					_this.movement.main.benson.addMessage("Warning: High Voltage");
@@ -62999,6 +63054,7 @@
 					return true;
 				},
 				"36,c9,FF8866": function c9FF8866() {
+					_this.movement.main.benson.addLogBreak();
 					_this.movement.main.benson.addMessage("Feels cool to the touch.");
 					if (_this.state["allitus_control"]) {
 						_this.movement.main.benson.addMessage("An ominous buzzing");
@@ -63018,12 +63074,14 @@
 				},
 				"f8,c9,CCCCCC": function f8C9CCCCCC() {
 					if (_this.movement.inInventory("core")) {
+						_this.movement.main.benson.addLogBreak();
 						_this.movement.main.benson.addMessage("The drives now have");
 						_this.movement.main.benson.addMessage("plasma cores installed.");
 						_this.movement.main.benson.addMessage("The xeno ship prepares");
 						_this.movement.main.benson.addMessage("to depart from Targ.");
 						_this.state["xeno_base_depart"] = true;
 					} else {
+						_this.movement.main.benson.addLogBreak();
 						_this.movement.main.benson.addMessage("These xeno drives need");
 						_this.movement.main.benson.addMessage("new plasma cores to");
 						_this.movement.main.benson.addMessage("operate again.");
@@ -63040,12 +63098,13 @@
 					}
 					_this.movement.noise.play("control");
 					setTimeout(function () {
+						_this.movement.main.benson.addLogBreak();
 						_this.movement.main.benson.addMessage("Allitus is " + (_this.state["allitus_control"] ? "ARMED" : "disarmed"));
 						if (!_this.state["allitus_control"]) {
 							_this.movement.main.benson.addMessage("The Targ city council is");
 							_this.movement.main.benson.addMessage("eternally grateful for");
 							_this.movement.main.benson.addMessage("disabling the alien threat.");
-							_this.movement.main.benson.addMessage("20000 credits have been");
+							_this.movement.main.benson.addMessage("<span class='log_important'>20000</span> credits have been");
 							_this.movement.main.benson.addMessage("added to your account.");
 						}
 					}, 500);
@@ -63093,6 +63152,7 @@
 		}, {
 			key: 'xenoTerm',
 			value: function xenoTerm() {
+				this.movement.main.benson.addLogBreak();
 				if (this.movement.inInventory("trans")) {
 					var _iteratorNormalCompletion2 = true;
 					var _didIteratorError2 = false;
@@ -63129,9 +63189,9 @@
 		}, {
 			key: 'okReport',
 			value: function okReport() {
-				this.movement.main.benson.addMessage("Memory scan: OK");
-				this.movement.main.benson.addMessage("Disk scan: OK");
-				this.movement.main.benson.addMessage("System health: OK");
+				this.movement.main.benson.addMessage("Memory scan: <span class='log_important'>OK</span>");
+				this.movement.main.benson.addMessage("Disk scan: <span class='log_important'>OK</span>");
+				this.movement.main.benson.addMessage("System health: <span class='log_important'>OK</span>");
 			}
 		}, {
 			key: 'update',
@@ -63453,6 +63513,18 @@
 		}
 	
 		_createClass(Benson, [{
+			key: '_showMessage',
+			value: function _showMessage(message) {
+				var div = "<div class='message'>" + "<span class='log_marker'>" + window.merc.getLogMarker() + "</span>" + "<span class='log_message'>" + message + "</span>" + "</div>";
+				(0, _jquery2.default)("#log_display .log_break").eq(0).before(div);
+				this.el.empty().append(message);
+			}
+		}, {
+			key: 'addLogBreak',
+			value: function addLogBreak() {
+				(0, _jquery2.default)("#log_display").prepend("<div class='log_break'></div>");
+			}
+		}, {
 			key: 'addMessage',
 			value: function addMessage(message, onComplete) {
 				// skip dupes
@@ -63462,7 +63534,7 @@
 	
 				this.messages.push([message, onComplete]);
 				if (this.messages.length == 1) {
-					this.el.empty().append(this.messages[0][0]);
+					this._showMessage(this.messages[0][0]);
 				}
 			}
 		}, {
@@ -63486,8 +63558,7 @@
 								this.el.css("left", this.scroll * 100 + "%");
 	
 								this.messages.splice(0, 1);
-								this.el.empty();
-								this.el.append(this.messages[0][0]);
+								this._showMessage(this.messages[0][0]);
 							}
 						}
 					} else {

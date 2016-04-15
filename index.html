@@ -154,7 +154,7 @@
 			position: relative;
 		}
 
-		#help {
+		.dialog {
 			display: none;
 			width: 40%;
 			height: 40%;
@@ -274,7 +274,48 @@
 			color: #256;
 			display: none;
 		}
+
+		#log {
+			width: 60%;
+			left: 20%;
+			top: 20%;
+		}
+
+		#log_display {
+			width: 100%;
+			height: 90%;
+			overflow: auto;
+			margin: 10px;
+			text-align: left;
+		}
+
+		#log_display, .log_marker {
+			color: #ccf;
+		}
+
+		#log_display, .log_message {
+			color: #ddd;
+		}
+
+		#log_display .log_break {
+			margin-top: 20px;
+		}
+
+		#log_display .log_important {
+			color: #ffc;
+		}
 	</style>
+
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+				m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+		ga('create', 'UA-76495453-1', 'auto');
+		ga('send', 'pageview');
+
+	</script>
 </head>
 <body>
 	<script src="dist/merc.js?v=27"></script>
@@ -313,7 +354,7 @@
 		<tr><td valign="top"><div id="time" class="uibox"><label>DAY-TIME</label><div class="value"></div></div></td></tr>
 	</table>
 	</div>
-	<div id="help">
+	<div id="help" class="dialog">
 		<p>MERC keyboard help<br><br></p>
 		<p>
 			Movement: WASD keys<br>
@@ -325,14 +366,12 @@
 			Toggle sound: Q<br>
 			Toggle FPS limits: F<br>
 			Teleport: T<br>
+			Toggle Log: L<br>
 			<br>
 			Click for mouse lock.<br>
 			<br>
 		</p>
-		<p>
-			Press H again to hide<br>
-			this panel.
-		</p>
+		<p>Toggle this panel: H</p>
 	</div>
 	<div id="explosion_gameover" class="gameover whiteGameover">
 		<div class="gameover_message">
@@ -369,5 +408,6 @@
 			<button onclick="location.reload(); return false;">Play Again</button>
 		</div>
 	</div>
+	<div id="log" class="dialog"><div><b>Event Log</b></div><div id="log_display"><div class="log_break"></div></div></div>
 </body>
 </html>
