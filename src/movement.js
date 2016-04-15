@@ -312,6 +312,7 @@ export class Movement {
 			let handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase(), this.pickupObject);
 
 			if(!handled) {
+				ga("send", "event", "object", this.pickupObject.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 				this.inventory.push(this.pickupObject.model.name);
 				this.pickupObject.parent.remove(this.pickupObject);
 				this.main.benson.addLogBreak();
@@ -384,6 +385,7 @@ export class Movement {
 			let offsetX = this.player.position.x;
 			let offsetY = this.player.position.y;
 			if (this.enterMode == EXIT_COMPOUND) {
+				ga("send", "event", "compound", "exit", util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 				if(this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1]) {
 					this.teleportDir = 1;
 					this.teleportTime = Date.now() + TELEPORT_TIME;
@@ -462,6 +464,7 @@ export class Movement {
 
 					// the alien base is only visible from the ufo
 					this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo" && !this.events.state["xeno_base_depart"];
+					ga("send", "event", "vehicle", this.vehicle.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 				} else {
 					this.noise.play("denied");
 				}
@@ -1087,6 +1090,7 @@ export class Movement {
 	}
 
 	runGameover(gameoverId) {
+		ga("send", "event", "gameover", gameoverId);
 		this.gameover = true;
 		this.noise.stopAll();
 		$("#" + gameoverId).fadeIn();

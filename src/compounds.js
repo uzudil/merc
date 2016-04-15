@@ -25,7 +25,9 @@ export const LEVELS = {
 
 const LEVEL_CACHE = {};
 export function loadLevel(sectorX, sectorY, onload) {
-	let name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+	let _name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2);
+	let name = _name + ".json";
+	ga("send", "event", "compound", "enter", _name);
 	if(LEVEL_CACHE[name]) {
 		onload(LEVEL_CACHE[name]);
 	} else {

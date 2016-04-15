@@ -47934,6 +47934,7 @@
 					var handled = this.room && this.events.pickup(this.pickupObject.model.name, this.sectorX, this.sectorY, this.room.color.getHexString().toUpperCase(), this.pickupObject);
 	
 					if (!handled) {
+						ga("send", "event", "object", this.pickupObject.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 						this.inventory.push(this.pickupObject.model.name);
 						this.pickupObject.parent.remove(this.pickupObject);
 						this.main.benson.addLogBreak();
@@ -48037,6 +48038,7 @@
 						var offsetX = _this3.player.position.x;
 						var offsetY = _this3.player.position.y;
 						if (_this3.enterMode == EXIT_COMPOUND) {
+							ga("send", "event", "compound", "exit", util.toHex(_this3.sectorX, 2) + util.toHex(_this3.sectorY, 2));
 							if (_this3.sectorX == ALIEN_BASE_POS[0] && _this3.sectorY == ALIEN_BASE_POS[1]) {
 								_this3.teleportDir = 1;
 								_this3.teleportTime = Date.now() + TELEPORT_TIME;
@@ -48128,6 +48130,7 @@
 	
 								// the alien base is only visible from the ufo
 								this.main.game_map.xenoBase.visible = this.vehicle.model.name == "ufo" && !this.events.state["xeno_base_depart"];
+								ga("send", "event", "vehicle", this.vehicle.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 							} else {
 								this.noise.play("denied");
 							}
@@ -48858,6 +48861,7 @@
 		}, {
 			key: 'runGameover',
 			value: function runGameover(gameoverId) {
+				ga("send", "event", "gameover", gameoverId);
 				this.gameover = true;
 				this.noise.stopAll();
 				(0, _jquery2.default)("#" + gameoverId).fadeIn();
@@ -50032,7 +50036,9 @@
 	
 	var LEVEL_CACHE = {};
 	function loadLevel(sectorX, sectorY, onload) {
-		var name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2) + ".json";
+		var _name = util.toHex(sectorX, 2) + util.toHex(sectorY, 2);
+		var name = _name + ".json";
+		ga("send", "event", "compound", "enter", _name);
 		if (LEVEL_CACHE[name]) {
 			onload(LEVEL_CACHE[name]);
 		} else {
