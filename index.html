@@ -259,7 +259,7 @@
 
 		#title .label {
 			font-size: 52px;
-			margin-top: 15%;
+			margin-top: 5%;
 		}
 
 		#title .label span:nth-child(1) { color: #626; }
@@ -301,6 +301,10 @@
 		#log_display .log_important {
 			color: #ffc;
 		}
+
+		#loadgame {
+			display: none;
+		}
 	</style>
 
 	<script>
@@ -332,6 +336,7 @@
 			<div class="label"><span>M</span><span>E</span><span>R</span><span>C</span></div>
 			<div>2016 (c) Gabor Torok</div>
 			<div id="version"></div>
+			<div id="loadgame">Press C to continue game, or</div>
 			<div class="start">Press any key to start</div>
 		</div>
 	</div>
@@ -364,7 +369,7 @@
 			Toggle FPS limits: F<br>
 			Teleport: T<br>
 			Toggle Log: L<br>
-			<br>
+			Save game: X<br>
 			Click for mouse lock.<br>
 			<br>
 		</p>

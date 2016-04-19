@@ -155,12 +155,18 @@
 					return _this._game_map.finishInit();
 				}, function () {
 					(0, _jquery2.default)("#title .start").show();
+					if (localStorage["savegame"]) (0, _jquery2.default)("#loadgame").show();
 					(0, _jquery2.default)(document).keydown(function (event) {
 						(0, _jquery2.default)(document).unbind("keydown");
 						_this.setupUI();
-						//this.startGame();
-						//this.startGame(true);
-						_this.startIntro();
+						// C - continue
+						if (event.keyCode == 67) {
+							_this.startGame(true, true);
+						} else {
+							//this.startGame();
+							//this.startGame(true);
+							_this.startIntro();
+						}
 						_this.animate();
 					});
 				}], "wait-world");
@@ -243,6 +249,7 @@
 			key: 'startGame',
 			value: function startGame() {
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
+				var loadgame = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 	
 				console.log("game starting");
 				// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
@@ -277,6 +284,10 @@
 					this.movement.startLanding();
 				}
 	
+				if (loadgame) {
+					this.movement.loadGame(JSON.parse(localStorage["savegame"]));
+				}
+	
 				// hack: start in a room
 				// by the xeno base
 				//this.movement.loadGame({
@@ -284,7 +295,7 @@
 				//	//sectorX: 9, sectorY: 2,
 				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 				//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
-				//	vehicle: this.models.models["ufo"].createObject(),
+				//	vehicle: "ufo",
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 				//	state: Object.assign(events.Events.getStartState(), {
 				//		"lightcar-keys": true,
@@ -36984,6 +36995,10 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
+	var _model = __webpack_require__(10);
+	
+	var model_package = _interopRequireWildcard(_model);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -37012,6 +37027,7 @@
 	
 			// add models
 			this.structures = [];
+			this.vehicles = [];
 			this.xenoBase = null;
 		}
 	
@@ -37307,13 +37323,21 @@
 		}, {
 			key: 'addModelAt',
 			value: function addModelAt(x, y, z, model, zRot) {
+				var object = model.createObject();
+				if (model.hasBB()) this.structures.push(object);
+				if (model instanceof model_package.Vehicle) {
+					object["vehicleIndex"] = this.vehicles.length;
+					this.vehicles.push(object);
+				}
+				return this.addObjectAt(x, y, z, object, zRot);
+			}
+		}, {
+			key: 'addObjectAt',
+			value: function addObjectAt(x, y, z, object, zRot) {
 				var sx = x / constants.SECTOR_SIZE | 0;
 				var sy = y / constants.SECTOR_SIZE | 0;
 				var ox = x % constants.SECTOR_SIZE;
 				var oy = y % constants.SECTOR_SIZE;
-	
-				var object = model.createObject();
-				if (model.hasBB()) this.structures.push(object);
 	
 				object.position.set(0, 0, z);
 				object.rotation.z = zRot;
@@ -37330,6 +37354,8 @@
 				if (this.sectors[k] == null) {
 					var o = new _three2.default.Object3D();
 					o["road"] = [0, 0];
+					o["sectorX"] = sectorX;
+					o["sectorY"] = sectorY;
 					o.position.set(sectorX * constants.SECTOR_SIZE, sectorY * constants.SECTOR_SIZE, 0);
 					this.sectors[k] = o;
 					this.land.add(o);
@@ -47849,6 +47875,14 @@
 						(0, _jquery2.default)("#log").toggle();
 						if ((0, _jquery2.default)("#log").is(":visible")) document.exitPointerLock();
 						break;
+					case 88:
+						// x
+						if (_this.vehicle) {
+							_this.noise.play("denied");
+						} else {
+							_this.saveGame();
+						}
+						break;
 					case 84:
 						// t
 						_this.teleport();
@@ -47858,18 +47892,74 @@
 		}
 	
 		_createClass(Movement, [{
+			key: 'saveGame',
+			value: function saveGame() {
+				var x, y, xs, ys, z;
+				if (this.level) {
+					x = this.sectorX;
+					y = this.sectorY;
+					xs = constants.SECTOR_SIZE / 2;
+					ys = constants.SECTOR_SIZE / 2;
+					z = ROOM_DEPTH;
+				} else {
+					x = this.player.position.x / constants.SECTOR_SIZE;
+					y = this.player.position.y / constants.SECTOR_SIZE;
+					xs = this.player.position.x % constants.SECTOR_SIZE;
+					ys = this.player.position.y % constants.SECTOR_SIZE;
+					z = this.player.position.z;
+				}
+	
+				localStorage["savegame"] = JSON.stringify({
+					version: 1,
+					sectorX: x, sectorY: y,
+					x: xs, y: ys, z: z,
+					zRot: this.player.rotation.z,
+					vehicleIndex: this.vehicle ? this.vehicle.vehicleIndex : null,
+					inventory: this.inventory,
+					state: this.events.state,
+					now: Date.now(),
+					vehicles: this.main.game_map.vehicles.map(function (v) {
+						return {
+							x: v.position.x,
+							y: v.position.y,
+							z: v.position.z,
+							sectorX: v.parent.sectorX,
+							sectorY: v.parent.sectorY,
+							rotZ: v.rotation.z
+						};
+					})
+				});
+				this.main.benson.addLogBreak();
+				this.main.benson.addMessage("Game saved.");
+			}
+		}, {
 			key: 'loadGame',
 			value: function loadGame(gameState) {
 				var _this2 = this;
 	
+				console.log("Loading game=", gameState);
 				this.player.position.set(gameState.sectorX * constants.SECTOR_SIZE + gameState.x, gameState.sectorY * constants.SECTOR_SIZE + gameState.y, gameState.z);
+				this.player.rotation.z = gameState.zRot;
 				this.inventory = gameState.inventory;
-				this.vehicle = gameState.vehicle;
+				this.vehicle = gameState.vehicle ? this.main.models.models[gameState.vehicle].createObject() : null;
 				this.sectorX = this.player.position.x / constants.SECTOR_SIZE | 0;
 				this.sectorY = this.player.position.y / constants.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
+				this.events.state["next-game-day"] = Date.now() + (this.events.state["next-game-day"] - gameState.now);
 				this.main.setLightPercent();
+	
+				// reposition vehicles: this assumes the world map doesn't change...
+				// Ff it does, increment the savegame version and ignore old saves.
+				for (var i = 0; i < gameState.vehicles.length; i++) {
+					var vehicle = this.main.game_map.vehicles[i];
+					vehicle.parent.remove(vehicle);
+					if (i != gameState.vehicleIndex) {
+						var info = gameState.vehicles[i];
+						this.main.game_map.addObjectAt(info.x + info.sectorX * constants.SECTOR_SIZE, info.y + info.sectorY * constants.SECTOR_SIZE, info.z, vehicle, info.rotZ);
+					}
+				}
+	
 				if (this.player.position.z == ROOM_DEPTH) {
 					this.canMove = false;
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
@@ -47879,7 +47969,7 @@
 						if (_this2.level) {
 							var offsetX = _this2.player.position.x;
 							var offsetY = _this2.player.position.y;
-							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true);
+							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true, _this2.inventory);
 						}
 					});
 				}
@@ -48026,7 +48116,7 @@
 							_this3.teleportDir = 1;
 							_this3.teleportTime = Date.now() + TELEPORT_TIME;
 							_this3.baseMove = 1;
-							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true);
+							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true, _this3.inventory);
 						}
 					});
 				} else {
@@ -48070,7 +48160,7 @@
 										if (_this3.level) {
 											_this3.liftDirection = -1;
 											var liftPos = elevator.getWorldPosition();
-											_this3.level.create(_this3.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this3.main.models);
+											_this3.level.create(_this3.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this3.main.models, false, _this3.inventory);
 										}
 									});
 								}
@@ -48099,7 +48189,7 @@
 			value: function exitVehicle() {
 				this.noise.stop("car");
 				this.noise.stop("jet");
-				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle.model, this.player.rotation.z);
+				this.main.game_map.addObjectAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle, this.player.rotation.z);
 				this.noise.stop(this.vehicle.model.noise);
 				this.vehicle = null;
 				this.stop();
@@ -50442,6 +50532,7 @@
 			key: 'create',
 			value: function create(scene, x, y, liftX, liftY, models) {
 				var visible = arguments.length <= 6 || arguments[6] === undefined ? false : arguments[6];
+				var inventory = arguments.length <= 7 || arguments[7] === undefined ? null : arguments[7];
 	
 				this.liftX = liftX;
 				this.liftY = liftY;
@@ -50505,14 +50596,17 @@
 						for (var _iterator6 = this.objects[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
 							var object = _step6.value;
 	
-							var m = models.models[object.object];
-							var mesh = m.createObject();
-							var _dx = (object.x + .5) * constants.ROOM_SIZE;
-							var _dy = (object.y + .5) * constants.ROOM_SIZE;
-							var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-							mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-							mesh.position.set(_dx, _dy, _dz);
-							this.targetMesh.add(mesh);
+							// only add object if not already picked up
+							if (!inventory || inventory.indexOf(object.object) < 0) {
+								var m = models.models[object.object];
+								var mesh = m.createObject();
+								var _dx = (object.x + .5) * constants.ROOM_SIZE;
+								var _dy = (object.y + .5) * constants.ROOM_SIZE;
+								var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
+								mesh.rotation.z = util.angle2rad(object["rot"] || 0);
+								mesh.position.set(_dx, _dy, _dz);
+								this.targetMesh.add(mesh);
+							}
 						}
 					} catch (err) {
 						_didIteratorError6 = true;

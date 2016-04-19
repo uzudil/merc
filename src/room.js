@@ -128,7 +128,7 @@ export class Level {
 		position.y = (room.y + room.h/2) * constants.ROOM_SIZE + this.offsetY;
 	}
 
-	create(scene, x, y, liftX, liftY, models, visible=false) {
+	create(scene, x, y, liftX, liftY, models, visible=false, inventory=null) {
 		this.liftX = liftX;
 		this.liftY = liftY;
 		this.scene = scene;
@@ -162,14 +162,17 @@ export class Level {
 
 			// objects
 			for(let object of this.objects) {
-				let m = models.models[object.object];
-				let mesh = m.createObject();
-				let dx = (object.x + .5) * constants.ROOM_SIZE;
-				let dy = (object.y + .5) * constants.ROOM_SIZE;
-				let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-				mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-				mesh.position.set(dx, dy, dz);
-				this.targetMesh.add(mesh);
+				// only add object if not already picked up
+				if(!inventory || inventory.indexOf(object.object) < 0) {
+					let m = models.models[object.object];
+					let mesh = m.createObject();
+					let dx = (object.x + .5) * constants.ROOM_SIZE;
+					let dy = (object.y + .5) * constants.ROOM_SIZE;
+					let dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
+					mesh.rotation.z = util.angle2rad(object["rot"] || 0);
+					mesh.position.set(dx, dy, dz);
+					this.targetMesh.add(mesh);
+				}
 			}
 
 		}

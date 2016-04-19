@@ -53,12 +53,18 @@ class Merc {
 				() => this._game_map.finishInit(),
 				() => {
 					$("#title .start").show();
+					if(localStorage["savegame"]) $("#loadgame").show();
 					$(document).keydown(( event ) => {
 						$(document).unbind("keydown");
 						this.setupUI();
-						//this.startGame();
-						//this.startGame(true);
-						this.startIntro();
+						// C - continue
+						if(event.keyCode == 67) {
+							this.startGame(true, true);
+						} else {
+							//this.startGame();
+							//this.startGame(true);
+							this.startIntro();
+						}
 						this.animate();
 					});
 				}
@@ -134,7 +140,7 @@ class Merc {
 		}, 5000);
 	}
 
-	startGame(skipLanding=false) {
+	startGame(skipLanding=false, loadgame=false) {
 		console.log("game starting");
 		// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
 		// lights
@@ -171,6 +177,10 @@ class Merc {
 			this.movement.startLanding();
 		}
 
+		if(loadgame) {
+			this.movement.loadGame(JSON.parse(localStorage["savegame"]));
+		}
+
 		// hack: start in a room
 		// by the xeno base
 		//this.movement.loadGame({
@@ -178,7 +188,7 @@ class Merc {
 		//	//sectorX: 9, sectorY: 2,
 		//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 		//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
-		//	vehicle: this.models.models["ufo"].createObject(),
+		//	vehicle: "ufo",
 		//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 		//	state: Object.assign(events.Events.getStartState(), {
 		//		"lightcar-keys": true,

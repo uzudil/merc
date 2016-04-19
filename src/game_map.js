@@ -2,6 +2,7 @@ import THREE from 'three.js'
 import * as util from 'util'
 import * as world from 'world'
 import * as constants from 'constants'
+import * as model_package from 'model'
 
 var key = (sectorX, sectorY) => `${sectorX}.${sectorY}`;
 
@@ -21,6 +22,7 @@ export class GameMap {
 
 		// add models
 		this.structures = [];
+		this.vehicles = [];
 		this.xenoBase = null;
 	}
 
@@ -192,13 +194,20 @@ export class GameMap {
 	}
 
 	addModelAt(x, y, z, model, zRot) {
+		var object = model.createObject();
+		if(model.hasBB()) this.structures.push(object);
+		if(model instanceof model_package.Vehicle) {
+			object["vehicleIndex"] = this.vehicles.length;
+			this.vehicles.push(object);
+		}
+		return this.addObjectAt(x, y, z, object, zRot);
+	}
+
+	addObjectAt(x, y, z, object, zRot) {
 		var sx = (x/constants.SECTOR_SIZE)|0;
 		var sy = (y/constants.SECTOR_SIZE)|0;
 		var ox = x % constants.SECTOR_SIZE;
 		var oy = y % constants.SECTOR_SIZE;
-
-		var object = model.createObject();
-		if(model.hasBB()) this.structures.push(object);
 
 		object.position.set(0, 0, z);
 		object.rotation.z = zRot;
@@ -214,6 +223,8 @@ export class GameMap {
 		if(this.sectors[k] == null) {
 			let o = new THREE.Object3D();
 			o["road"] = [0, 0];
+			o["sectorX"] = sectorX;
+			o["sectorY"] = sectorY;
 			o.position.set(sectorX * constants.SECTOR_SIZE, sectorY * constants.SECTOR_SIZE, 0);
 			this.sectors[k] = o;
 			this.land.add(o);

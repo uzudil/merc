@@ -214,6 +214,13 @@ export class Movement {
 					$("#log").toggle();
 					if($("#log").is(":visible")) document.exitPointerLock();
 					break;
+				case 88: // x
+					if(this.vehicle) {
+						this.noise.play("denied");
+					} else {
+						this.saveGame();
+					}
+					break;
 				case 84: // t
 					this.teleport();
 					break;
@@ -221,19 +228,78 @@ export class Movement {
 		});
 	}
 
+	saveGame() {
+		var x, y, xs, ys, z;
+		if (this.level) {
+			x = this.sectorX;
+			y = this.sectorY;
+			xs = constants.SECTOR_SIZE/2;
+			ys = constants.SECTOR_SIZE/2;
+			z = ROOM_DEPTH;
+		} else {
+			x = this.player.position.x / constants.SECTOR_SIZE;
+			y = this.player.position.y / constants.SECTOR_SIZE;
+			xs = this.player.position.x % constants.SECTOR_SIZE;
+			ys = this.player.position.y % constants.SECTOR_SIZE;
+			z = this.player.position.z;
+		}
+
+		localStorage["savegame"] = JSON.stringify({
+			version: 1,
+			sectorX: x, sectorY: y,
+			x: xs, y: ys, z: z,
+			zRot: this.player.rotation.z,
+			vehicleIndex: this.vehicle ? this.vehicle.vehicleIndex : null,
+			inventory: this.inventory,
+			state: this.events.state,
+			now: Date.now(),
+			vehicles: this.main.game_map.vehicles.map((v) => {
+				return {
+					x: v.position.x,
+					y: v.position.y,
+					z: v.position.z,
+					sectorX: v.parent.sectorX,
+					sectorY: v.parent.sectorY,
+					rotZ: v.rotation.z
+				};
+			})
+		});
+		this.main.benson.addLogBreak();
+		this.main.benson.addMessage("Game saved.");
+	}
+
 	loadGame(gameState) {
+		console.log("Loading game=", gameState);
 		this.player.position.set(
 			gameState.sectorX * constants.SECTOR_SIZE + gameState.x,
 			gameState.sectorY * constants.SECTOR_SIZE + gameState.y,
 			gameState.z
 		);
+		this.player.rotation.z = gameState.zRot;
 		this.inventory = gameState.inventory;
-		this.vehicle = gameState.vehicle;
+		this.vehicle = gameState.vehicle ? this.main.models.models[gameState.vehicle].createObject() : null;
 		this.sectorX = (this.player.position.x / constants.SECTOR_SIZE) | 0;
 		this.sectorY = (this.player.position.y / constants.SECTOR_SIZE) | 0;
 		this.liftDirection = 0;
 		this.events.state = gameState.state;
+		this.events.state["next-game-day"] = Date.now() + (this.events.state["next-game-day"] - gameState.now);
 		this.main.setLightPercent();
+
+		// reposition vehicles: this assumes the world map doesn't change...
+		// Ff it does, increment the savegame version and ignore old saves.
+		for(let i = 0; i < gameState.vehicles.length; i++) {
+			let vehicle = this.main.game_map.vehicles[i];
+			vehicle.parent.remove(vehicle);
+			if(i != gameState.vehicleIndex) {
+				let info = gameState.vehicles[i];
+				this.main.game_map.addObjectAt(info.x + info.sectorX * constants.SECTOR_SIZE,
+					info.y + info.sectorY * constants.SECTOR_SIZE,
+					info.z,
+					vehicle,
+					info.rotZ);
+			}
+		}
+
 		if(this.player.position.z == ROOM_DEPTH) {
 			this.canMove = false;
 			compounds.loadLevel(this.sectorX, this.sectorY, (level)=> {
@@ -248,7 +314,8 @@ export class Movement {
 						offsetX - this.main.models.models["elevator"].bbox.size().x/2,
 						offsetY - this.main.models.models["elevator"].bbox.size().y/2,
 						this.main.models,
-						true);
+						true,
+						this.inventory);
 				}
 			});
 		}
@@ -376,7 +443,7 @@ export class Movement {
 					this.teleportDir = 1;
 					this.teleportTime = Date.now() + TELEPORT_TIME;
 					this.baseMove = 1;
-					this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models, true);
+					this.level.create(this.main.scene, offsetX, offsetY, 0, 0, this.main.models, true, this.inventory);
 				}
 			});
 		} else {
@@ -416,7 +483,7 @@ export class Movement {
 						if (this.level) {
 							this.liftDirection = -1;
 							let liftPos = elevator.getWorldPosition();
-							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models);
+							this.level.create(this.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, this.main.models, false, this.inventory);
 						}
 					});
 				}
@@ -436,11 +503,11 @@ export class Movement {
 	exitVehicle() {
 		this.noise.stop("car");
 		this.noise.stop("jet");
-		this.main.game_map.addModelAt(
+		this.main.game_map.addObjectAt(
 			this.player.position.x,
 			this.player.position.y,
 			this.player.position.z - DEFAULT_Z,
-			this.vehicle.model,
+			this.vehicle,
 			this.player.rotation.z);
 		this.noise.stop(this.vehicle.model.noise);
 		this.vehicle = null;
