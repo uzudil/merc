@@ -11,6 +11,7 @@ import * as benson from 'benson'
 import * as space from 'space'
 import * as events from 'events'
 import * as constants from 'constants'
+import * as messages from 'messages'
 
 const FPS_LIMITS = [ 0, 30, 15 ];
 const ASPECT_RATIO = 320/200;
@@ -19,7 +20,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.5; // todo: git hook this
+const VERSION = 0.6; // todo: git hook this
 
 class Merc {
 	constructor() {
@@ -105,30 +106,25 @@ class Merc {
 		this.space = new space.Space(this.scene, this);
 		window.setTimeout(()=>{
 			if(skipping) return;
-			this.benson.addMessage("Set course to Novagen...");
-			this.benson.addMessage("Engaging Hyperdrive", () => {
+			this.benson.showMessage(messages.MESSAGES.intro_1, false, () => {
 				if(skipping) return;
 				//this.space.power = 1;
 				this.space.burn(1, 15000);
-				this.benson.addMessage("Enjoy your trip.");
+				this.benson.showMessage(messages.MESSAGES.intro_2, false);
 				window.setTimeout(() => {
 					if(skipping) return;
-					this.benson.addMessage("Message received.");
-					this.benson.addMessage("Sender: Targ city.");
-					this.benson.addMessage("Priority: urgent.", ()=> {
+					this.benson.showMessage(messages.MESSAGES.intro_3, false, () => {
 						window.setTimeout(()=>{
 							if(skipping) return;
-							this.benson.addMessage("Request for assistance.");
-							this.benson.addMessage("Targ city emergency.");
-							this.benson.addMessage("Immediate help requested.", ()=> {
+							this.benson.showMessage(messages.MESSAGES.intro_4, false, () => {
 								setTimeout(()=> {
 									if(skipping) return;
-									this.benson.addMessage("Starting deceleration...", () => {
+									this.benson.showMessage(messages.MESSAGES.intro_5, false, () => {
 										//this.space.power = -1;
 										this.space.burn(-1, 7500);
 										setTimeout(()=> {
 											if(skipping) return;
-											this.benson.addMessage("Landing on Targ");
+											this.benson.showMessage(messages.MESSAGES.intro_6, false);
 										}, 3000);
 									});
 								}, 4000);
@@ -172,13 +168,9 @@ class Merc {
 			constants.SECTOR_SIZE * constants.START_Y,
 			skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 		if (skipLanding) {
-			this.movement.endLanding();
+			this.movement.endLanding(loadgame);
 		} else {
 			this.movement.startLanding();
-		}
-
-		if(loadgame) {
-			this.movement.loadGame(JSON.parse(localStorage["savegame"]));
 		}
 
 		// hack: start in a room

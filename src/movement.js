@@ -11,6 +11,7 @@ import * as compounds from 'compounds'
 import * as game_map from 'game_map'
 import * as events from 'events'
 import * as constants from 'constants'
+import * as messages from 'messages'
 
 const SIZE = 20;
 export const DEFAULT_Z = 20;
@@ -111,6 +112,7 @@ export class Movement {
 		this.takeoff = 0;
 
 		this.events = new events.Events(this);
+		this.main.benson.context = this.events.state; // hack...
 
 		$(document).mousemove((event) => {
 			if(this.landing != 0 || this.takeoff != 0) return;
@@ -184,8 +186,7 @@ export class Movement {
 				case 48: {
 					this.power = 1.0;
 					if(this.vehicle && this.vehicle.model.name == "light") {
-						this.main.benson.addLogBreak();
-						this.main.benson.addMessage("Yee-haw!");
+						this.main.benson.showMessage(messages.MESSAGES.yeehaw);
 					}
 					break;
 				}
@@ -262,10 +263,10 @@ export class Movement {
 					sectorY: v.parent.sectorY,
 					rotZ: v.rotation.z
 				};
-			})
+			}),
+			messages: this.main.benson.history
 		});
-		this.main.benson.addLogBreak();
-		this.main.benson.addMessage("Game saved.");
+		this.main.benson.showMessage(messages.MESSAGES.game_saved);
 	}
 
 	loadGame(gameState) {
@@ -299,6 +300,9 @@ export class Movement {
 					info.rotZ);
 			}
 		}
+
+		// message history replay
+		this.main.benson.replay(gameState.messages);
 
 		if(this.player.position.z == ROOM_DEPTH) {
 			this.canMove = false;
@@ -382,8 +386,7 @@ export class Movement {
 				ga("send", "event", "object", this.pickupObject.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 				this.inventory.push(this.pickupObject.model.name);
 				this.pickupObject.parent.remove(this.pickupObject);
-				this.main.benson.addLogBreak();
-				this.main.benson.addMessage(this.pickupObject.model.description);
+				this.main.benson.showMessage(this.pickupObject.model.description);
 			}
 		}
 	}
@@ -525,8 +528,7 @@ export class Movement {
 					this.player.rotation.z = o.rotation.z;
 					this.vehicle = o;
 					this.vehicle.parent.remove(this.vehicle);
-					this.main.benson.addLogBreak();
-					this.main.benson.addMessage(o.model.description);
+					this.main.benson.showMessage(o.model.description);
 					this.stop();
 
 					// the alien base is only visible from the ufo
@@ -1128,7 +1130,7 @@ export class Movement {
 		this.noise.setLevel("pink", 0);
 	}
 
-	endLanding() {
+	endLanding(loadgame=false) {
 		console.log("landing ending");
 		this.player.position.z = DEFAULT_Z;
 		//this.player.rotation.z = 0;
@@ -1140,13 +1142,12 @@ export class Movement {
 		// add ship behind player
 		this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 
-		this.main.benson.addLogBreak();
-		this.main.benson.addMessage("Welcome to Targ.");
-		this.main.benson.addMessage("Please take the jet");
-		this.main.benson.addMessage("and proceed to <span class='log_important'>9-2</span>.");
-		this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to use the jet.");
-		this.main.benson.addMessage("<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.");
-		this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to get out again.");
+		if(loadgame) {
+			this.loadGame(JSON.parse(localStorage["savegame"]));
+		} else if(!this.events.state["welcome-message"]) {
+			this.main.benson.showMessage(messages.MESSAGES.welcome);
+			this.events.state["welcome-message"] = true;
+		}
 	}
 
 	startTakeoff() {

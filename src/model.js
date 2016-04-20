@@ -2,6 +2,7 @@ import THREE from 'three.js';
 import * as game_map from 'game_map';
 import * as util from 'util';
 import * as constants from 'constants';
+import * as messages from 'messages';
 
 /*
 	To use colors, use the "vertex paint" feature of blender.
@@ -23,17 +24,12 @@ const VEHICLES = {
 		onEnter: (movement)=> {
 			if(movement.inInventory("art") && movement.inInventory("art2")) {
 				if(!movement.events.state["ufo-first"]) {
-					movement.main.benson.addLogBreak();
-					movement.main.benson.addMessage("The xeno artifacts");
-					movement.main.benson.addMessage("started the craft!");
-					movement.main.benson.addMessage("Try take-off and turns");
-					movement.main.benson.addMessage("without moving first.");
+					movement.main.benson.showMessage(messages.MESSAGES.ufo_fixed);
 					movement.events.state["ufo-first"] = true;
 				}
 				return true;
 			} else {
-				movement.main.benson.addLogBreak();
-				movement.main.benson.addMessage("This craft seems broken.");
+				movement.main.benson.showMessage(messages.MESSAGES.ufo_broken);
 				return false;
 			}
 		}
@@ -43,12 +39,11 @@ const VEHICLES = {
 			// can't depart until either: allitus is stopped, or the xeno base left
 			if(!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
 				setTimeout(()=> {
-					movement.main.benson.addLogBreak();
-					movement.main.benson.addMessage("Preparing for takeoff...", ()=> {
-						movement.main.benson.addMessage("3...", ()=> {
-							movement.main.benson.addMessage("2...", ()=> {
-								movement.main.benson.addMessage("1...", ()=> {
-									movement.main.benson.addMessage("Blastoff!", ()=> {
+					movement.main.benson.showMessage(messages.MESSAGES.takeoff_1, true, ()=> {
+						movement.main.benson.showMessage(messages.MESSAGES.takeoff_2, false, ()=> {
+							movement.main.benson.showMessage(messages.MESSAGES.takeoff_3, false, ()=> {
+								movement.main.benson.showMessage(messages.MESSAGES.takeoff_4, false, ()=> {
+									movement.main.benson.addMessage(messages.MESSAGES.takeoff_5, false, ()=> {
 										movement.startTakeoff();
 									});
 								});
@@ -58,10 +53,7 @@ const VEHICLES = {
 				}, 500);
 				return true;
 			} else {
-				movement.main.benson.addLogBreak();
-				movement.main.benson.addMessage("Until you complete");
-				movement.main.benson.addMessage("your mission, your");
-				movement.main.benson.addMessage("ship remains locked.");
+				movement.main.benson.showMessage(messages.MESSAGES.ship_locked);
 				return false;
 
 			}
@@ -102,23 +94,6 @@ const SCALE = {
 	"pine": 50
 };
 
-const DESCRIPTIONS = {
-	"keya": "Pentagon key",
-	"keyb": "Triangle key",
-	"keyc": "Gate key",
-	"keyd": "X key",
-	"car": "Tando groundcar",
-	"plane": "Harris skipjet",
-	"ship": "Templar class cruiser",
-	"light": "Pulsar lightcar",
-	"disk": "Emergency Override Disk",
-	"art": "Xeno artifact",
-	"art2": "Xeno artifact",
-	"ufo": "Alien craft A3",
-	"trans": "Xeno translator chip",
-	"core": "Plasma drive core"
-};
-
 const LIFTS = {
 	bridge: true
 };
@@ -155,7 +130,7 @@ export class Model {
 		this.lifts = LIFTS[name];
 		this.mesh = null;
 		this.bbox = null;
-		this.description = DESCRIPTIONS[name] || name;
+		this.description = messages.MESSAGES[name] || name;
 		this.canCompress = canCompress;
 	}
 
