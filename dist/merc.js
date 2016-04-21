@@ -68,37 +68,41 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(9);
+	var _movement = __webpack_require__(11);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(60);
+	var _skybox = __webpack_require__(61);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
-	var _model = __webpack_require__(10);
+	var _model = __webpack_require__(9);
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(61);
+	var _compass = __webpack_require__(62);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(62);
+	var _benson = __webpack_require__(63);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(63);
+	var _space = __webpack_require__(64);
 	
 	var space = _interopRequireWildcard(_space);
 	
-	var _events = __webpack_require__(59);
+	var _events = __webpack_require__(60);
 	
 	var events = _interopRequireWildcard(_events);
 	
 	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
+	
+	var _messages = __webpack_require__(10);
+	
+	var messages = _interopRequireWildcard(_messages);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -113,7 +117,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.5; // todo: git hook this
+	var VERSION = 0.6; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -155,12 +159,18 @@
 					return _this._game_map.finishInit();
 				}, function () {
 					(0, _jquery2.default)("#title .start").show();
+					if (localStorage["savegame"]) (0, _jquery2.default)("#loadgame").show();
 					(0, _jquery2.default)(document).keydown(function (event) {
 						(0, _jquery2.default)(document).unbind("keydown");
 						_this.setupUI();
-						//this.startGame();
-						//this.startGame(true);
-						_this.startIntro();
+						// C - continue
+						if (event.keyCode == 67) {
+							_this.startGame(true, true);
+						} else {
+							//this.startGame();
+							//this.startGame(true);
+							_this.startIntro();
+						}
 						_this.animate();
 					});
 				}], "wait-world");
@@ -205,30 +215,25 @@
 				this.space = new space.Space(this.scene, this);
 				window.setTimeout(function () {
 					if (skipping) return;
-					_this2.benson.addMessage("Set course to Novagen...");
-					_this2.benson.addMessage("Engaging Hyperdrive", function () {
+					_this2.benson.showMessage(messages.MESSAGES.intro_1, false, function () {
 						if (skipping) return;
 						//this.space.power = 1;
 						_this2.space.burn(1, 15000);
-						_this2.benson.addMessage("Enjoy your trip.");
+						_this2.benson.showMessage(messages.MESSAGES.intro_2, false);
 						window.setTimeout(function () {
 							if (skipping) return;
-							_this2.benson.addMessage("Message received.");
-							_this2.benson.addMessage("Sender: Targ city.");
-							_this2.benson.addMessage("Priority: urgent.", function () {
+							_this2.benson.showMessage(messages.MESSAGES.intro_3, false, function () {
 								window.setTimeout(function () {
 									if (skipping) return;
-									_this2.benson.addMessage("Request for assistance.");
-									_this2.benson.addMessage("Targ city emergency.");
-									_this2.benson.addMessage("Immediate help requested.", function () {
+									_this2.benson.showMessage(messages.MESSAGES.intro_4, false, function () {
 										setTimeout(function () {
 											if (skipping) return;
-											_this2.benson.addMessage("Starting deceleration...", function () {
+											_this2.benson.showMessage(messages.MESSAGES.intro_5, false, function () {
 												//this.space.power = -1;
 												_this2.space.burn(-1, 7500);
 												setTimeout(function () {
 													if (skipping) return;
-													_this2.benson.addMessage("Landing on Targ");
+													_this2.benson.showMessage(messages.MESSAGES.intro_6, false);
 												}, 3000);
 											});
 										}, 4000);
@@ -243,6 +248,7 @@
 			key: 'startGame',
 			value: function startGame() {
 				var skipLanding = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
+				var loadgame = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 	
 				console.log("game starting");
 				// this.scene.fog = new THREE.Fog(constants.GRASS_COLOR.getHex(), 50 * constants.SECTOR_SIZE, 50 * constants.SECTOR_SIZE);
@@ -272,7 +278,7 @@
 	
 				this.movement.player.position.set(constants.SECTOR_SIZE * constants.START_X + constants.SECTOR_SIZE / 2, constants.SECTOR_SIZE * constants.START_Y, skipLanding ? movement.DEFAULT_Z : constants.START_Z);
 				if (skipLanding) {
-					this.movement.endLanding();
+					this.movement.endLanding(loadgame);
 				} else {
 					this.movement.startLanding();
 				}
@@ -284,7 +290,7 @@
 				//	//sectorX: 9, sectorY: 2,
 				//	//x: constants.SECTOR_SIZE/2, y: constants.SECTOR_SIZE/2, z: movement.ROOM_DEPTH,
 				//	x: constants.SECTOR_SIZE / 2, y: constants.SECTOR_SIZE / 2, z: 10000,
-				//	vehicle: this.models.models["ufo"].createObject(),
+				//	vehicle: "ufo",
 				//	inventory: ["keya", "keyb", "keyc", "keyd", "art", "art2", "trans", "core"],
 				//	state: Object.assign(events.Events.getStartState(), {
 				//		"lightcar-keys": true,
@@ -36984,6 +36990,10 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
+	var _model = __webpack_require__(9);
+	
+	var model_package = _interopRequireWildcard(_model);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -37012,6 +37022,7 @@
 	
 			// add models
 			this.structures = [];
+			this.vehicles = [];
 			this.xenoBase = null;
 		}
 	
@@ -37307,13 +37318,21 @@
 		}, {
 			key: 'addModelAt',
 			value: function addModelAt(x, y, z, model, zRot) {
+				var object = model.createObject();
+				if (model.hasBB()) this.structures.push(object);
+				if (model instanceof model_package.Vehicle) {
+					object["vehicleIndex"] = this.vehicles.length;
+					this.vehicles.push(object);
+				}
+				return this.addObjectAt(x, y, z, object, zRot);
+			}
+		}, {
+			key: 'addObjectAt',
+			value: function addObjectAt(x, y, z, object, zRot) {
 				var sx = x / constants.SECTOR_SIZE | 0;
 				var sy = y / constants.SECTOR_SIZE | 0;
 				var ox = x % constants.SECTOR_SIZE;
 				var oy = y % constants.SECTOR_SIZE;
-	
-				var object = model.createObject();
-				if (model.hasBB()) this.structures.push(object);
 	
 				object.position.set(0, 0, z);
 				object.rotation.z = zRot;
@@ -37330,6 +37349,8 @@
 				if (this.sectors[k] == null) {
 					var o = new _three2.default.Object3D();
 					o["road"] = [0, 0];
+					o["sectorX"] = sectorX;
+					o["sectorY"] = sectorY;
 					o.position.set(sectorX * constants.SECTOR_SIZE, sectorY * constants.SECTOR_SIZE, 0);
 					this.sectors[k] = o;
 					this.land.add(o);
@@ -37546,7 +37567,7 @@
 	
 	function runWithProgress(fxs, index) {
 		var p = (index + 1) / fxs.length * 100 | 0;
-		console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+		//console.log("index=" + index + " p=" + p + " length=" + fxs.length);
 		setLoadingUIProgress(p, function () {
 			fxs[index]();
 			if (++index < fxs.length) {
@@ -47566,6 +47587,398 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+	exports.Vehicle = exports.Model = exports.Models = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _three = __webpack_require__(1);
+	
+	var _three2 = _interopRequireDefault(_three);
+	
+	var _game_map = __webpack_require__(4);
+	
+	var game_map = _interopRequireWildcard(_game_map);
+	
+	var _util = __webpack_require__(5);
+	
+	var util = _interopRequireWildcard(_util);
+	
+	var _constants = __webpack_require__(8);
+	
+	var constants = _interopRequireWildcard(_constants);
+	
+	var _messages = __webpack_require__(10);
+	
+	var messages = _interopRequireWildcard(_messages);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	/*
+		To use colors, use the "vertex paint" feature of blender.
+		Then, export with vertex colors on (no materials needed.)
+	 */
+	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine", "mill"];
+	
+	var VEHICLES = {
+		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
+		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
+		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
+			onEnter: function onEnter(movement) {
+				if (movement.inInventory("art") && movement.inInventory("art2")) {
+					if (!movement.events.state["ufo-first"]) {
+						movement.main.benson.showMessage(messages.MESSAGES.ufo_fixed);
+						movement.events.state["ufo-first"] = true;
+					}
+					return true;
+				} else {
+					movement.main.benson.showMessage(messages.MESSAGES.ufo_broken);
+					return false;
+				}
+			}
+		},
+		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
+			onEnter: function onEnter(movement) {
+				// can't depart until either: allitus is stopped, or the xeno base left
+				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
+					setTimeout(function () {
+						movement.main.benson.showMessage(messages.MESSAGES.takeoff_1, true, function () {
+							movement.main.benson.showMessage(messages.MESSAGES.takeoff_2, false, function () {
+								movement.main.benson.showMessage(messages.MESSAGES.takeoff_3, false, function () {
+									movement.main.benson.showMessage(messages.MESSAGES.takeoff_4, false, function () {
+										movement.main.benson.showMessage(messages.MESSAGES.takeoff_5, false, function () {
+											movement.startTakeoff();
+										});
+									});
+								});
+							});
+						});
+					}, 500);
+					return true;
+				} else {
+					movement.main.benson.showMessage(messages.MESSAGES.ship_locked);
+					return false;
+				}
+			}
+		},
+		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
+			onEnter: function onEnter(movement) {
+				return movement.events.state["lightcar-keys"];
+			}
+		}
+	};
+	
+	var SCALE = {
+		"car": 20,
+		"light": 10,
+		"plane": 20,
+		"keya": 10,
+		"keyb": 10,
+		"keyc": 10,
+		"keyd": 10,
+		"ship": 20,
+		"pres": 15,
+		"elevator": 30,
+		"tower2": 80,
+		"plant": 80,
+		"term": 15,
+		"disk": 20,
+		"art": 20,
+		"art2": 20,
+		"ufo": 20,
+		"allitus": 15,
+		"xenterm": 8,
+		"trans": 10,
+		"control": 10,
+		"engine": 15,
+		"core": 10,
+		"pine": 50
+	};
+	
+	var LIFTS = {
+		bridge: true
+	};
+	
+	var Models = exports.Models = function Models(onLoad) {
+		var _this = this;
+	
+		_classCallCheck(this, Models);
+	
+		this.onLoad = onLoad;
+		this.models = {};
+		util.startLoadingUI("wait-models");
+	
+		var _iteratorNormalCompletion = true;
+		var _didIteratorError = false;
+		var _iteratorError = undefined;
+	
+		try {
+			var _loop = function _loop() {
+				var name = _step.value;
+	
+				var model = void 0;
+				if (name in VEHICLES) {
+					model = new Vehicle(name, VEHICLES[name]);
+				} else {
+					model = new Model(name, name !== "elevator");
+				}
+				model.load(function (m) {
+					console.log("Model loaded: " + model);
+					_this.models[model.name] = model;
+					util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
+					if (Object.keys(_this.models).length == MODELS.length) {
+						util.stopLoadingUI();
+						_this.onLoad(_this);
+					}
+				});
+			};
+	
+			for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				_loop();
+			}
+		} catch (err) {
+			_didIteratorError = true;
+			_iteratorError = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion && _iterator.return) {
+					_iterator.return();
+				}
+			} finally {
+				if (_didIteratorError) {
+					throw _iteratorError;
+				}
+			}
+		}
+	};
+	
+	var Model = exports.Model = function () {
+		function Model(name, canCompress) {
+			_classCallCheck(this, Model);
+	
+			this.name = name;
+			this.lifts = LIFTS[name];
+			this.mesh = null;
+			this.bbox = null;
+			this.description = messages.MESSAGES[name] || name;
+			this.canCompress = canCompress;
+		}
+	
+		_createClass(Model, [{
+			key: 'load',
+			value: function load(onLoad) {
+				var _this2 = this;
+	
+				var loader = new _three2.default.JSONLoader();
+				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
+	
+					// compress the model a bit by removing stuff we don't need
+					util.compressGeo(geometry);
+	
+					if (_this2.name == "control") {
+						var _iteratorNormalCompletion2 = true;
+						var _didIteratorError2 = false;
+						var _iteratorError2 = undefined;
+	
+						try {
+							for (var _iterator2 = geometry.faces[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+								var face = _step2.value;
+	
+								face["original_color"] = face.color.getHex();
+							}
+						} catch (err) {
+							_didIteratorError2 = true;
+							_iteratorError2 = err;
+						} finally {
+							try {
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+							} finally {
+								if (_didIteratorError2) {
+									throw _iteratorError2;
+								}
+							}
+						}
+					}
+	
+					// put the geom. on the ground
+					geometry.center();
+					geometry.rotateX(Math.PI / 2);
+					geometry.rotateZ(Math.PI / 2);
+					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
+					var scale = SCALE[_this2.name] || 60;
+					geometry.scale(scale, scale, scale);
+					_this2.mesh = new _three2.default.Mesh(geometry, constants.MATERIAL);
+					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
+					onLoad(_this2);
+				});
+			}
+		}, {
+			key: 'getBoundingBox',
+			value: function getBoundingBox() {
+				return this.bbox;
+			}
+		}, {
+			key: 'createObject',
+			value: function createObject() {
+				var m = this.mesh.clone();
+				m["model"] = this;
+				return m;
+			}
+		}, {
+			key: 'hasBB',
+			value: function hasBB() {
+				return !this.canCompress;
+			}
+		}]);
+	
+		return Model;
+	}();
+	
+	var Vehicle = exports.Vehicle = function (_Model) {
+		_inherits(Vehicle, _Model);
+	
+		function Vehicle(name, vehicle) {
+			_classCallCheck(this, Vehicle);
+	
+			var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(Vehicle).call(this, name));
+	
+			_this3.speed = vehicle.speed;
+			_this3.flies = vehicle.flies;
+			_this3.exp = vehicle.exp;
+			_this3.noise = vehicle.noise;
+			_this3.vehicle = vehicle;
+			_this3.canCompress = false;
+			return _this3;
+		}
+	
+		_createClass(Vehicle, [{
+			key: 'enterCheck',
+			value: function enterCheck(movement) {
+				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
+			}
+		}, {
+			key: 'hasBB',
+			value: function hasBB() {
+				return true;
+			}
+		}]);
+	
+		return Vehicle;
+	}(Model);
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	/*
+	When adding new messages, ensure their keys are sorted after any previous messages.
+	This is because the keys' sorted index is stored in the savegame (to conserve disk space).
+	Maybe prefix a new batch with zz_ or something...
+	 */
+	var messages = {
+		intro_1: ["Set course to Novagen...", "Engaging Hyperdrive"],
+		intro_2: "Enjoy your trip.",
+		intro_3: ["Message received.", "Sender: Targ city.", "Priority: urgent."],
+		intro_4: ["Request for assistance.", "Targ city emergency.", "Immediate help requested."],
+		intro_5: "Starting deceleration...",
+		intro_6: "Landing on Targ",
+		welcome: ["Welcome to Targ.", "Please take the jet", "and proceed to <span class='log_important'>9-2</span>.", "<span class='log_important'>[SPACE]</span> to use the jet.", "<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.", "<span class='log_important'>[SPACE]</span> to get out again."],
+		yeehaw: "Yee-haw!",
+		game_saved: "Game saved.",
+		ufo_fixed: ["The xeno artifacts", "started the craft!", "Try take-off and turns", "without moving first."],
+		ufo_broken: "This craft seems broken.",
+		ship_locked: ["Until you complete", "your mission, your", "ship remains locked."],
+		takeoff_1: "Preparing for takeoff...",
+		takeoff_2: "3...",
+		takeoff_3: "2...",
+		takeoff_4: "1...",
+		takeoff_5: "Blastoff!",
+		"keya": "Pentagon key",
+		"keyb": "Triangle key",
+		"keyc": "Gate key",
+		"keyd": "X key",
+		"car": "Tando groundcar",
+		"plane": "Harris skipjet",
+		"ship": "Templar class cruiser",
+		"light": "Pulsar lightcar",
+		"disk": "Emergency Override Disk",
+		"art": "Xeno artifact",
+		"art2": "Xeno artifact",
+		"ufo": "Alien craft A3",
+		"trans": "Xeno translator chip",
+		"core": "Plasma drive core",
+		x_file_1: ["File X-100: Xeno info", "The construct Allitus", "is set to destroy Targ.", "It was created by an", "alien race in order to", "ensure humanity doesn't", "evolve to discover the", "Xeno central base."],
+		x_file_2: ["File X-110: Xeno info", "The alien artifact", "in this research lab, has", "an unknown purpose. It is", "thought to be related to", "the object at <span class='log_important'>79-66</span>."],
+		x_file_3: ["File X-120: Xeno info", "The location of the Xeno", "central base is debated.", "It may be shielded from our", "scanning equipment somehow."],
+		x_file_4: ["File X-130: Xeno info", "Allitus cannot be", "disarmed at this location.", "However, we think the", "Xeno central base contains", "a shutoff mechanism."],
+		xeno_1: ["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."],
+		xeno_2: ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."],
+		xeno_3: ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."],
+		xeno_4: ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."],
+		lift_9_2: ["Take the lift down.", "This complex houses all", "that we know about the", "current situation.", "<span class='log_important'>[E]</span> to use the lift."],
+		in_lift_9_2: ["You're welcome to take", "all you find with you.", "<span class='log_important'>[P]</span> to pick things up."],
+		info_1_9_2: ["The xeno device Allitus", "was discovered a year ago.", "At first we didn't", "understand its purpose.", "It was thought to be a", "power generator.", "Our scientists worked", "hard to fire it up.", "Some months ago they", "succeeded.", "However,", "We now know it to be", "a machine of war.", "Your task is to", "terminate Allitus.", "Next, meet with our", "defense counsil at", "coordinates <span class='log_important'>c8-f0</span>."],
+		info_2_9_2: ["Since your last visit,", "Alien ruins have been", "discovered on Targ.", "An underground complex", "and cave system is", "located at <span class='log_important'>d9-42</span>."],
+		info_3_9_2: ["We have requisitioned", "a Lightcar for your", "travels. It has now been", "encoded for your use."],
+		ok_message: ["Memory scan: <span class='log_important'>OK</span>", "Disk scan: <span class='log_important'>OK</span>", "System health: <span class='log_important'>OK</span>"],
+		term_100: "Terminal 100: report",
+		term_110: "Terminal 110: report",
+		term_120: "Terminal 120: report",
+		override: ["<span class='log_important'>Override 17A</span> exec:", "!System compromised!"],
+		term_100_or: ["The intruder Allitus is", "taking over all Targ", "communications."],
+		term_110_or: ["Allitus has no known", "weakness. To learn more", "visit our Xeno studies", "lab at <span class='log_important'>36-c9</span>."],
+		term_120_or: ["Allitus is now armed.", "It is set to go critical", "in $allitus-ttl$ days."],
+		info_c8_f0: ["Defense Council Info:", "You're welcome to use", "the Defense Computer Array,", "via the terminals. Your", "security clearance will", "decide the info you see."],
+		override_disk: ["You find a disk labeled", "Emergency Override 17A", "It looks like it fits", "some kind of terminal."],
+		term_20a: "Terminal 20A: report",
+		term_20b: "Terminal 20B: report",
+		info_1_36_c9: ["This area houses", "a Xeno artifact.", "Please observe posted", "health and safety", "regulations."],
+		info_2_36_c9: ["This area houses", "a Xeno artifact.", "Please observe posted", "health and safety", "regulations."],
+		info_3_36_c9: ["Allitus: a device", "of alien origins.", "Warning: High Voltage", "Ionizing radiation", "Posted biohazard", "Do not enter."],
+		allitus_1: "Feels cool to the touch.",
+		allitus_on: ["An ominous buzzing", "sound is emitted."],
+		allitus_off: "Total silence reigns.",
+		drives_with_core: ["The drives now have", "plasma cores installed.", "The xeno ship prepares", "to depart from Targ."],
+		drives_no_core: ["These xeno drives need", "new plasma cores to", "operate again."],
+		allitus_armed: "Allitus is ARMED",
+		allitus_disarmed: "Allitus is disarmed",
+		thanks: ["The Targ city council is", "eternally grateful for", "disabling the alien threat.", "<span class='log_important'>20000</span> credits have been", "added to your account."],
+		xeno_gibberish: "Xargff norgil Mggarth."
+	};
+	
+	var keys = Object.keys(messages).sort();
+	var MESSAGES = exports.MESSAGES = {};
+	for (var i = 0; i < keys.length; i++) {
+		var k = keys[i];
+		MESSAGES[k] = i;
+	}
+	var VALUES = exports.VALUES = keys.map(function (k) {
+		return messages[k];
+	});
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
 	exports.Movement = exports.ROOM_DEPTH = exports.DEFAULT_Z = undefined;
 	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -47584,7 +47997,7 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _model = __webpack_require__(10);
+	var _model = __webpack_require__(9);
 	
 	var models = _interopRequireWildcard(_model);
 	
@@ -47592,11 +48005,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _noise = __webpack_require__(11);
+	var _noise = __webpack_require__(12);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
-	var _compounds = __webpack_require__(12);
+	var _compounds = __webpack_require__(13);
 	
 	var compounds = _interopRequireWildcard(_compounds);
 	
@@ -47604,13 +48017,17 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(59);
+	var _events = __webpack_require__(60);
 	
 	var events = _interopRequireWildcard(_events);
 	
 	var _constants = __webpack_require__(8);
 	
 	var constants = _interopRequireWildcard(_constants);
+	
+	var _messages = __webpack_require__(10);
+	
+	var messages = _interopRequireWildcard(_messages);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -47721,6 +48138,7 @@
 			this.takeoff = 0;
 	
 			this.events = new events.Events(this);
+			this.main.benson.context = this.events.state; // hack...
 	
 			(0, _jquery2.default)(document).mousemove(function (event) {
 				if (_this.landing != 0 || _this.takeoff != 0) return;
@@ -47814,8 +48232,7 @@
 						{
 							_this.power = 1.0;
 							if (_this.vehicle && _this.vehicle.model.name == "light") {
-								_this.main.benson.addLogBreak();
-								_this.main.benson.addMessage("Yee-haw!");
+								_this.main.benson.showMessage(messages.MESSAGES.yeehaw);
 							}
 							break;
 						}
@@ -47849,6 +48266,14 @@
 						(0, _jquery2.default)("#log").toggle();
 						if ((0, _jquery2.default)("#log").is(":visible")) document.exitPointerLock();
 						break;
+					case 88:
+						// x
+						if (_this.vehicle || _this.sectorX == ALIEN_BASE_POS[0] && _this.sectorY == ALIEN_BASE_POS[1]) {
+							_this.noise.play("denied");
+						} else {
+							_this.saveGame();
+						}
+						break;
 					case 84:
 						// t
 						_this.teleport();
@@ -47858,18 +48283,77 @@
 		}
 	
 		_createClass(Movement, [{
+			key: 'saveGame',
+			value: function saveGame() {
+				var x, y, xs, ys, z;
+				if (this.level) {
+					x = this.sectorX;
+					y = this.sectorY;
+					xs = constants.SECTOR_SIZE / 2;
+					ys = constants.SECTOR_SIZE / 2;
+					z = ROOM_DEPTH;
+				} else {
+					x = this.player.position.x / constants.SECTOR_SIZE;
+					y = this.player.position.y / constants.SECTOR_SIZE;
+					xs = this.player.position.x % constants.SECTOR_SIZE;
+					ys = this.player.position.y % constants.SECTOR_SIZE;
+					z = this.player.position.z;
+				}
+	
+				localStorage["savegame"] = JSON.stringify({
+					version: 1,
+					sectorX: x, sectorY: y,
+					x: xs, y: ys, z: z,
+					zRot: this.player.rotation.z,
+					vehicleIndex: this.vehicle ? this.vehicle.vehicleIndex : null,
+					inventory: this.inventory,
+					state: this.events.state,
+					now: Date.now(),
+					vehicles: this.main.game_map.vehicles.map(function (v) {
+						return {
+							x: v.position.x,
+							y: v.position.y,
+							z: v.position.z,
+							sectorX: v.parent.sectorX,
+							sectorY: v.parent.sectorY,
+							rotZ: v.rotation.z
+						};
+					}),
+					messages: this.main.benson.history
+				});
+				this.main.benson.showMessage(messages.MESSAGES.game_saved);
+			}
+		}, {
 			key: 'loadGame',
 			value: function loadGame(gameState) {
 				var _this2 = this;
 	
+				console.log("Loading game=", gameState);
 				this.player.position.set(gameState.sectorX * constants.SECTOR_SIZE + gameState.x, gameState.sectorY * constants.SECTOR_SIZE + gameState.y, gameState.z);
+				this.player.rotation.z = gameState.zRot;
 				this.inventory = gameState.inventory;
-				this.vehicle = gameState.vehicle;
+				this.vehicle = gameState.vehicle ? this.main.models.models[gameState.vehicle].createObject() : null;
 				this.sectorX = this.player.position.x / constants.SECTOR_SIZE | 0;
 				this.sectorY = this.player.position.y / constants.SECTOR_SIZE | 0;
 				this.liftDirection = 0;
 				this.events.state = gameState.state;
+				this.events.state["next-game-day"] = Date.now() + (this.events.state["next-game-day"] - gameState.now);
 				this.main.setLightPercent();
+	
+				// reposition vehicles: this assumes the world map doesn't change...
+				// Ff it does, increment the savegame version and ignore old saves.
+				for (var i = 0; i < gameState.vehicles.length; i++) {
+					var vehicle = this.main.game_map.vehicles[i];
+					vehicle.parent.remove(vehicle);
+					if (i != gameState.vehicleIndex) {
+						var info = gameState.vehicles[i];
+						this.main.game_map.addObjectAt(info.x + info.sectorX * constants.SECTOR_SIZE, info.y + info.sectorY * constants.SECTOR_SIZE, info.z, vehicle, info.rotZ);
+					}
+				}
+	
+				// message history replay
+				this.main.benson.replay(gameState.messages);
+	
 				if (this.player.position.z == ROOM_DEPTH) {
 					this.canMove = false;
 					compounds.loadLevel(this.sectorX, this.sectorY, function (level) {
@@ -47879,7 +48363,7 @@
 						if (_this2.level) {
 							var offsetX = _this2.player.position.x;
 							var offsetY = _this2.player.position.y;
-							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true);
+							_this2.level.create(_this2.main.scene, offsetX, offsetY, offsetX - _this2.main.models.models["elevator"].bbox.size().x / 2, offsetY - _this2.main.models.models["elevator"].bbox.size().y / 2, _this2.main.models, true, _this2.inventory);
 						}
 					});
 				}
@@ -47937,8 +48421,7 @@
 						ga("send", "event", "object", this.pickupObject.model.name, util.toHex(this.sectorX, 2) + util.toHex(this.sectorY, 2));
 						this.inventory.push(this.pickupObject.model.name);
 						this.pickupObject.parent.remove(this.pickupObject);
-						this.main.benson.addLogBreak();
-						this.main.benson.addMessage(this.pickupObject.model.description);
+						this.main.benson.showMessage(this.pickupObject.model.description);
 					}
 				}
 			}
@@ -48026,7 +48509,7 @@
 							_this3.teleportDir = 1;
 							_this3.teleportTime = Date.now() + TELEPORT_TIME;
 							_this3.baseMove = 1;
-							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true);
+							_this3.level.create(_this3.main.scene, offsetX, offsetY, 0, 0, _this3.main.models, true, _this3.inventory);
 						}
 					});
 				} else {
@@ -48070,7 +48553,7 @@
 										if (_this3.level) {
 											_this3.liftDirection = -1;
 											var liftPos = elevator.getWorldPosition();
-											_this3.level.create(_this3.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this3.main.models);
+											_this3.level.create(_this3.main.scene, offsetX, offsetY, liftPos.x, liftPos.y, _this3.main.models, false, _this3.inventory);
 										}
 									});
 								}
@@ -48099,7 +48582,7 @@
 			value: function exitVehicle() {
 				this.noise.stop("car");
 				this.noise.stop("jet");
-				this.main.game_map.addModelAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle.model, this.player.rotation.z);
+				this.main.game_map.addObjectAt(this.player.position.x, this.player.position.y, this.player.position.z - DEFAULT_Z, this.vehicle, this.player.rotation.z);
 				this.noise.stop(this.vehicle.model.noise);
 				this.vehicle = null;
 				this.stop();
@@ -48124,8 +48607,7 @@
 								this.player.rotation.z = o.rotation.z;
 								this.vehicle = o;
 								this.vehicle.parent.remove(this.vehicle);
-								this.main.benson.addLogBreak();
-								this.main.benson.addMessage(o.model.description);
+								this.main.benson.showMessage(o.model.description);
 								this.stop();
 	
 								// the alien base is only visible from the ufo
@@ -48342,7 +48824,10 @@
 							if (this.baseMove == -1) {
 								// moving out of the base
 								this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-								this.vehicle = this.main.models.models["ufo"].createObject();
+								// do not create a new model here
+								this.vehicle = this.main.game_map.vehicles.find(function (v) {
+									return v.model.name == "ufo";
+								});
 								this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 								this.level.destroy();
 								this.level = null;
@@ -48831,6 +49316,8 @@
 		}, {
 			key: 'endLanding',
 			value: function endLanding() {
+				var loadgame = arguments.length <= 0 || arguments[0] === undefined ? false : arguments[0];
+	
 				console.log("landing ending");
 				this.player.position.z = DEFAULT_Z;
 				//this.player.rotation.z = 0;
@@ -48842,13 +49329,12 @@
 				// add ship behind player
 				this.main.game_map.addShip(this.player.position.x + 100, this.player.position.y + 100, this.player.rotation.z);
 	
-				this.main.benson.addLogBreak();
-				this.main.benson.addMessage("Welcome to Targ.");
-				this.main.benson.addMessage("Please take the jet");
-				this.main.benson.addMessage("and proceed to <span class='log_important'>9-2</span>.");
-				this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to use the jet.");
-				this.main.benson.addMessage("<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.");
-				this.main.benson.addMessage("<span class='log_important'>[SPACE]</span> to get out again.");
+				if (loadgame) {
+					this.loadGame(JSON.parse(localStorage["savegame"]));
+				} else if (!this.events.state["welcome-message"]) {
+					this.main.benson.showMessage(messages.MESSAGES.welcome);
+					this.events.state["welcome-message"] = true;
+				}
 			}
 		}, {
 			key: 'startTakeoff',
@@ -48884,326 +49370,7 @@
 	}();
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports.Vehicle = exports.Model = exports.Models = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _three = __webpack_require__(1);
-	
-	var _three2 = _interopRequireDefault(_three);
-	
-	var _game_map = __webpack_require__(4);
-	
-	var game_map = _interopRequireWildcard(_game_map);
-	
-	var _util = __webpack_require__(5);
-	
-	var util = _interopRequireWildcard(_util);
-	
-	var _constants = __webpack_require__(8);
-	
-	var constants = _interopRequireWildcard(_constants);
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	/*
-		To use colors, use the "vertex paint" feature of blender.
-		Then, export with vertex colors on (no materials needed.)
-	 */
-	var MODELS = ["opera", "asha", "car", "plane", "tower", "elevator", "keya", "keyb", "keyc", "keyd", "ship", "port", "pres", "light", "ruins", "tower2", "bldg", "bridge", "plant", "term", "disk", "stadium", "art", "art2", "ufo", "allitus", "xeno", "xenterm", "trans", "control", "engine", "core", "pine", "mill"];
-	
-	var VEHICLES = {
-		"car": { speed: 4000, flies: false, exp: false, noise: "car", hovers: false },
-		"plane": { speed: 20000, flies: true, exp: false, noise: "jet", hovers: false },
-		"ufo": { speed: 40000, flies: true, exp: true, noise: "ufo", hovers: true,
-			onEnter: function onEnter(movement) {
-				if (movement.inInventory("art") && movement.inInventory("art2")) {
-					if (!movement.events.state["ufo-first"]) {
-						movement.main.benson.addLogBreak();
-						movement.main.benson.addMessage("The xeno artifacts");
-						movement.main.benson.addMessage("started the craft!");
-						movement.main.benson.addMessage("Try take-off and turns");
-						movement.main.benson.addMessage("without moving first.");
-						movement.events.state["ufo-first"] = true;
-					}
-					return true;
-				} else {
-					movement.main.benson.addLogBreak();
-					movement.main.benson.addMessage("This craft seems broken.");
-					return false;
-				}
-			}
-		},
-		"ship": { speed: 5000000, flies: true, exp: true, noise: "pink", hovers: true,
-			onEnter: function onEnter(movement) {
-				// can't depart until either: allitus is stopped, or the xeno base left
-				if (!movement.events.state["allitus_control"] || movement.events.state["xeno_base_depart"]) {
-					setTimeout(function () {
-						movement.main.benson.addLogBreak();
-						movement.main.benson.addMessage("Preparing for takeoff...", function () {
-							movement.main.benson.addMessage("3...", function () {
-								movement.main.benson.addMessage("2...", function () {
-									movement.main.benson.addMessage("1...", function () {
-										movement.main.benson.addMessage("Blastoff!", function () {
-											movement.startTakeoff();
-										});
-									});
-								});
-							});
-						});
-					}, 500);
-					return true;
-				} else {
-					movement.main.benson.addLogBreak();
-					movement.main.benson.addMessage("Until you complete");
-					movement.main.benson.addMessage("your mission, your");
-					movement.main.benson.addMessage("ship remains locked.");
-					return false;
-				}
-			}
-		},
-		"light": { speed: 50000, flies: false, exp: true, noise: "car", hovers: false,
-			onEnter: function onEnter(movement) {
-				return movement.events.state["lightcar-keys"];
-			}
-		}
-	};
-	
-	var SCALE = {
-		"car": 20,
-		"light": 10,
-		"plane": 20,
-		"keya": 10,
-		"keyb": 10,
-		"keyc": 10,
-		"keyd": 10,
-		"ship": 20,
-		"pres": 15,
-		"elevator": 30,
-		"tower2": 80,
-		"plant": 80,
-		"term": 15,
-		"disk": 20,
-		"art": 20,
-		"art2": 20,
-		"ufo": 20,
-		"allitus": 15,
-		"xenterm": 8,
-		"trans": 10,
-		"control": 10,
-		"engine": 15,
-		"core": 10,
-		"pine": 50
-	};
-	
-	var DESCRIPTIONS = {
-		"keya": "Pentagon key",
-		"keyb": "Triangle key",
-		"keyc": "Gate key",
-		"keyd": "X key",
-		"car": "Tando groundcar",
-		"plane": "Harris skipjet",
-		"ship": "Templar class cruiser",
-		"light": "Pulsar lightcar",
-		"disk": "Emergency Override Disk",
-		"art": "Xeno artifact",
-		"art2": "Xeno artifact",
-		"ufo": "Alien craft A3",
-		"trans": "Xeno translator chip",
-		"core": "Plasma drive core"
-	};
-	
-	var LIFTS = {
-		bridge: true
-	};
-	
-	var Models = exports.Models = function Models(onLoad) {
-		var _this = this;
-	
-		_classCallCheck(this, Models);
-	
-		this.onLoad = onLoad;
-		this.models = {};
-		util.startLoadingUI("wait-models");
-	
-		var _iteratorNormalCompletion = true;
-		var _didIteratorError = false;
-		var _iteratorError = undefined;
-	
-		try {
-			var _loop = function _loop() {
-				var name = _step.value;
-	
-				var model = void 0;
-				if (name in VEHICLES) {
-					model = new Vehicle(name, VEHICLES[name]);
-				} else {
-					model = new Model(name, name !== "elevator");
-				}
-				model.load(function (m) {
-					console.log("Model loaded: " + model);
-					_this.models[model.name] = model;
-					util.setLoadingUIProgress(Object.keys(_this.models).length / MODELS.length);
-					if (Object.keys(_this.models).length == MODELS.length) {
-						util.stopLoadingUI();
-						_this.onLoad(_this);
-					}
-				});
-			};
-	
-			for (var _iterator = MODELS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-				_loop();
-			}
-		} catch (err) {
-			_didIteratorError = true;
-			_iteratorError = err;
-		} finally {
-			try {
-				if (!_iteratorNormalCompletion && _iterator.return) {
-					_iterator.return();
-				}
-			} finally {
-				if (_didIteratorError) {
-					throw _iteratorError;
-				}
-			}
-		}
-	};
-	
-	var Model = exports.Model = function () {
-		function Model(name, canCompress) {
-			_classCallCheck(this, Model);
-	
-			this.name = name;
-			this.lifts = LIFTS[name];
-			this.mesh = null;
-			this.bbox = null;
-			this.description = DESCRIPTIONS[name] || name;
-			this.canCompress = canCompress;
-		}
-	
-		_createClass(Model, [{
-			key: 'load',
-			value: function load(onLoad) {
-				var _this2 = this;
-	
-				var loader = new _three2.default.JSONLoader();
-				loader.load("models/" + this.name + ".json?cb=" + window.cb, function (geometry, materials) {
-	
-					// compress the model a bit by removing stuff we don't need
-					util.compressGeo(geometry);
-	
-					if (_this2.name == "control") {
-						var _iteratorNormalCompletion2 = true;
-						var _didIteratorError2 = false;
-						var _iteratorError2 = undefined;
-	
-						try {
-							for (var _iterator2 = geometry.faces[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-								var face = _step2.value;
-	
-								face["original_color"] = face.color.getHex();
-							}
-						} catch (err) {
-							_didIteratorError2 = true;
-							_iteratorError2 = err;
-						} finally {
-							try {
-								if (!_iteratorNormalCompletion2 && _iterator2.return) {
-									_iterator2.return();
-								}
-							} finally {
-								if (_didIteratorError2) {
-									throw _iteratorError2;
-								}
-							}
-						}
-					}
-	
-					// put the geom. on the ground
-					geometry.center();
-					geometry.rotateX(Math.PI / 2);
-					geometry.rotateZ(Math.PI / 2);
-					geometry.translate(0, 0, geometry.boundingBox.size().z / 2 + 1 / 60);
-					var scale = SCALE[_this2.name] || 60;
-					geometry.scale(scale, scale, scale);
-					_this2.mesh = new _three2.default.Mesh(geometry, constants.MATERIAL);
-					_this2.bbox = new _three2.default.Box3().setFromObject(_this2.mesh);
-					onLoad(_this2);
-				});
-			}
-		}, {
-			key: 'getBoundingBox',
-			value: function getBoundingBox() {
-				return this.bbox;
-			}
-		}, {
-			key: 'createObject',
-			value: function createObject() {
-				var m = this.mesh.clone();
-				m["model"] = this;
-				return m;
-			}
-		}, {
-			key: 'hasBB',
-			value: function hasBB() {
-				return !this.canCompress;
-			}
-		}]);
-	
-		return Model;
-	}();
-	
-	var Vehicle = exports.Vehicle = function (_Model) {
-		_inherits(Vehicle, _Model);
-	
-		function Vehicle(name, vehicle) {
-			_classCallCheck(this, Vehicle);
-	
-			var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(Vehicle).call(this, name));
-	
-			_this3.speed = vehicle.speed;
-			_this3.flies = vehicle.flies;
-			_this3.exp = vehicle.exp;
-			_this3.noise = vehicle.noise;
-			_this3.vehicle = vehicle;
-			_this3.canCompress = false;
-			return _this3;
-		}
-	
-		_createClass(Vehicle, [{
-			key: 'enterCheck',
-			value: function enterCheck(movement) {
-				return this.vehicle.onEnter ? this.vehicle.onEnter(movement) : true;
-			}
-		}, {
-			key: 'hasBB',
-			value: function hasBB() {
-				return true;
-			}
-		}]);
-	
-		return Vehicle;
-	}(Model);
-
-/***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -49977,7 +50144,7 @@
 	}();
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -49988,11 +50155,11 @@
 	exports.LEVELS = undefined;
 	exports.loadLevel = loadLevel;
 	
-	var _room = __webpack_require__(13);
+	var _room = __webpack_require__(14);
 	
 	var room = _interopRequireWildcard(_room);
 	
-	var _compound_generator = __webpack_require__(15);
+	var _compound_generator = __webpack_require__(16);
 	
 	var generator = _interopRequireWildcard(_compound_generator);
 	
@@ -50008,7 +50175,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jszip = __webpack_require__(16);
+	var _jszip = __webpack_require__(17);
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
@@ -50025,7 +50192,7 @@
 		"d9,42": { "rooms": [{ "x": 12, "y": 8, "w": 3, "h": 3, "color": "#ffcccc" }, { "x": 15, "y": 9, "w": 8, "h": 1, "color": "#ffffcc" }, { "x": 23, "y": 8, "w": 3, "h": 3, "color": "#ccffcc" }, { "x": 24, "y": 11, "w": 1, "h": 4, "color": "#ccccff" }, { "x": 21, "y": 15, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 18, "y": 16, "w": 3, "h": 1, "color": "#cccccc" }, { "x": 15, "y": 15, "w": 3, "h": 3, "color": "#ffcc88" }, { "x": 23, "y": 18, "w": 3, "h": 5, "color": "#ccffcc" }, { "x": 24, "y": 23, "w": 1, "h": 3, "color": "#ffcccc" }, { "x": 23, "y": 26, "w": 3, "h": 8, "color": "#ccccff", "cave": false }, { "x": 26, "y": 27, "w": 6, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 32, "w": 3, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 32, "y": 37, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 32, "y": 33, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 33, "y": 30, "w": 4, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 30, "y": 25, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 29, "y": 23, "w": 10, "h": 2, "color": "#cccccc", "cave": true }, { "x": 35, "y": 27, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 36, "y": 28, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 37, "y": 32, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 38, "y": 33, "w": 2, "h": 3, "color": "#cccccc", "cave": true }, { "x": 40, "y": 27, "w": 4, "h": 3, "color": "#ff8866", "cave": false }, { "x": 39, "y": 24, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 41, "y": 25, "w": 2, "h": 2, "color": "#cccccc", "cave": true }, { "x": 36, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 31, "y": 20, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 26, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 27, "y": 36, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 28, "y": 39, "w": 8, "h": 1, "color": "#cccccc", "cave": true }, { "x": 24, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 23, "y": 34, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 36, "y": 37, "w": 3, "h": 4, "color": "#ccffcc", "cave": false }, { "x": 33, "y": 34, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 32, "y": 21, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 39, "y": 39, "w": 4, "h": 2, "color": "#cccccc", "cave": true }, { "x": 43, "y": 33, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 40, "y": 35, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 13, "y": 11, "w": 1, "h": 10, "color": "#ccffff" }, { "x": 13, "y": 24, "w": 1, "h": 8, "color": "#ccffff" }, { "x": 14, "y": 31, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 10, "y": 21, "w": 7, "h": 3, "color": "#ccffff" }, { "x": 31, "y": 40, "w": 1, "h": 2, "color": "#cccccc", "cave": true }, { "x": 17, "y": 32, "w": 1, "h": 3, "color": "#cccccc", "cave": true }, { "x": 17, "y": 35, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 30, "y": 42, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 14, "y": 35, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 44, "y": 36, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 40, "y": 30, "w": 1, "h": 4, "color": "#cccccc", "cave": true }], "doors": [{ "x": 14, "y": 9, "dir": "e", "roomA": 0, "roomB": 1, "key": "" }, { "x": 13, "y": 10, "dir": "s", "roomA": 0, "roomB": 37, "key": "" }, { "x": 22, "y": 9, "dir": "e", "roomA": 1, "roomB": 2, "key": "" }, { "x": 24, "y": 10, "dir": "s", "roomA": 2, "roomB": 3, "key": "" }, { "x": 24, "y": 14, "dir": "s", "roomA": 3, "roomB": 4, "key": "" }, { "x": 21, "y": 16, "dir": "w", "roomA": 4, "roomB": 5, "key": "" }, { "x": 24, "y": 17, "dir": "s", "roomA": 4, "roomB": 7, "key": "keyc" }, { "x": 18, "y": 16, "dir": "w", "roomA": 5, "roomB": 6, "key": "" }, { "x": 24, "y": 22, "dir": "s", "roomA": 7, "roomB": 8, "key": "" }, { "x": 24, "y": 25, "dir": "s", "roomA": 8, "roomB": 9, "key": "" }, { "x": 25, "y": 28, "dir": "e", "roomA": 9, "roomB": 10, "key": "" }, { "x": 23, "y": 33, "dir": "s", "roomA": 9, "roomB": 30, "key": "" }, { "x": 23, "y": 31, "dir": "w", "roomA": 9, "roomB": 39, "key": "" }, { "x": 30, "y": 27, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 31, "y": 37, "dir": "e", "roomA": 11, "roomB": 12, "key": "" }, { "x": 31, "y": 33, "dir": "e", "roomA": 11, "roomB": 13, "key": "" }, { "x": 29, "y": 35, "dir": "w", "roomA": 11, "roomB": 26, "key": "" }, { "x": 35, "y": 37, "dir": "e", "roomA": 12, "roomB": 31, "key": "" }, { "x": 33, "y": 37, "dir": "n", "roomA": 12, "roomB": 32, "key": "" }, { "x": 34, "y": 33, "dir": "n", "roomA": 13, "roomB": 14, "key": "" }, { "x": 33, "y": 33, "dir": "s", "roomA": 13, "roomB": 32, "key": "" }, { "x": 35, "y": 30, "dir": "n", "roomA": 14, "roomB": 17, "key": "" }, { "x": 36, "y": 32, "dir": "e", "roomA": 14, "roomB": 19, "key": "" }, { "x": 30, "y": 25, "dir": "n", "roomA": 15, "roomB": 16, "key": "" }, { "x": 38, "y": 24, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 37, "y": 23, "dir": "n", "roomA": 16, "roomB": 24, "key": "" }, { "x": 31, "y": 23, "dir": "n", "roomA": 16, "roomB": 25, "key": "" }, { "x": 35, "y": 28, "dir": "e", "roomA": 17, "roomB": 18, "key": "" }, { "x": 39, "y": 28, "dir": "e", "roomA": 18, "roomB": 21, "key": "" }, { "x": 38, "y": 32, "dir": "s", "roomA": 19, "roomB": 20, "key": "" }, { "x": 39, "y": 35, "dir": "e", "roomA": 20, "roomB": 36, "key": "" }, { "x": 39, "y": 33, "dir": "e", "roomA": 20, "roomB": 47, "key": "" }, { "x": 42, "y": 27, "dir": "n", "roomA": 21, "roomB": 23, "key": "" }, { "x": 40, "y": 29, "dir": "s", "roomA": 21, "roomB": 47, "key": "" }, { "x": 42, "y": 24, "dir": "s", "roomA": 22, "roomB": 23, "key": "" }, { "x": 36, "y": 21, "dir": "w", "roomA": 24, "roomB": 33, "key": "" }, { "x": 31, "y": 21, "dir": "e", "roomA": 25, "roomB": 33, "key": "" }, { "x": 27, "y": 35, "dir": "s", "roomA": 26, "roomB": 27, "key": "" }, { "x": 27, "y": 39, "dir": "e", "roomA": 27, "roomB": 28, "key": "" }, { "x": 27, "y": 38, "dir": "w", "roomA": 27, "roomB": 29, "key": "" }, { "x": 35, "y": 39, "dir": "e", "roomA": 28, "roomB": 31, "key": "" }, { "x": 31, "y": 39, "dir": "s", "roomA": 28, "roomB": 41, "key": "" }, { "x": 24, "y": 38, "dir": "w", "roomA": 29, "roomB": 30, "key": "" }, { "x": 23, "y": 35, "dir": "w", "roomA": 30, "roomB": 43, "key": "" }, { "x": 38, "y": 40, "dir": "e", "roomA": 31, "roomB": 34, "key": "" }, { "x": 42, "y": 39, "dir": "e", "roomA": 34, "roomB": 35, "key": "" }, { "x": 43, "y": 35, "dir": "w", "roomA": 35, "roomB": 36, "key": "" }, { "x": 43, "y": 37, "dir": "e", "roomA": 35, "roomB": 46, "key": "" }, { "x": 13, "y": 20, "dir": "s", "roomA": 37, "roomB": 40, "key": "keyd" }, { "x": 13, "y": 31, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 13, "y": 24, "dir": "n", "roomA": 38, "roomB": 40, "key": "keyd" }, { "x": 17, "y": 31, "dir": "s", "roomA": 39, "roomB": 42, "key": "" }, { "x": 31, "y": 41, "dir": "s", "roomA": 41, "roomB": 44, "key": "" }, { "x": 17, "y": 34, "dir": "s", "roomA": 42, "roomB": 43, "key": "" }, { "x": 17, "y": 35, "dir": "w", "roomA": 43, "roomB": 45, "key": "" }], "objects": [{ "x": 15, "y": 16, "object": "keyc", "room": 8 }, { "x": 36, "y": 40, "object": "keyd", "room": 39 }, { "x": 33, "y": 31, "object": "trans", "room": 17, "rot": -90 }, { "x": 14, "y": 36, "object": "core", "room": 53, "rot": null }, { "x": 46, "y": 37, "object": "core", "room": 54, "rot": null }, { "x": 11, "y": 22, "object": "art2", "room": 40, "rot": null }], "teleporters": [{ "roomA": 44, "roomB": 24 }, { "roomA": 45, "roomB": 46 }] },
 	
 		// defense council
-		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }, { "x": 66, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 69, "y": 37, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 52, "y": 30, "w": 1, "h": 17, "color": "#cccccc", "cave": true }, { "x": 53, "y": 34, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 44, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 58, "y": 37, "w": 1, "h": 7, "color": "#cccccc", "cave": true }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 25, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 26, "key": "" }, { "x": 52, "y": 47, "dir": "n", "roomA": 18, "roomB": 38, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 27, "key": "" }, { "x": 52, "y": 29, "dir": "s", "roomA": 22, "roomB": 38, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 23, "roomB": 24, "key": "" }, { "x": 57, "y": 34, "dir": "w", "roomA": 23, "roomB": 39, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 23, "roomB": 41, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 24, "roomB": 25, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 24, "roomB": 26, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 24, "roomB": 33, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 26, "roomB": 27, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 28, "roomB": 29, "key": "" }, { "x": 62, "y": 44, "dir": "w", "roomA": 28, "roomB": 40, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 29, "roomB": 30, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 30, "roomB": 31, "key": "" }, { "x": 65, "y": 38, "dir": "e", "roomA": 30, "roomB": 36, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 31, "roomB": 32, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 32, "roomB": 33, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 32, "roomB": 34, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 34, "roomB": 35, "key": "" }, { "x": 68, "y": 38, "dir": "e", "roomA": 36, "roomB": 37, "key": "" }, { "x": 52, "y": 34, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 52, "y": 44, "dir": "e", "roomA": 38, "roomB": 40, "key": "" }, { "x": 58, "y": 44, "dir": "n", "roomA": 40, "roomB": 41, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }], "teleporters": [{ "roomA": 7, "roomB": 8 }, { "roomA": 37, "roomB": 6 }] },
+		"c8,f0": { "rooms": [{ "x": 38, "y": 33, "w": 4, "h": 4, "color": "#ffcccc", "cave": false }, { "x": 39, "y": 20, "w": 2, "h": 13, "color": "#ccccff", "cave": false }, { "x": 39, "y": 37, "w": 2, "h": 13, "color": "#ccffcc", "cave": false }, { "x": 42, "y": 34, "w": 3, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 35, "y": 34, "w": 3, "h": 2, "color": "#ff8866", "cave": false }, { "x": 45, "y": 32, "w": 4, "h": 6, "color": "#ffcc88", "cave": false }, { "x": 31, "y": 32, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 38, "y": 16, "w": 4, "h": 4, "color": "#ccffff", "cave": false }, { "x": 38, "y": 50, "w": 4, "h": 4, "color": "#ffccff", "cave": false }, { "x": 42, "y": 16, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 42, "y": 50, "w": 13, "h": 4, "color": "#cccccc", "cave": false }, { "x": 43, "y": 20, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 46, "y": 20, "w": 2, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 49, "y": 20, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 52, "y": 20, "w": 2, "h": 3, "color": "#ffccff", "cave": false }, { "x": 43, "y": 47, "w": 2, "h": 3, "color": "#ccffff", "cave": false }, { "x": 46, "y": 47, "w": 2, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 49, "y": 47, "w": 2, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 52, "y": 47, "w": 2, "h": 3, "color": "#ccccff", "cave": false }, { "x": 42, "y": 23, "w": 4, "h": 6, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 26, "w": 5, "h": 1, "color": "#cccccc", "cave": true }, { "x": 48, "y": 27, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 49, "y": 29, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 57, "y": 32, "w": 5, "h": 5, "color": "#ccffcc", "cave": false }, { "x": 58, "y": 18, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 55, "y": 18, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 55, "y": 23, "w": 1, "h": 7, "color": "#cccccc", "cave": true }, { "x": 62, "y": 40, "w": 1, "h": 5, "color": "#cccccc", "cave": true }, { "x": 63, "y": 40, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 65, "y": 36, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 63, "y": 36, "w": 2, "h": 1, "color": "#cccccc", "cave": true }, { "x": 63, "y": 22, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 59, "y": 22, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 64, "y": 28, "w": 3, "h": 1, "color": "#ffffcc", "cave": true }, { "x": 67, "y": 26, "w": 4, "h": 5, "color": "#ff8866", "cave": false }, { "x": 66, "y": 38, "w": 3, "h": 1, "color": "#cccccc", "cave": true }, { "x": 69, "y": 37, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 52, "y": 30, "w": 1, "h": 17, "color": "#cccccc", "cave": true }, { "x": 53, "y": 34, "w": 4, "h": 1, "color": "#cccccc", "cave": true }, { "x": 53, "y": 44, "w": 9, "h": 1, "color": "#cccccc", "cave": true }, { "x": 58, "y": 37, "w": 1, "h": 7, "color": "#cccccc", "cave": true }], "doors": [{ "x": 40, "y": 33, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 40, "y": 36, "dir": "s", "roomA": 0, "roomB": 2, "key": "" }, { "x": 41, "y": 35, "dir": "e", "roomA": 0, "roomB": 3, "key": "" }, { "x": 38, "y": 35, "dir": "w", "roomA": 0, "roomB": 4, "key": "" }, { "x": 40, "y": 20, "dir": "n", "roomA": 1, "roomB": 7, "key": "" }, { "x": 40, "y": 49, "dir": "s", "roomA": 2, "roomB": 8, "key": "" }, { "x": 44, "y": 35, "dir": "e", "roomA": 3, "roomB": 5, "key": "" }, { "x": 35, "y": 35, "dir": "w", "roomA": 4, "roomB": 6, "key": "" }, { "x": 48, "y": 32, "dir": "n", "roomA": 5, "roomB": 21, "key": "" }, { "x": 41, "y": 18, "dir": "e", "roomA": 7, "roomB": 9, "key": "keya" }, { "x": 41, "y": 52, "dir": "e", "roomA": 8, "roomB": 10, "key": "keya" }, { "x": 44, "y": 19, "dir": "s", "roomA": 9, "roomB": 11, "key": "" }, { "x": 47, "y": 19, "dir": "s", "roomA": 9, "roomB": 12, "key": "" }, { "x": 50, "y": 19, "dir": "s", "roomA": 9, "roomB": 13, "key": "" }, { "x": 53, "y": 19, "dir": "s", "roomA": 9, "roomB": 14, "key": "" }, { "x": 54, "y": 18, "dir": "e", "roomA": 9, "roomB": 25, "key": "" }, { "x": 44, "y": 50, "dir": "n", "roomA": 10, "roomB": 15, "key": "" }, { "x": 47, "y": 50, "dir": "n", "roomA": 10, "roomB": 16, "key": "" }, { "x": 50, "y": 50, "dir": "n", "roomA": 10, "roomB": 17, "key": "" }, { "x": 53, "y": 50, "dir": "n", "roomA": 10, "roomB": 18, "key": "" }, { "x": 44, "y": 22, "dir": "s", "roomA": 11, "roomB": 19, "key": "" }, { "x": 53, "y": 22, "dir": "e", "roomA": 14, "roomB": 26, "key": "" }, { "x": 52, "y": 47, "dir": "n", "roomA": 18, "roomB": 38, "key": "" }, { "x": 45, "y": 26, "dir": "e", "roomA": 19, "roomB": 20, "key": "" }, { "x": 48, "y": 26, "dir": "s", "roomA": 20, "roomB": 21, "key": "" }, { "x": 48, "y": 29, "dir": "e", "roomA": 21, "roomB": 22, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 22, "roomB": 27, "key": "" }, { "x": 52, "y": 29, "dir": "s", "roomA": 22, "roomB": 38, "key": "" }, { "x": 58, "y": 32, "dir": "n", "roomA": 23, "roomB": 24, "key": "" }, { "x": 57, "y": 34, "dir": "w", "roomA": 23, "roomB": 39, "key": "" }, { "x": 58, "y": 36, "dir": "s", "roomA": 23, "roomB": 41, "key": "" }, { "x": 58, "y": 18, "dir": "w", "roomA": 24, "roomB": 25, "key": "" }, { "x": 58, "y": 22, "dir": "w", "roomA": 24, "roomB": 26, "key": "" }, { "x": 58, "y": 22, "dir": "e", "roomA": 24, "roomB": 33, "key": "" }, { "x": 55, "y": 22, "dir": "s", "roomA": 26, "roomB": 27, "key": "" }, { "x": 62, "y": 40, "dir": "e", "roomA": 28, "roomB": 29, "key": "" }, { "x": 62, "y": 44, "dir": "w", "roomA": 28, "roomB": 40, "key": "" }, { "x": 65, "y": 40, "dir": "n", "roomA": 29, "roomB": 30, "key": "" }, { "x": 65, "y": 36, "dir": "w", "roomA": 30, "roomB": 31, "key": "" }, { "x": 65, "y": 38, "dir": "e", "roomA": 30, "roomB": 36, "key": "" }, { "x": 63, "y": 36, "dir": "n", "roomA": 31, "roomB": 32, "key": "" }, { "x": 63, "y": 22, "dir": "w", "roomA": 32, "roomB": 33, "key": "" }, { "x": 63, "y": 28, "dir": "e", "roomA": 32, "roomB": 34, "key": "" }, { "x": 66, "y": 28, "dir": "e", "roomA": 34, "roomB": 35, "key": "" }, { "x": 68, "y": 38, "dir": "e", "roomA": 36, "roomB": 37, "key": "" }, { "x": 52, "y": 34, "dir": "e", "roomA": 38, "roomB": 39, "key": "" }, { "x": 52, "y": 44, "dir": "e", "roomA": 38, "roomB": 40, "key": "" }, { "x": 58, "y": 44, "dir": "n", "roomA": 40, "roomB": 41, "key": "" }], "objects": [{ "x": 38, "y": 34, "object": "pres", "room": 0 }, { "x": 38, "y": 17, "object": "term", "room": 7, "rot": -90 }, { "x": 38, "y": 52, "object": "term", "room": 8, "rot": -90 }, { "x": 70, "y": 28, "object": "disk", "room": 48, "rot": null }, { "x": 48, "y": 35, "object": "term", "room": 5, "rot": 90 }], "teleporters": [{ "roomA": 7, "roomB": 8 }, { "roomA": 37, "roomB": 6 }] },
 	
 		// xeno lab
 		"36,c9": { "rooms": [{ "x": 46, "y": 32, "w": 6, "h": 6, "color": "#ffcccc", "cave": false }, { "x": 45, "y": 24, "w": 3, "h": 8, "color": "#ccffcc", "cave": false }, { "x": 50, "y": 24, "w": 3, "h": 8, "color": "#ccffff", "cave": false }, { "x": 51, "y": 22, "w": 1, "h": 2, "color": "#ff8866", "cave": false }, { "x": 50, "y": 19, "w": 3, "h": 3, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 25, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 43, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 40, "y": 28, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 40, "y": 24, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 53, "y": 29, "w": 2, "h": 1, "color": "#ffffcc", "cave": false }, { "x": 55, "y": 28, "w": 3, "h": 3, "color": "#ccffcc", "cave": false }, { "x": 47, "y": 38, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 40, "w": 3, "h": 3, "color": "#ffcc88", "cave": false }, { "x": 47, "y": 43, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 45, "w": 3, "h": 3, "color": "#ccccff", "cave": false }, { "x": 47, "y": 48, "w": 1, "h": 2, "color": "#ffffcc", "cave": false }, { "x": 46, "y": 50, "w": 3, "h": 3, "color": "#ffccff", "cave": false }, { "x": 63, "y": 50, "w": 3, "h": 3, "color": "#ccffff", "cave": false }, { "x": 64, "y": 36, "w": 1, "h": 14, "color": "#cccccc", "cave": true }, { "x": 63, "y": 33, "w": 3, "h": 3, "color": "#ffcccc", "cave": false }, { "x": 56, "y": 31, "w": 1, "h": 4, "color": "#cccccc", "cave": true }, { "x": 57, "y": 34, "w": 6, "h": 1, "color": "#cccccc", "cave": true }, { "x": 49, "y": 51, "w": 14, "h": 1, "color": "#cccccc", "cave": true }, { "x": 54, "y": 38, "w": 7, "h": 10, "color": "#ff8866", "cave": false }, { "x": 56, "y": 48, "w": 3, "h": 3, "color": "#cccccc", "cave": false }, { "x": 61, "y": 42, "w": 3, "h": 3, "color": "#cccccc", "cave": false }], "doors": [{ "x": 47, "y": 32, "dir": "n", "roomA": 0, "roomB": 1, "key": "" }, { "x": 51, "y": 32, "dir": "n", "roomA": 0, "roomB": 2, "key": "" }, { "x": 47, "y": 37, "dir": "s", "roomA": 0, "roomB": 11, "key": "" }, { "x": 45, "y": 25, "dir": "w", "roomA": 1, "roomB": 5, "key": "" }, { "x": 45, "y": 29, "dir": "w", "roomA": 1, "roomB": 6, "key": "" }, { "x": 51, "y": 24, "dir": "n", "roomA": 2, "roomB": 3, "key": "" }, { "x": 52, "y": 29, "dir": "e", "roomA": 2, "roomB": 9, "key": "" }, { "x": 51, "y": 22, "dir": "n", "roomA": 3, "roomB": 4, "key": "" }, { "x": 43, "y": 25, "dir": "w", "roomA": 5, "roomB": 8, "key": "" }, { "x": 43, "y": 29, "dir": "w", "roomA": 6, "roomB": 7, "key": "" }, { "x": 54, "y": 29, "dir": "e", "roomA": 9, "roomB": 10, "key": "keyd" }, { "x": 56, "y": 30, "dir": "s", "roomA": 10, "roomB": 20, "key": "" }, { "x": 47, "y": 39, "dir": "s", "roomA": 11, "roomB": 12, "key": "" }, { "x": 47, "y": 42, "dir": "s", "roomA": 12, "roomB": 13, "key": "" }, { "x": 47, "y": 44, "dir": "s", "roomA": 13, "roomB": 14, "key": "" }, { "x": 47, "y": 47, "dir": "s", "roomA": 14, "roomB": 15, "key": "" }, { "x": 47, "y": 49, "dir": "s", "roomA": 15, "roomB": 16, "key": "keyd" }, { "x": 48, "y": 51, "dir": "e", "roomA": 16, "roomB": 22, "key": "" }, { "x": 64, "y": 50, "dir": "n", "roomA": 17, "roomB": 18, "key": "" }, { "x": 63, "y": 51, "dir": "w", "roomA": 17, "roomB": 22, "key": "" }, { "x": 64, "y": 36, "dir": "n", "roomA": 18, "roomB": 19, "key": "" }, { "x": 64, "y": 43, "dir": "w", "roomA": 18, "roomB": 25, "key": "" }, { "x": 63, "y": 34, "dir": "w", "roomA": 19, "roomB": 21, "key": "" }, { "x": 56, "y": 34, "dir": "e", "roomA": 20, "roomB": 21, "key": "" }, { "x": 57, "y": 51, "dir": "n", "roomA": 22, "roomB": 24, "key": "" }, { "x": 57, "y": 47, "dir": "s", "roomA": 23, "roomB": 24, "key": "keyc" }, { "x": 60, "y": 43, "dir": "e", "roomA": 23, "roomB": 25, "key": "keyc" }], "objects": [{ "x": 50, "y": 19, "object": "keyd", "room": 4, "rot": null }, { "x": 46, "y": 51, "object": "pres", "room": 16, "rot": null }, { "x": 65, "y": 34, "object": "pres", "room": 19, "rot": 180 }, { "x": 40, "y": 29, "object": "term", "room": 7, "rot": -90 }, { "x": 40, "y": 25, "object": "term", "room": 8, "rot": -90 }, { "x": 56, "y": 48, "object": "pres", "room": 24, "rot": 0 }, { "x": 61, "y": 42, "object": "pres", "room": 25, "rot": 0 }, { "x": 65, "y": 52, "object": "art", "room": 17, "rot": 45 }, { "x": 57, "y": 41, "object": "allitus", "room": 23, "rot": null }] },
@@ -50170,7 +50337,7 @@
 	};
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50182,7 +50349,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(9);
+	var _movement = __webpack_require__(11);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -50198,7 +50365,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(14);
+	var _ThreeCSG = __webpack_require__(15);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -50442,6 +50609,7 @@
 			key: 'create',
 			value: function create(scene, x, y, liftX, liftY, models) {
 				var visible = arguments.length <= 6 || arguments[6] === undefined ? false : arguments[6];
+				var inventory = arguments.length <= 7 || arguments[7] === undefined ? null : arguments[7];
 	
 				this.liftX = liftX;
 				this.liftY = liftY;
@@ -50505,14 +50673,17 @@
 						for (var _iterator6 = this.objects[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
 							var object = _step6.value;
 	
-							var m = models.models[object.object];
-							var mesh = m.createObject();
-							var _dx = (object.x + .5) * constants.ROOM_SIZE;
-							var _dy = (object.y + .5) * constants.ROOM_SIZE;
-							var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
-							mesh.rotation.z = util.angle2rad(object["rot"] || 0);
-							mesh.position.set(_dx, _dy, _dz);
-							this.targetMesh.add(mesh);
+							// only add object if not already picked up
+							if (!inventory || inventory.indexOf(object.object) < 0) {
+								var m = models.models[object.object];
+								var mesh = m.createObject();
+								var _dx = (object.x + .5) * constants.ROOM_SIZE;
+								var _dy = (object.y + .5) * constants.ROOM_SIZE;
+								var _dz = -(constants.ROOM_SIZE - constants.WALL_THICKNESS) * .5;
+								mesh.rotation.z = util.angle2rad(object["rot"] || 0);
+								mesh.position.set(_dx, _dy, _dz);
+								this.targetMesh.add(mesh);
+							}
 						}
 					} catch (err) {
 						_didIteratorError6 = true;
@@ -50617,7 +50788,7 @@
 	}();
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51189,7 +51360,7 @@
 	};
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51201,7 +51372,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(9);
+	var _movement = __webpack_require__(11);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -51217,7 +51388,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(14);
+	var _ThreeCSG = __webpack_require__(15);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -51693,12 +51864,12 @@
 	}();
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(17);
+	var base64 = __webpack_require__(18);
 	
 	/**
 	Usage:
@@ -51746,16 +51917,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(18);
-	JSZip.prototype.load = __webpack_require__(51);
-	JSZip.support = __webpack_require__(19);
-	JSZip.defaults = __webpack_require__(46);
+	JSZip.prototype = __webpack_require__(19);
+	JSZip.prototype.load = __webpack_require__(52);
+	JSZip.support = __webpack_require__(20);
+	JSZip.defaults = __webpack_require__(47);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(58);
+	JSZip.utils = __webpack_require__(59);
 	
 	JSZip.base64 = {
 	    /**
@@ -51773,12 +51944,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(25);
+	JSZip.compressions = __webpack_require__(26);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -51854,22 +52025,22 @@
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(19);
-	var utils = __webpack_require__(24);
-	var crc32 = __webpack_require__(44);
-	var signature = __webpack_require__(45);
-	var defaults = __webpack_require__(46);
-	var base64 = __webpack_require__(17);
-	var compressions = __webpack_require__(25);
-	var CompressedObject = __webpack_require__(47);
-	var nodeBuffer = __webpack_require__(43);
-	var utf8 = __webpack_require__(48);
-	var StringWriter = __webpack_require__(49);
-	var Uint8ArrayWriter = __webpack_require__(50);
+	var support = __webpack_require__(20);
+	var utils = __webpack_require__(25);
+	var crc32 = __webpack_require__(45);
+	var signature = __webpack_require__(46);
+	var defaults = __webpack_require__(47);
+	var base64 = __webpack_require__(18);
+	var compressions = __webpack_require__(26);
+	var CompressedObject = __webpack_require__(48);
+	var nodeBuffer = __webpack_require__(44);
+	var utf8 = __webpack_require__(49);
+	var StringWriter = __webpack_require__(50);
+	var Uint8ArrayWriter = __webpack_require__(51);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -52743,7 +52914,7 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -52781,10 +52952,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -52797,9 +52968,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(21)
-	var ieee754 = __webpack_require__(22)
-	var isArray = __webpack_require__(23)
+	var base64 = __webpack_require__(22)
+	var ieee754 = __webpack_require__(23)
+	var isArray = __webpack_require__(24)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -54336,10 +54507,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -54469,7 +54640,7 @@
 
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -54559,7 +54730,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -54570,13 +54741,13 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(19);
-	var compressions = __webpack_require__(25);
-	var nodeBuffer = __webpack_require__(43);
+	var support = __webpack_require__(20);
+	var compressions = __webpack_require__(26);
+	var nodeBuffer = __webpack_require__(44);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -54902,7 +55073,7 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -54917,17 +55088,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(26);
+	exports.DEFLATE = __webpack_require__(27);
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(27);
+	var pako = __webpack_require__(28);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -54943,17 +55114,17 @@
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(28).assign;
+	var assign    = __webpack_require__(29).assign;
 	
-	var deflate   = __webpack_require__(29);
-	var inflate   = __webpack_require__(37);
-	var constants = __webpack_require__(41);
+	var deflate   = __webpack_require__(30);
+	var inflate   = __webpack_require__(38);
+	var constants = __webpack_require__(42);
 	
 	var pako = {};
 	
@@ -54963,7 +55134,7 @@
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -55071,17 +55242,17 @@
 
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(30);
-	var utils = __webpack_require__(28);
-	var strings = __webpack_require__(35);
-	var msg = __webpack_require__(34);
-	var zstream = __webpack_require__(36);
+	var zlib_deflate = __webpack_require__(31);
+	var utils = __webpack_require__(29);
+	var strings = __webpack_require__(36);
+	var msg = __webpack_require__(35);
+	var zstream = __webpack_require__(37);
 	
 	var toString = Object.prototype.toString;
 	
@@ -55453,16 +55624,16 @@
 
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(28);
-	var trees   = __webpack_require__(31);
-	var adler32 = __webpack_require__(32);
-	var crc32   = __webpack_require__(33);
-	var msg   = __webpack_require__(34);
+	var utils   = __webpack_require__(29);
+	var trees   = __webpack_require__(32);
+	var adler32 = __webpack_require__(33);
+	var crc32   = __webpack_require__(34);
+	var msg   = __webpack_require__(35);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -57224,13 +57395,13 @@
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(28);
+	var utils = __webpack_require__(29);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -58429,7 +58600,7 @@
 
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58467,7 +58638,7 @@
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58514,7 +58685,7 @@
 
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58533,14 +58704,14 @@
 
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(28);
+	var utils = __webpack_require__(29);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -58724,7 +58895,7 @@
 
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58759,19 +58930,19 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(38);
-	var utils = __webpack_require__(28);
-	var strings = __webpack_require__(35);
-	var c = __webpack_require__(41);
-	var msg = __webpack_require__(34);
-	var zstream = __webpack_require__(36);
-	var gzheader = __webpack_require__(42);
+	var zlib_inflate = __webpack_require__(39);
+	var utils = __webpack_require__(29);
+	var strings = __webpack_require__(36);
+	var c = __webpack_require__(42);
+	var msg = __webpack_require__(35);
+	var zstream = __webpack_require__(37);
+	var gzheader = __webpack_require__(43);
 	
 	var toString = Object.prototype.toString;
 	
@@ -59165,17 +59336,17 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(28);
-	var adler32 = __webpack_require__(32);
-	var crc32   = __webpack_require__(33);
-	var inflate_fast = __webpack_require__(39);
-	var inflate_table = __webpack_require__(40);
+	var utils = __webpack_require__(29);
+	var adler32 = __webpack_require__(33);
+	var crc32   = __webpack_require__(34);
+	var inflate_fast = __webpack_require__(40);
+	var inflate_table = __webpack_require__(41);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -60674,7 +60845,7 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61006,13 +61177,13 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(28);
+	var utils = __webpack_require__(29);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -61339,7 +61510,7 @@
 
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -61392,7 +61563,7 @@
 
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61438,7 +61609,7 @@
 
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -61449,15 +61620,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(24);
+	var utils = __webpack_require__(25);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -61560,7 +61731,7 @@
 
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61573,7 +61744,7 @@
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61590,7 +61761,7 @@
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61624,14 +61795,14 @@
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(24);
-	var support = __webpack_require__(19);
-	var nodeBuffer = __webpack_require__(43);
+	var utils = __webpack_require__(25);
+	var support = __webpack_require__(20);
+	var nodeBuffer = __webpack_require__(44);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -61837,12 +62008,12 @@
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(24);
+	var utils = __webpack_require__(25);
 	
 	/**
 	 * An object to write any content to a string.
@@ -61873,12 +62044,12 @@
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(24);
+	var utils = __webpack_require__(25);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -61915,12 +62086,12 @@
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(17);
-	var ZipEntries = __webpack_require__(52);
+	var base64 = __webpack_require__(18);
+	var ZipEntries = __webpack_require__(53);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -61952,18 +62123,18 @@
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(53);
-	var NodeBufferReader = __webpack_require__(55);
-	var Uint8ArrayReader = __webpack_require__(56);
-	var utils = __webpack_require__(24);
-	var sig = __webpack_require__(45);
-	var ZipEntry = __webpack_require__(57);
-	var support = __webpack_require__(19);
-	var jszipProto = __webpack_require__(18);
+	var StringReader = __webpack_require__(54);
+	var NodeBufferReader = __webpack_require__(56);
+	var Uint8ArrayReader = __webpack_require__(57);
+	var utils = __webpack_require__(25);
+	var sig = __webpack_require__(46);
+	var ZipEntry = __webpack_require__(58);
+	var support = __webpack_require__(20);
+	var jszipProto = __webpack_require__(19);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -62179,12 +62350,12 @@
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(54);
-	var utils = __webpack_require__(24);
+	var DataReader = __webpack_require__(55);
+	var utils = __webpack_require__(25);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -62221,11 +62392,11 @@
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(24);
+	var utils = __webpack_require__(25);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -62334,11 +62505,11 @@
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(56);
+	var Uint8ArrayReader = __webpack_require__(57);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -62360,11 +62531,11 @@
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(54);
+	var DataReader = __webpack_require__(55);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -62413,14 +62584,14 @@
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(53);
-	var utils = __webpack_require__(24);
-	var CompressedObject = __webpack_require__(47);
-	var jszipProto = __webpack_require__(18);
+	var StringReader = __webpack_require__(54);
+	var utils = __webpack_require__(25);
+	var CompressedObject = __webpack_require__(48);
+	var jszipProto = __webpack_require__(19);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -62729,11 +62900,11 @@
 
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(24);
+	var utils = __webpack_require__(25);
 	
 	/**
 	 * @deprecated
@@ -62840,7 +63011,7 @@
 
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -62860,13 +63031,17 @@
 	
 	var constants = _interopRequireWildcard(_constants);
 	
+	var _messages = __webpack_require__(10);
+	
+	var messages = _interopRequireWildcard(_messages);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var X_FILES = [["File X-100: Xeno info", "The construct Allitus", "is set to destroy Targ.", "It was created by an", "alien race in order to", "ensure humanity doesn't", "evolve to discover the", "Xeno central base."], ["File X-110: Xeno info", "The alien artifact", "in this research lab, has", "an unknown purpose. It is", "thought to be related to", "the object at <span class='log_important'>79-66</span>."], ["File X-120: Xeno info", "The location of the Xeno", "central base is debated.", "It may be shielded from our", "scanning equipment somehow."], ["File X-130: Xeno info", "Allitus cannot be", "disarmed at this location.", "However, we think the", "Xeno central base contains", "a shutoff mechanism."]];
+	var X_FILES = [messages.MESSAGES.x_file_1, messages.MESSAGES.x_file_2, messages.MESSAGES.x_file_3, messages.MESSAGES.x_file_4];
 	
-	var XENO_FILES = [["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."], ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."], ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."], ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."]];
+	var XENO_FILES = [messages.MESSAGES.xeno_1, messages.MESSAGES.xeno_2, messages.MESSAGES.xeno_3, messages.MESSAGES.xeno_4];
 	
 	var Events = exports.Events = function () {
 		_createClass(Events, null, [{
@@ -62895,172 +63070,93 @@
 				"09,02": function _() {
 					if (!_this.state["lift-9-2"] && _this.movement.getElevator()) {
 						_this.state["lift-9-2"] = true;
-						_this.movement.main.benson.addLogBreak();
-						_this.movement.main.benson.addMessage("Take the lift down.");
-						_this.movement.main.benson.addMessage("This complex houses all");
-						_this.movement.main.benson.addMessage("that we know about the");
-						_this.movement.main.benson.addMessage("current situation.");
-						_this.movement.main.benson.addMessage("<span class='log_important'>[E]</span> to use the lift.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.lift_9_2);
 					}
 					if (!_this.state["in-lift-9-2"] && _this.movement.usingElevator()) {
 						_this.state["in-lift-9-2"] = true;
-						_this.movement.main.benson.addLogBreak();
-						_this.movement.main.benson.addMessage("You're welcome to take");
-						_this.movement.main.benson.addMessage("all you find with you.");
-						_this.movement.main.benson.addMessage("<span class='log_important'>[P]</span> to pick things up.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.in_lift_9_2);
 					}
 				}
 			};
 			this.PICKUP_EVENTS = {
 				"09,02,CCCCFF": function CCCCFF() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("The xeno device Allitus");
-					_this.movement.main.benson.addMessage("was discovered a year ago.");
-					_this.movement.main.benson.addMessage("At first we didn't");
-					_this.movement.main.benson.addMessage("understand its purpose.");
-					_this.movement.main.benson.addMessage("It was thought to be a");
-					_this.movement.main.benson.addMessage("power generator.");
-					_this.movement.main.benson.addMessage("Our scientists worked");
-					_this.movement.main.benson.addMessage("hard to fire it up.");
-					_this.movement.main.benson.addMessage("Some months ago they");
-					_this.movement.main.benson.addMessage("succeeded.");
-					_this.movement.main.benson.addMessage("However,");
-					_this.movement.main.benson.addMessage("We now know it to be");
-					_this.movement.main.benson.addMessage("a machine of war.");
-					_this.movement.main.benson.addMessage("Your task is to");
-					_this.movement.main.benson.addMessage("terminate Allitus.");
-					_this.movement.main.benson.addMessage("Next, meet with our");
-					_this.movement.main.benson.addMessage("defense counsil at");
-					_this.movement.main.benson.addMessage("coordinates <span class='log_important'>c8-f0</span>.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_1_9_2);
 					return true;
 				},
 				"09,02,CCCCCC": function CCCCCC() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Since your last visit,");
-					_this.movement.main.benson.addMessage("Alien ruins have been");
-					_this.movement.main.benson.addMessage("discovered on Targ.");
-					_this.movement.main.benson.addMessage("An underground complex");
-					_this.movement.main.benson.addMessage("and cave system is");
-					_this.movement.main.benson.addMessage("located at <span class='log_important'>d9-42</span>.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_2_9_2);
 					return true;
 				},
 				"09,02,FFCC88": function FFCC88() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("We have requisitioned");
-					_this.movement.main.benson.addMessage("a Lightcar for your");
-					_this.movement.main.benson.addMessage("travels. It has now been");
-					_this.movement.main.benson.addMessage("encoded for your use.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_3_9_2);
 					_this.state["lightcar-keys"] = true;
 					return true;
 				},
 				"c8,f0,CCFFFF": function c8F0CCFFFF() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Terminal 100: report");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.term_100);
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
-						_this.movement.main.benson.addMessage("!System compromised!");
-						_this.movement.main.benson.addMessage("The intruder Allitus is");
-						_this.movement.main.benson.addMessage("taking over all Targ");
-						_this.movement.main.benson.addMessage("communications.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
+						_this.movement.main.benson.showMessage(messages.MESSAGES.term_100_or, false);
 					} else {
-						_this.okReport();
+						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
 					}
 					return true;
 				},
 				"c8,f0,FFCCFF": function c8F0FFCCFF() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Terminal 110: report");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.term_110);
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
-						_this.movement.main.benson.addMessage("!System compromised!");
-						_this.movement.main.benson.addMessage("Allitus has no known");
-						_this.movement.main.benson.addMessage("weakness. To learn more");
-						_this.movement.main.benson.addMessage("visit our Xeno studies");
-						_this.movement.main.benson.addMessage("lab at <span class='log_important'>36-c9</span>.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
+						_this.movement.main.benson.showMessage(messages.MESSAGES.term_110_or, false);
 					} else {
-						_this.okReport();
+						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
 					}
 					return true;
 				},
-				"c8,f0,CCFFCC": function c8F0CCFFCC() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Terminal 120: report");
+				"c8,f0,FFCC88": function c8F0FFCC88() {
+					_this.movement.main.benson.showMessage(messages.MESSAGES.term_120);
 					if (_this.state["override-17a"]) {
-						_this.movement.main.benson.addMessage("<span class='log_important'>Override 17A</span> exec:");
-						_this.movement.main.benson.addMessage("!System compromised!");
-						_this.movement.main.benson.addMessage("Allitus is now armed.");
-						_this.movement.main.benson.addMessage("It is set to go critical");
-						_this.movement.main.benson.addMessage("in " + _this.state["allitus-ttl"] + " days.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
+						_this.movement.main.benson.showMessage(messages.MESSAGES.term_120_or, false);
 					} else {
-						_this.okReport();
+						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
 					}
 					return true;
 				},
 				"c8,f0,FFCCCC": function c8F0FFCCCC() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Defense Council Info:");
-					_this.movement.main.benson.addMessage("You're welcome to use");
-					_this.movement.main.benson.addMessage("the Defense Computer Array,");
-					_this.movement.main.benson.addMessage("via the terminals. Your");
-					_this.movement.main.benson.addMessage("security clearance will");
-					_this.movement.main.benson.addMessage("decide the info you see.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_c8_f0);
 					return true;
 				},
 				"c8,f0,FF8866": function c8F0FF8866() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("You find a disk labeled");
-					_this.movement.main.benson.addMessage("Emergency Override 17A");
-					_this.movement.main.benson.addMessage("It looks like it fits");
-					_this.movement.main.benson.addMessage("some kind of terminal.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.override_disk);
 					_this.state["override-17a"] = true;
 					return false;
 				},
 				"36,c9,CCCCFF": function c9CCCCFF() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Terminal 20A: report");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.term_20a);
 					return _this.xFileTerm();
 				},
 				"36,c9,FFCC88": function c9FFCC88() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Terminal 20B: report");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.term_20b);
 					return _this.xFileTerm();
 				},
 				"36,c9,FFCCCC": function c9FFCCCC() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("This area houses");
-					_this.movement.main.benson.addMessage("a Xeno artifact.");
-					_this.movement.main.benson.addMessage("Please observe posted");
-					_this.movement.main.benson.addMessage("health and safety");
-					_this.movement.main.benson.addMessage("regulations.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_1_36_c9);
 					return true;
 				},
 				"36,c9,FFCCFF": function c9FFCCFF() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("This area houses");
-					_this.movement.main.benson.addMessage("a Xeno artifact.");
-					_this.movement.main.benson.addMessage("Please observe posted");
-					_this.movement.main.benson.addMessage("health and safety");
-					_this.movement.main.benson.addMessage("regulations.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_2_36_c9);
 					return true;
 				},
 				"36,c9,CCCCCC": function c9CCCCCC() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Allitus: a device");
-					_this.movement.main.benson.addMessage("of alien origins.");
-					_this.movement.main.benson.addMessage("Warning: High Voltage");
-					_this.movement.main.benson.addMessage("Ionizing radiation");
-					_this.movement.main.benson.addMessage("Posted biohazard");
-					_this.movement.main.benson.addMessage("Do not enter.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_3_36_c9);
 					return true;
 				},
 				"36,c9,FF8866": function c9FF8866() {
-					_this.movement.main.benson.addLogBreak();
-					_this.movement.main.benson.addMessage("Feels cool to the touch.");
+					_this.movement.main.benson.showMessage(messages.MESSAGES.allitus_1);
 					if (_this.state["allitus_control"]) {
-						_this.movement.main.benson.addMessage("An ominous buzzing");
-						_this.movement.main.benson.addMessage("sound is emitted.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.allitus_on, false);
 					} else {
-						_this.movement.main.benson.addMessage("Total silence reigns.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.allitus_off, false);
 					}
 					return true;
 				},
@@ -63074,17 +63170,10 @@
 				},
 				"f8,c9,CCCCCC": function f8C9CCCCCC() {
 					if (_this.movement.inInventory("core")) {
-						_this.movement.main.benson.addLogBreak();
-						_this.movement.main.benson.addMessage("The drives now have");
-						_this.movement.main.benson.addMessage("plasma cores installed.");
-						_this.movement.main.benson.addMessage("The xeno ship prepares");
-						_this.movement.main.benson.addMessage("to depart from Targ.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.drives_with_core);
 						_this.state["xeno_base_depart"] = true;
 					} else {
-						_this.movement.main.benson.addLogBreak();
-						_this.movement.main.benson.addMessage("These xeno drives need");
-						_this.movement.main.benson.addMessage("new plasma cores to");
-						_this.movement.main.benson.addMessage("operate again.");
+						_this.movement.main.benson.showMessage(messages.MESSAGES.drives_no_core);
 					}
 					return true;
 				},
@@ -63098,14 +63187,11 @@
 					}
 					_this.movement.noise.play("control");
 					setTimeout(function () {
-						_this.movement.main.benson.addLogBreak();
-						_this.movement.main.benson.addMessage("Allitus is " + (_this.state["allitus_control"] ? "ARMED" : "disarmed"));
-						if (!_this.state["allitus_control"]) {
-							_this.movement.main.benson.addMessage("The Targ city council is");
-							_this.movement.main.benson.addMessage("eternally grateful for");
-							_this.movement.main.benson.addMessage("disabling the alien threat.");
-							_this.movement.main.benson.addMessage("<span class='log_important'>20000</span> credits have been");
-							_this.movement.main.benson.addMessage("added to your account.");
+						if (_this.state["allitus_control"]) {
+							_this.movement.main.benson.showMessage(messages.MESSAGES.allitus_armed);
+						} else {
+							_this.movement.main.benson.showMessage(messages.MESSAGES.allitus_disarmed);
+							_this.movement.main.benson.showMessage(messages.MESSAGES.thanks, false);
 						}
 					}, 500);
 					return true;
@@ -63117,81 +63203,25 @@
 			key: 'xFileTerm',
 			value: function xFileTerm() {
 				if (this.state["override-17a"]) {
-					var _iteratorNormalCompletion = true;
-					var _didIteratorError = false;
-					var _iteratorError = undefined;
-	
-					try {
-						for (var _iterator = X_FILES[this.xFileIndex][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-							var line = _step.value;
-	
-							this.movement.main.benson.addMessage(line);
-						}
-					} catch (err) {
-						_didIteratorError = true;
-						_iteratorError = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion && _iterator.return) {
-								_iterator.return();
-							}
-						} finally {
-							if (_didIteratorError) {
-								throw _iteratorError;
-							}
-						}
-					}
-	
+					this.movement.main.benson.showMessage(X_FILES[this.xFileIndex], false);
 					this.xFileIndex++;
 					if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 				} else {
-					this.okReport();
+					this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
 				}
 				return true;
 			}
 		}, {
 			key: 'xenoTerm',
 			value: function xenoTerm() {
-				this.movement.main.benson.addLogBreak();
 				if (this.movement.inInventory("trans")) {
-					var _iteratorNormalCompletion2 = true;
-					var _didIteratorError2 = false;
-					var _iteratorError2 = undefined;
-	
-					try {
-						for (var _iterator2 = XENO_FILES[this.xenoFileIndex][Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-							var line = _step2.value;
-	
-							this.movement.main.benson.addMessage(line);
-						}
-					} catch (err) {
-						_didIteratorError2 = true;
-						_iteratorError2 = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion2 && _iterator2.return) {
-								_iterator2.return();
-							}
-						} finally {
-							if (_didIteratorError2) {
-								throw _iteratorError2;
-							}
-						}
-					}
-	
+					this.movement.main.benson.showMessage(XENO_FILES[this.xenoFileIndex]);
 					this.xenoFileIndex++;
 					if (this.xenoFileIndex >= XENO_FILES.length) this.xenoFileIndex = 0;
 				} else {
-					this.movement.main.benson.addMessage("Xargff norgil Mggarth.");
+					this.movement.main.benson.showMessage(messages.MESSAGES.xeno_gibberish);
 				}
 				return true;
-			}
-		}, {
-			key: 'okReport',
-			value: function okReport() {
-				this.movement.main.benson.addMessage("Memory scan: <span class='log_important'>OK</span>");
-				this.movement.main.benson.addMessage("Disk scan: <span class='log_important'>OK</span>");
-				this.movement.main.benson.addMessage("System health: <span class='log_important'>OK</span>");
 			}
 		}, {
 			key: 'update',
@@ -63240,7 +63270,7 @@
 	}();
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63356,7 +63386,7 @@
 	}();
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63469,7 +63499,7 @@
 	}();
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63485,9 +63515,13 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _noise = __webpack_require__(11);
+	var _noise = __webpack_require__(12);
 	
 	var noise = _interopRequireWildcard(_noise);
+	
+	var _messages = __webpack_require__(10);
+	
+	var messages = _interopRequireWildcard(_messages);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -63500,6 +63534,8 @@
 	
 	var Benson = exports.Benson = function () {
 		function Benson() {
+			var context = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+	
 			_classCallCheck(this, Benson);
 	
 			this.el = (0, _jquery2.default)("#message .value");
@@ -63510,18 +63546,59 @@
 			this.pause = null;
 			this.out = false;
 			this.noise = new noise.Noise();
+			this.context = context;
+			this.history = [];
+			this.replayMode = false;
 		}
 	
 		_createClass(Benson, [{
+			key: 'showMessage',
+			value: function showMessage(messageIndex) {
+				var addBreak = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
+				var onComplete = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+	
+				if (addBreak) this.addLogBreak();
+	
+				this.history.push(messageIndex);
+				var lines = messages.VALUES[messageIndex];
+				if (typeof lines === "string") {
+					if (this.replayMode) {
+						this._showMessage(lines);
+					} else {
+						this.addMessage(lines, onComplete);
+					}
+				} else {
+					for (var i = 0; i < lines.length; i++) {
+						if (this.replayMode) {
+							this._showMessage(lines[i]);
+						} else {
+							this.addMessage(lines[i], i == lines.length - 1 ? onComplete : null);
+						}
+					}
+				}
+			}
+		}, {
+			key: '_parseMessage',
+			value: function _parseMessage(message) {
+				// not sure why but 'this' is undefined below
+				var that = this;
+				return message.replace(/\$(.*?)\$/g, function (a, b) {
+					return that.context[b];
+				});
+			}
+		}, {
 			key: '_showMessage',
 			value: function _showMessage(message) {
-				var div = "<div class='message'>" + "<span class='log_marker'>" + window.merc.getLogMarker() + "</span>" + "<span class='log_message'>" + message + "</span>" + "</div>";
+				var s = this._parseMessage(message);
+				var div = "<div class='message'>" + "<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" + "<span class='log_message'>" + s + "</span>" + "</div>";
 				(0, _jquery2.default)("#log_display .log_break").eq(0).before(div);
-				this.el.empty().append(message);
+	
+				if (!this.replayMode) this.el.empty().append(s);
 			}
 		}, {
 			key: 'addLogBreak',
 			value: function addLogBreak() {
+				this.history.push(-1);
 				(0, _jquery2.default)("#log_display").prepend("<div class='log_break'></div>");
 			}
 		}, {
@@ -63536,6 +63613,41 @@
 				if (this.messages.length == 1) {
 					this._showMessage(this.messages[0][0]);
 				}
+			}
+		}, {
+			key: 'replay',
+			value: function replay(history) {
+				this.replayMode = true;
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
+	
+				try {
+					for (var _iterator = history[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var index = _step.value;
+	
+						if (index < 0) {
+							this.addLogBreak();
+						} else {
+							this.showMessage(index, false);
+						}
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
+					}
+				}
+	
+				this.replayMode = false;
 			}
 		}, {
 			key: 'update',
@@ -63587,7 +63699,7 @@
 	}();
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63603,7 +63715,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _noise = __webpack_require__(11);
+	var _noise = __webpack_require__(12);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
