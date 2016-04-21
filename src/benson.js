@@ -53,7 +53,7 @@ export class Benson {
 	_showMessage(message) {
 		let s = this._parseMessage(message);
 		let div = "<div class='message'>" +
-			"<span class='log_marker'>" + window.merc.getLogMarker() + "</span>" +
+			"<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" +
 			"<span class='log_message'>" + s + "</span>" +
 			"</div>";
 		$("#log_display .log_break").eq(0).before(div);

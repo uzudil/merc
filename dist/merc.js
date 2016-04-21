@@ -63590,7 +63590,7 @@
 			key: '_showMessage',
 			value: function _showMessage(message) {
 				var s = this._parseMessage(message);
-				var div = "<div class='message'>" + "<span class='log_marker'>" + window.merc.getLogMarker() + "</span>" + "<span class='log_message'>" + s + "</span>" + "</div>";
+				var div = "<div class='message'>" + "<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" + "<span class='log_message'>" + s + "</span>" + "</div>";
 				(0, _jquery2.default)("#log_display .log_break").eq(0).before(div);
 	
 				if (!this.replayMode) this.el.empty().append(s);
