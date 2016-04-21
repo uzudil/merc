@@ -117,7 +117,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.6; // todo: git hook this
+	var VERSION = 0.61; // todo: git hook this
 	
 	var Merc = function () {
 		function Merc() {
@@ -48268,7 +48268,7 @@
 						break;
 					case 88:
 						// x
-						if (_this.vehicle || _this.sectorX == ALIEN_BASE_POS[0] && _this.sectorY == ALIEN_BASE_POS[1]) {
+						if (_this.landing || _this.takeoff || _this.vehicle || _this.sectorX == ALIEN_BASE_POS[0] && _this.sectorY == ALIEN_BASE_POS[1]) {
 							_this.noise.play("denied");
 						} else {
 							_this.saveGame();

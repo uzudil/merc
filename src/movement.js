@@ -216,7 +216,7 @@ export class Movement {
 					if($("#log").is(":visible")) document.exitPointerLock();
 					break;
 				case 88: // x
-					if(this.vehicle || (this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1])) {
+					if(this.landing || this.takeoff || this.vehicle || (this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1])) {
 						this.noise.play("denied");
 					} else {
 						this.saveGame();
