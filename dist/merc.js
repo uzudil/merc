@@ -117,7 +117,7 @@
 	var EVENING = 17;
 	var LIGHT_CHANGE_HOURS = 3;
 	
-	var VERSION = 0.61; // todo: git hook this
+	var VERSION = 0.62;
 	
 	var Merc = function () {
 		function Merc() {
@@ -160,15 +160,14 @@
 				}, function () {
 					(0, _jquery2.default)("#title .start").show();
 					if (localStorage["savegame"]) (0, _jquery2.default)("#loadgame").show();
-					(0, _jquery2.default)(document).keydown(function (event) {
-						(0, _jquery2.default)(document).unbind("keydown");
+					(0, _jquery2.default)(document).keyup(function (event) {
+						event.stopPropagation();
+						(0, _jquery2.default)(document).unbind("keyup");
 						_this.setupUI();
 						// C - continue
 						if (event.keyCode == 67) {
 							_this.startGame(true, true);
 						} else {
-							//this.startGame();
-							//this.startGame(true);
 							_this.startIntro();
 						}
 						_this.animate();
@@ -202,7 +201,7 @@
 	
 				var skipping = false;
 				(0, _jquery2.default)(document).keyup(function (event) {
-					if (event.keyCode == 27 && window.escapeUsed == false && constants.DEV_MODE) {
+					if (event.keyCode == 27 && window.escapeUsed == false) {
 						window.escapeUsed = true; // only once
 						if (!skipping) {
 							skipping = true;
@@ -48193,7 +48192,7 @@
 				//console.log(event.keyCode);
 				if (_this.vehicle && _this.vehicle.model.name == "ship") return;
 				switch (event.keyCode) {
-					case 27 && _this.landing && window.escapeUsed == false && constants.DEV_MODE:
+					case 27 && _this.landing && window.escapeUsed == false:
 						window.escapeUsed = true; // only once
 						_this.noise.stop("pink");
 						_this.landing = Date.now() - LANDING_TIME;
