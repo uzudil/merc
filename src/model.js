@@ -43,7 +43,7 @@ const VEHICLES = {
 						movement.main.benson.showMessage(messages.MESSAGES.takeoff_2, false, ()=> {
 							movement.main.benson.showMessage(messages.MESSAGES.takeoff_3, false, ()=> {
 								movement.main.benson.showMessage(messages.MESSAGES.takeoff_4, false, ()=> {
-									movement.main.benson.addMessage(messages.MESSAGES.takeoff_5, false, ()=> {
+									movement.main.benson.showMessage(messages.MESSAGES.takeoff_5, false, ()=> {
 										movement.startTakeoff();
 									});
 								});

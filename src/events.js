@@ -167,9 +167,7 @@ export class Events {
 
 	xFileTerm() {
 		if(this.state["override-17a"]) {
-			for (let line of X_FILES[this.xFileIndex]) {
-				this.movement.main.benson.addMessage(line);
-			}
+			this.movement.main.benson.showMessage(X_FILES[this.xFileIndex], false);
 			this.xFileIndex++;
 			if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 		} else {
@@ -179,15 +177,12 @@ export class Events {
 	}
 
 	xenoTerm() {
-		this.movement.main.benson.addLogBreak();
 		if(this.movement.inInventory("trans")) {
-			for (let line of XENO_FILES[this.xenoFileIndex]) {
-				this.movement.main.benson.addMessage(line);
-			}
+			this.movement.main.benson.showMessage(XENO_FILES[this.xenoFileIndex]);
 			this.xenoFileIndex++;
 			if (this.xenoFileIndex >= XENO_FILES.length) this.xenoFileIndex = 0;
 		} else {
-			this.movement.main.benson.showMessage(messages.MESSAGES.xeno_gibberish, false);
+			this.movement.main.benson.showMessage(messages.MESSAGES.xeno_gibberish);
 		}
 		return true;
 	}

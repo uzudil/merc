@@ -153,7 +153,7 @@ export function execWithProgress(fxs, waitDivId="wait") {
 
 function runWithProgress(fxs, index) {
 	let p = (((index + 1) / fxs.length * 100)|0);
-	console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+	//console.log("index=" + index + " p=" + p + " length=" + fxs.length);
 	setLoadingUIProgress(p, () => {
 		fxs[index]();
 		if(++index < fxs.length) {

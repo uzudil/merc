@@ -216,7 +216,7 @@ export class Movement {
 					if($("#log").is(":visible")) document.exitPointerLock();
 					break;
 				case 88: // x
-					if(this.vehicle) {
+					if(this.vehicle || (this.sectorX == ALIEN_BASE_POS[0] && this.sectorY == ALIEN_BASE_POS[1])) {
 						this.noise.play("denied");
 					} else {
 						this.saveGame();
@@ -715,7 +715,8 @@ export class Movement {
 					if (this.baseMove == -1) {
 						// moving out of the base
 						this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-						this.vehicle = this.main.models.models["ufo"].createObject();
+						// do not create a new model here
+						this.vehicle = this.main.game_map.vehicles.find((v) => v.model.name == "ufo");
 						this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 						this.level.destroy();
 						this.level = null;

@@ -37567,7 +37567,7 @@
 	
 	function runWithProgress(fxs, index) {
 		var p = (index + 1) / fxs.length * 100 | 0;
-		console.log("index=" + index + " p=" + p + " length=" + fxs.length);
+		//console.log("index=" + index + " p=" + p + " length=" + fxs.length);
 		setLoadingUIProgress(p, function () {
 			fxs[index]();
 			if (++index < fxs.length) {
@@ -47653,7 +47653,7 @@
 							movement.main.benson.showMessage(messages.MESSAGES.takeoff_2, false, function () {
 								movement.main.benson.showMessage(messages.MESSAGES.takeoff_3, false, function () {
 									movement.main.benson.showMessage(messages.MESSAGES.takeoff_4, false, function () {
-										movement.main.benson.addMessage(messages.MESSAGES.takeoff_5, false, function () {
+										movement.main.benson.showMessage(messages.MESSAGES.takeoff_5, false, function () {
 											movement.startTakeoff();
 										});
 									});
@@ -48268,7 +48268,7 @@
 						break;
 					case 88:
 						// x
-						if (_this.vehicle) {
+						if (_this.vehicle || _this.sectorX == ALIEN_BASE_POS[0] && _this.sectorY == ALIEN_BASE_POS[1]) {
 							_this.noise.play("denied");
 						} else {
 							_this.saveGame();
@@ -48824,7 +48824,10 @@
 							if (this.baseMove == -1) {
 								// moving out of the base
 								this.player.position.set(this.player.position.x, this.player.position.y, this.main.game_map.xenoBase.position.z);
-								this.vehicle = this.main.models.models["ufo"].createObject();
+								// do not create a new model here
+								this.vehicle = this.main.game_map.vehicles.find(function (v) {
+									return v.model.name == "ufo";
+								});
 								this.main.game_map.xenoBase.visible = !this.events.state["xeno_base_depart"];
 								this.level.destroy();
 								this.level = null;
@@ -63200,31 +63203,7 @@
 			key: 'xFileTerm',
 			value: function xFileTerm() {
 				if (this.state["override-17a"]) {
-					var _iteratorNormalCompletion = true;
-					var _didIteratorError = false;
-					var _iteratorError = undefined;
-	
-					try {
-						for (var _iterator = X_FILES[this.xFileIndex][Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-							var line = _step.value;
-	
-							this.movement.main.benson.addMessage(line);
-						}
-					} catch (err) {
-						_didIteratorError = true;
-						_iteratorError = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion && _iterator.return) {
-								_iterator.return();
-							}
-						} finally {
-							if (_didIteratorError) {
-								throw _iteratorError;
-							}
-						}
-					}
-	
+					this.movement.main.benson.showMessage(X_FILES[this.xFileIndex], false);
 					this.xFileIndex++;
 					if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 				} else {
@@ -63235,37 +63214,12 @@
 		}, {
 			key: 'xenoTerm',
 			value: function xenoTerm() {
-				this.movement.main.benson.addLogBreak();
 				if (this.movement.inInventory("trans")) {
-					var _iteratorNormalCompletion2 = true;
-					var _didIteratorError2 = false;
-					var _iteratorError2 = undefined;
-	
-					try {
-						for (var _iterator2 = XENO_FILES[this.xenoFileIndex][Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-							var line = _step2.value;
-	
-							this.movement.main.benson.addMessage(line);
-						}
-					} catch (err) {
-						_didIteratorError2 = true;
-						_iteratorError2 = err;
-					} finally {
-						try {
-							if (!_iteratorNormalCompletion2 && _iterator2.return) {
-								_iterator2.return();
-							}
-						} finally {
-							if (_didIteratorError2) {
-								throw _iteratorError2;
-							}
-						}
-					}
-	
+					this.movement.main.benson.showMessage(XENO_FILES[this.xenoFileIndex]);
 					this.xenoFileIndex++;
 					if (this.xenoFileIndex >= XENO_FILES.length) this.xenoFileIndex = 0;
 				} else {
-					this.movement.main.benson.showMessage(messages.MESSAGES.xeno_gibberish, false);
+					this.movement.main.benson.showMessage(messages.MESSAGES.xeno_gibberish);
 				}
 				return true;
 			}
