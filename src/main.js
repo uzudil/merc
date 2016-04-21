@@ -20,7 +20,7 @@ const MORNING = 4;
 const EVENING = 17;
 const LIGHT_CHANGE_HOURS = 3;
 
-const VERSION = 0.61; // todo: git hook this
+const VERSION = 0.62;
 
 class Merc {
 	constructor() {
@@ -55,15 +55,14 @@ class Merc {
 				() => {
 					$("#title .start").show();
 					if(localStorage["savegame"]) $("#loadgame").show();
-					$(document).keydown(( event ) => {
-						$(document).unbind("keydown");
+					$(document).keyup(( event ) => {
+						event.stopPropagation();
+						$(document).unbind("keyup");
 						this.setupUI();
 						// C - continue
 						if(event.keyCode == 67) {
 							this.startGame(true, true);
 						} else {
-							//this.startGame();
-							//this.startGame(true);
 							this.startIntro();
 						}
 						this.animate();
@@ -93,7 +92,7 @@ class Merc {
 	startIntro() {
 		let skipping = false;
 		$(document).keyup(( event ) => {
-			if(event.keyCode == 27 && window.escapeUsed == false && constants.DEV_MODE) {
+			if(event.keyCode == 27 && window.escapeUsed == false) {
 				window.escapeUsed = true; // only once
 				if(!skipping) {
 					skipping = true;
