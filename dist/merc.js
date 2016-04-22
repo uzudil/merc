@@ -68,11 +68,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(11);
+	var _movement = __webpack_require__(12);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(61);
+	var _skybox = __webpack_require__(62);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
@@ -80,19 +80,19 @@
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(62);
+	var _compass = __webpack_require__(63);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(63);
+	var _benson = __webpack_require__(64);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(64);
+	var _space = __webpack_require__(65);
 	
 	var space = _interopRequireWildcard(_space);
 	
-	var _events = __webpack_require__(60);
+	var _events = __webpack_require__(61);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -47876,32 +47876,50 @@
 
 /***/ },
 /* 10 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
-		value: true
+	  value: true
 	});
+	exports.MESSAGES = exports.VALUES = undefined;
+	
+	var _en_US = __webpack_require__(11);
+	
+	var _en_US2 = _interopRequireDefault(_en_US);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
 	/* Special characters: * - bold, | - line break */
-	var VALUES = exports.VALUES = {
-		intro_1: "Set course to Novagen... Engaging Hyperdrive",
-		intro_2: "Enjoy your trip.",
-		intro_3: "Message received.|Sender: Targ city.|Priority: urgent.",
-		intro_4: "Request for assistance. Targ city emergency. Immediate help requested.",
-		intro_5: "Starting deceleration... ",
-		intro_6: "Landing on Targ",
-		welcome: "Welcome to Targ.|Please take the jet and proceed to *9-2*.|*[SPACE]* to use the jet.|*[1]*-*[0]* for power.|*[SPACE]* to get out again",
-		yeehaw: "Yee-haw!",
-		game_saved: "Game saved.",
-		ufo_fixed: "The xeno artifacts started the craft! Try take-off and turns without moving first.",
-		ufo_broken: "This craft seems broken.",
-		ship_locked: "Until you complete your mission, your ship remains locked.",
-		takeoff_1: "Preparing for takeoff...",
-		takeoff_2: "3...",
-		takeoff_3: "2...",
-		takeoff_4: "1...",
-		takeoff_5: "Blastoff!",
+	var VALUES = exports.VALUES = _en_US2.default;
+	var MESSAGES = exports.MESSAGES = {};
+	for (var k in VALUES) {
+	  MESSAGES[k] = k;
+	}
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"intro_1": "Set course to Novagen... Engaging Hyperdrive",
+		"intro_2": "Enjoy your trip.",
+		"intro_3": "Message received.|Sender: Targ city.|Priority: urgent.",
+		"intro_4": "Request for assistance. Targ city emergency. Immediate help requested.",
+		"intro_5": "Starting deceleration... ",
+		"intro_6": "Landing on Targ",
+		"welcome": "Welcome to Targ.|Please take the jet and proceed to *9-2*.|*[SPACE]* to use the jet.|*[1]*-*[0]* for power.|*[SPACE]* to get out again",
+		"yeehaw": "Yee-haw!",
+		"game_saved": "Game saved.",
+		"ufo_fixed": "The xeno artifacts started the craft! Try take-off and turns without moving first.",
+		"ufo_broken": "This craft seems broken.",
+		"ship_locked": "Until you complete your mission, your ship remains locked.",
+		"takeoff_1": "Preparing for takeoff...",
+		"takeoff_2": "3...",
+		"takeoff_3": "2...",
+		"takeoff_4": "1...",
+		"takeoff_5": "Blastoff!",
 		"keya": "Pentagon key",
 		"keyb": "Triangle key",
 		"keyc": "Gate key",
@@ -47916,53 +47934,48 @@
 		"ufo": "Alien craft A3",
 		"trans": "Xeno translator chip",
 		"core": "Plasma drive core",
-		x_file_1: "File X-100: Xeno info. The construct Allitus is set to destroy Targ. It was created by an alien race in order to ensure humanity doesn't evolve to discover the Xeno central base.",
-		x_file_2: "File X-110: Xeno info. The alien artifact in this research lab, has an unknown purpose. It is thought to be related to the object at *79-66*.",
-		x_file_3: "File X-120: Xeno info. The location of the Xeno central base is debated. It may be shielded from our scanning equipment somehow.",
-		x_file_4: "File X-130: Xeno info. Allitus cannot be disarmed at this location. However, we think the Xeno central base contains a shutoff mechanism.",
-		xeno_1: "30-72: Main drive failure. A3 craft ejected and assumed lost. Shields and Allitus deployed. We have not been detected so far.",
-		xeno_2: "Targ natives have been observed evolving to within grasp of hyperlight technology. To avoid their expansion further, Allitus has been deployed.",
-		xeno_3: "It pains us to end their civilization on this planet. But it is needed in order to protect ourselves from detection.",
-		xeno_4: "Allitus override controls are located on this base. The terminal energy released by the device should propel us into orbit again.",
-		lift_9_2: "Take the lift down. This complex houses all that we know about the current situation. *[E]* to use the lift.",
-		in_lift_9_2: "You're welcome to take all you find with you. *[P]* to pick things up.",
-		info_1_9_2: "The xeno device Allitus was discovered a year ago.|At first we didn't understand its purpose. It was thought to be a power generator.|Our scientists worked hard to fire it up.|Some months ago they succeeded.|However,|we now know it to be a machine of war.|Your task is to terminate Allitus. Next, meet with our defense council at coordinates *c8-f0*.",
-		info_2_9_2: "Since your last visit, Alien ruins have been discovered on Targ. An underground complex and cave system is located at *d9-42*.",
-		info_3_9_2: "We have requisitioned a Lightcar for your travels. It has now been encoded for your use.",
-		ok_message1: "Memory scan: *OK*",
-		ok_message2: "Disk scan: *OK*",
-		ok_message3: "System health: *OK*",
-		term_100: "Terminal 100: report",
-		term_110: "Terminal 110: report",
-		term_120: "Terminal 120: report",
-		override: "*Override 17A* exec: !System compromised!",
-		term_100_or: "The intruder Allitus is taking over all Targ communications.",
-		term_110_or: "Allitus has no known weakness. To learn more visit our Xeno studies lab at *36-c9*.",
-		term_120_or: "Allitus is now armed. It is set to go critical in 10 days.",
-		info_c8_f0: "Defense Council Info: You're welcome to use the Defense Computer Array, via the terminals. Your security clearance will decide the info you see.",
-		override_disk: "You find a disk labeled Emergency Override 17A It looks like it fits some kind of terminal.",
-		term_20a: "Terminal 20A: report",
-		term_20b: "Terminal 20B: report",
-		info_1_36_c9: "This area houses a Xeno artifact. Please observe posted health and safety regulations.",
-		info_3_36_c9: "Allitus: a device of alien origins. Warning: High Voltage Ionizing radiation Posted biohazard Do not enter.",
-		allitus_1: "Feels cool to the touch.",
-		allitus_on: "An ominous buzzing sound is emitted.",
-		allitus_off: "Total silence reigns.",
-		drives_with_core: "The drives now have plasma cores installed. The xeno ship prepares to depart from Targ.",
-		drives_no_core: "These xeno drives need new plasma cores to operate again.",
-		allitus_armed: "Allitus is ARMED",
-		allitus_disarmed: "Allitus is disarmed",
-		thanks: "The Targ city council is eternally grateful for disabling the alien threat. *20000* credits have been added to your account.",
-		xeno_gibberish: "Xargff norgil Mggarth."
+		"x_file_1": "File X-100: Xeno info. The construct Allitus is set to destroy Targ. It was created by an alien race in order to ensure humanity doesn't evolve to discover the Xeno central base.",
+		"x_file_2": "File X-110: Xeno info. The alien artifact in this research lab, has an unknown purpose. It is thought to be related to the object at *79-66*.",
+		"x_file_3": "File X-120: Xeno info. The location of the Xeno central base is debated. It may be shielded from our scanning equipment somehow.",
+		"x_file_4": "File X-130: Xeno info. Allitus cannot be disarmed at this location. However, we think the Xeno central base contains a shutoff mechanism.",
+		"xeno_1": "30-72: Main drive failure. A3 craft ejected and assumed lost. Shields and Allitus deployed. We have not been detected so far.",
+		"xeno_2": "Targ natives have been observed evolving to within grasp of hyperlight technology. To avoid their expansion further, Allitus has been deployed.",
+		"xeno_3": "It pains us to end their civilization on this planet. But it is needed in order to protect ourselves from detection.",
+		"xeno_4": "Allitus override controls are located on this base. The terminal energy released by the device should propel us into orbit again.",
+		"lift_9_2": "Take the lift down. This complex houses all that we know about the current situation. *[E]* to use the lift.",
+		"in_lift_9_2": "You're welcome to take all you find with you. *[P]* to pick things up.",
+		"info_1_9_2": "The xeno device Allitus was discovered a year ago.|At first we didn't understand its purpose. It was thought to be a power generator.|Our scientists worked hard to fire it up.|Some months ago they succeeded.|However,|we now know it to be a machine of war.|Your task is to terminate Allitus. Next, meet with our defense council at coordinates *c8-f0*.",
+		"info_2_9_2": "Since your last visit, Alien ruins have been discovered on Targ. An underground complex and cave system is located at *d9-42*.",
+		"info_3_9_2": "We have requisitioned a Lightcar for your travels. It has now been encoded for your use.",
+		"ok_message1": "Memory scan: *OK*",
+		"ok_message2": "Disk scan: *OK*",
+		"ok_message3": "System health: *OK*",
+		"term_100": "Terminal 100: report",
+		"term_110": "Terminal 110: report",
+		"term_120": "Terminal 120: report",
+		"override": "*Override 17A* exec: !System compromised!",
+		"term_100_or": "The intruder Allitus is taking over all Targ communications.",
+		"term_110_or": "Allitus has no known weakness. To learn more visit our Xeno studies lab at *36-c9*.",
+		"term_120_or": "Allitus is now armed. It is set to go critical in 10 days.",
+		"info_c8_f0": "Defense Council Info: You're welcome to use the Defense Computer Array, via the terminals. Your security clearance will decide the info you see.",
+		"override_disk": "You find a disk labeled Emergency Override 17A It looks like it fits some kind of terminal.",
+		"term_20a": "Terminal 20A: report",
+		"term_20b": "Terminal 20B: report",
+		"info_1_36_c9": "This area houses a Xeno artifact. Please observe posted health and safety regulations.",
+		"info_3_36_c9": "Allitus: a device of alien origins. Warning: High Voltage Ionizing radiation Posted biohazard Do not enter.",
+		"allitus_1": "Feels cool to the touch.",
+		"allitus_on": "An ominous buzzing sound is emitted.",
+		"allitus_off": "Total silence reigns.",
+		"drives_with_core": "The drives now have plasma cores installed. The xeno ship prepares to depart from Targ.",
+		"drives_no_core": "These xeno drives need new plasma cores to operate again.",
+		"allitus_armed": "Allitus is ARMED",
+		"allitus_disarmed": "Allitus is disarmed",
+		"thanks": "The Targ city council is eternally grateful for disabling the alien threat. *20000* credits have been added to your account.",
+		"xeno_gibberish": "Xargff norgil Mggarth."
 	};
-	
-	var MESSAGES = exports.MESSAGES = {};
-	for (var k in VALUES) {
-		MESSAGES[k] = k;
-	}
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -47996,11 +48009,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _noise = __webpack_require__(12);
+	var _noise = __webpack_require__(13);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
-	var _compounds = __webpack_require__(13);
+	var _compounds = __webpack_require__(14);
 	
 	var compounds = _interopRequireWildcard(_compounds);
 	
@@ -48008,7 +48021,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(60);
+	var _events = __webpack_require__(61);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -49361,7 +49374,7 @@
 	}();
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -50135,7 +50148,7 @@
 	}();
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50146,11 +50159,11 @@
 	exports.LEVELS = undefined;
 	exports.loadLevel = loadLevel;
 	
-	var _room = __webpack_require__(14);
+	var _room = __webpack_require__(15);
 	
 	var room = _interopRequireWildcard(_room);
 	
-	var _compound_generator = __webpack_require__(16);
+	var _compound_generator = __webpack_require__(17);
 	
 	var generator = _interopRequireWildcard(_compound_generator);
 	
@@ -50166,7 +50179,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jszip = __webpack_require__(17);
+	var _jszip = __webpack_require__(18);
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
@@ -50328,7 +50341,7 @@
 	};
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50340,7 +50353,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(11);
+	var _movement = __webpack_require__(12);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -50356,7 +50369,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(15);
+	var _ThreeCSG = __webpack_require__(16);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -50779,7 +50792,7 @@
 	}();
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51351,7 +51364,7 @@
 	};
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51363,7 +51376,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(11);
+	var _movement = __webpack_require__(12);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -51379,7 +51392,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(15);
+	var _ThreeCSG = __webpack_require__(16);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -51855,12 +51868,12 @@
 	}();
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(18);
+	var base64 = __webpack_require__(19);
 	
 	/**
 	Usage:
@@ -51908,16 +51921,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(19);
-	JSZip.prototype.load = __webpack_require__(52);
-	JSZip.support = __webpack_require__(20);
-	JSZip.defaults = __webpack_require__(47);
+	JSZip.prototype = __webpack_require__(20);
+	JSZip.prototype.load = __webpack_require__(53);
+	JSZip.support = __webpack_require__(21);
+	JSZip.defaults = __webpack_require__(48);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(59);
+	JSZip.utils = __webpack_require__(60);
 	
 	JSZip.base64 = {
 	    /**
@@ -51935,12 +51948,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(26);
+	JSZip.compressions = __webpack_require__(27);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -52016,22 +52029,22 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(20);
-	var utils = __webpack_require__(25);
-	var crc32 = __webpack_require__(45);
-	var signature = __webpack_require__(46);
-	var defaults = __webpack_require__(47);
-	var base64 = __webpack_require__(18);
-	var compressions = __webpack_require__(26);
-	var CompressedObject = __webpack_require__(48);
-	var nodeBuffer = __webpack_require__(44);
-	var utf8 = __webpack_require__(49);
-	var StringWriter = __webpack_require__(50);
-	var Uint8ArrayWriter = __webpack_require__(51);
+	var support = __webpack_require__(21);
+	var utils = __webpack_require__(26);
+	var crc32 = __webpack_require__(46);
+	var signature = __webpack_require__(47);
+	var defaults = __webpack_require__(48);
+	var base64 = __webpack_require__(19);
+	var compressions = __webpack_require__(27);
+	var CompressedObject = __webpack_require__(49);
+	var nodeBuffer = __webpack_require__(45);
+	var utf8 = __webpack_require__(50);
+	var StringWriter = __webpack_require__(51);
+	var Uint8ArrayWriter = __webpack_require__(52);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -52905,7 +52918,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -52943,10 +52956,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -52959,9 +52972,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(22)
-	var ieee754 = __webpack_require__(23)
-	var isArray = __webpack_require__(24)
+	var base64 = __webpack_require__(23)
+	var ieee754 = __webpack_require__(24)
+	var isArray = __webpack_require__(25)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -54498,10 +54511,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -54631,7 +54644,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -54721,7 +54734,7 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -54732,13 +54745,13 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(20);
-	var compressions = __webpack_require__(26);
-	var nodeBuffer = __webpack_require__(44);
+	var support = __webpack_require__(21);
+	var compressions = __webpack_require__(27);
+	var nodeBuffer = __webpack_require__(45);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -55064,7 +55077,7 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55079,17 +55092,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(27);
+	exports.DEFLATE = __webpack_require__(28);
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(28);
+	var pako = __webpack_require__(29);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -55105,17 +55118,17 @@
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(29).assign;
+	var assign    = __webpack_require__(30).assign;
 	
-	var deflate   = __webpack_require__(30);
-	var inflate   = __webpack_require__(38);
-	var constants = __webpack_require__(42);
+	var deflate   = __webpack_require__(31);
+	var inflate   = __webpack_require__(39);
+	var constants = __webpack_require__(43);
 	
 	var pako = {};
 	
@@ -55125,7 +55138,7 @@
 
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -55233,17 +55246,17 @@
 
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(31);
-	var utils = __webpack_require__(29);
-	var strings = __webpack_require__(36);
-	var msg = __webpack_require__(35);
-	var zstream = __webpack_require__(37);
+	var zlib_deflate = __webpack_require__(32);
+	var utils = __webpack_require__(30);
+	var strings = __webpack_require__(37);
+	var msg = __webpack_require__(36);
+	var zstream = __webpack_require__(38);
 	
 	var toString = Object.prototype.toString;
 	
@@ -55615,16 +55628,16 @@
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(29);
-	var trees   = __webpack_require__(32);
-	var adler32 = __webpack_require__(33);
-	var crc32   = __webpack_require__(34);
-	var msg   = __webpack_require__(35);
+	var utils   = __webpack_require__(30);
+	var trees   = __webpack_require__(33);
+	var adler32 = __webpack_require__(34);
+	var crc32   = __webpack_require__(35);
+	var msg   = __webpack_require__(36);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -57386,13 +57399,13 @@
 
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -58591,7 +58604,7 @@
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58629,7 +58642,7 @@
 
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58676,7 +58689,7 @@
 
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58695,14 +58708,14 @@
 
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -58886,7 +58899,7 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58921,19 +58934,19 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(39);
-	var utils = __webpack_require__(29);
-	var strings = __webpack_require__(36);
-	var c = __webpack_require__(42);
-	var msg = __webpack_require__(35);
-	var zstream = __webpack_require__(37);
-	var gzheader = __webpack_require__(43);
+	var zlib_inflate = __webpack_require__(40);
+	var utils = __webpack_require__(30);
+	var strings = __webpack_require__(37);
+	var c = __webpack_require__(43);
+	var msg = __webpack_require__(36);
+	var zstream = __webpack_require__(38);
+	var gzheader = __webpack_require__(44);
 	
 	var toString = Object.prototype.toString;
 	
@@ -59327,17 +59340,17 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
-	var adler32 = __webpack_require__(33);
-	var crc32   = __webpack_require__(34);
-	var inflate_fast = __webpack_require__(40);
-	var inflate_table = __webpack_require__(41);
+	var utils = __webpack_require__(30);
+	var adler32 = __webpack_require__(34);
+	var crc32   = __webpack_require__(35);
+	var inflate_fast = __webpack_require__(41);
+	var inflate_table = __webpack_require__(42);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -60836,7 +60849,7 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61168,13 +61181,13 @@
 
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -61501,7 +61514,7 @@
 
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -61554,7 +61567,7 @@
 
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61600,7 +61613,7 @@
 
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -61611,15 +61624,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -61722,7 +61735,7 @@
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61735,7 +61748,7 @@
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61752,7 +61765,7 @@
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61786,14 +61799,14 @@
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
-	var support = __webpack_require__(20);
-	var nodeBuffer = __webpack_require__(44);
+	var utils = __webpack_require__(26);
+	var support = __webpack_require__(21);
+	var nodeBuffer = __webpack_require__(45);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -61999,12 +62012,12 @@
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * An object to write any content to a string.
@@ -62035,12 +62048,12 @@
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -62077,12 +62090,12 @@
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(18);
-	var ZipEntries = __webpack_require__(53);
+	var base64 = __webpack_require__(19);
+	var ZipEntries = __webpack_require__(54);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -62114,18 +62127,18 @@
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(54);
-	var NodeBufferReader = __webpack_require__(56);
-	var Uint8ArrayReader = __webpack_require__(57);
-	var utils = __webpack_require__(25);
-	var sig = __webpack_require__(46);
-	var ZipEntry = __webpack_require__(58);
-	var support = __webpack_require__(20);
-	var jszipProto = __webpack_require__(19);
+	var StringReader = __webpack_require__(55);
+	var NodeBufferReader = __webpack_require__(57);
+	var Uint8ArrayReader = __webpack_require__(58);
+	var utils = __webpack_require__(26);
+	var sig = __webpack_require__(47);
+	var ZipEntry = __webpack_require__(59);
+	var support = __webpack_require__(21);
+	var jszipProto = __webpack_require__(20);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -62341,12 +62354,12 @@
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(55);
-	var utils = __webpack_require__(25);
+	var DataReader = __webpack_require__(56);
+	var utils = __webpack_require__(26);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -62383,11 +62396,11 @@
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -62496,11 +62509,11 @@
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(57);
+	var Uint8ArrayReader = __webpack_require__(58);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -62522,11 +62535,11 @@
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(55);
+	var DataReader = __webpack_require__(56);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -62575,14 +62588,14 @@
 
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(54);
-	var utils = __webpack_require__(25);
-	var CompressedObject = __webpack_require__(48);
-	var jszipProto = __webpack_require__(19);
+	var StringReader = __webpack_require__(55);
+	var utils = __webpack_require__(26);
+	var CompressedObject = __webpack_require__(49);
+	var jszipProto = __webpack_require__(20);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -62891,11 +62904,11 @@
 
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * @deprecated
@@ -63002,7 +63015,7 @@
 
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63268,7 +63281,7 @@
 	}();
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63384,7 +63397,7 @@
 	}();
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63497,7 +63510,7 @@
 	}();
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63513,7 +63526,7 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _noise = __webpack_require__(12);
+	var _noise = __webpack_require__(13);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
@@ -63697,7 +63710,7 @@
 	}();
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63713,7 +63726,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _noise = __webpack_require__(12);
+	var _noise = __webpack_require__(13);
 	
 	var noise = _interopRequireWildcard(_noise);
 	

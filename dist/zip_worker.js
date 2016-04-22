@@ -46,7 +46,7 @@
 
 	'use strict';
 	
-	var _jszip = __webpack_require__(17);
+	var _jszip = __webpack_require__(18);
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
@@ -88,12 +88,13 @@
 /* 14 */,
 /* 15 */,
 /* 16 */,
-/* 17 */
+/* 17 */,
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(18);
+	var base64 = __webpack_require__(19);
 	
 	/**
 	Usage:
@@ -141,16 +142,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(19);
-	JSZip.prototype.load = __webpack_require__(52);
-	JSZip.support = __webpack_require__(20);
-	JSZip.defaults = __webpack_require__(47);
+	JSZip.prototype = __webpack_require__(20);
+	JSZip.prototype.load = __webpack_require__(53);
+	JSZip.support = __webpack_require__(21);
+	JSZip.defaults = __webpack_require__(48);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(59);
+	JSZip.utils = __webpack_require__(60);
 	
 	JSZip.base64 = {
 	    /**
@@ -168,12 +169,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(26);
+	JSZip.compressions = __webpack_require__(27);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -249,22 +250,22 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(20);
-	var utils = __webpack_require__(25);
-	var crc32 = __webpack_require__(45);
-	var signature = __webpack_require__(46);
-	var defaults = __webpack_require__(47);
-	var base64 = __webpack_require__(18);
-	var compressions = __webpack_require__(26);
-	var CompressedObject = __webpack_require__(48);
-	var nodeBuffer = __webpack_require__(44);
-	var utf8 = __webpack_require__(49);
-	var StringWriter = __webpack_require__(50);
-	var Uint8ArrayWriter = __webpack_require__(51);
+	var support = __webpack_require__(21);
+	var utils = __webpack_require__(26);
+	var crc32 = __webpack_require__(46);
+	var signature = __webpack_require__(47);
+	var defaults = __webpack_require__(48);
+	var base64 = __webpack_require__(19);
+	var compressions = __webpack_require__(27);
+	var CompressedObject = __webpack_require__(49);
+	var nodeBuffer = __webpack_require__(45);
+	var utf8 = __webpack_require__(50);
+	var StringWriter = __webpack_require__(51);
+	var Uint8ArrayWriter = __webpack_require__(52);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -1138,7 +1139,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -1176,10 +1177,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -1192,9 +1193,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(22)
-	var ieee754 = __webpack_require__(23)
-	var isArray = __webpack_require__(24)
+	var base64 = __webpack_require__(23)
+	var ieee754 = __webpack_require__(24)
+	var isArray = __webpack_require__(25)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -2731,10 +2732,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -2864,7 +2865,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -2954,7 +2955,7 @@
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -2965,13 +2966,13 @@
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(20);
-	var compressions = __webpack_require__(26);
-	var nodeBuffer = __webpack_require__(44);
+	var support = __webpack_require__(21);
+	var compressions = __webpack_require__(27);
+	var nodeBuffer = __webpack_require__(45);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -3297,7 +3298,7 @@
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3312,17 +3313,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(27);
+	exports.DEFLATE = __webpack_require__(28);
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(28);
+	var pako = __webpack_require__(29);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -3338,17 +3339,17 @@
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(29).assign;
+	var assign    = __webpack_require__(30).assign;
 	
-	var deflate   = __webpack_require__(30);
-	var inflate   = __webpack_require__(38);
-	var constants = __webpack_require__(42);
+	var deflate   = __webpack_require__(31);
+	var inflate   = __webpack_require__(39);
+	var constants = __webpack_require__(43);
 	
 	var pako = {};
 	
@@ -3358,7 +3359,7 @@
 
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -3466,17 +3467,17 @@
 
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(31);
-	var utils = __webpack_require__(29);
-	var strings = __webpack_require__(36);
-	var msg = __webpack_require__(35);
-	var zstream = __webpack_require__(37);
+	var zlib_deflate = __webpack_require__(32);
+	var utils = __webpack_require__(30);
+	var strings = __webpack_require__(37);
+	var msg = __webpack_require__(36);
+	var zstream = __webpack_require__(38);
 	
 	var toString = Object.prototype.toString;
 	
@@ -3848,16 +3849,16 @@
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(29);
-	var trees   = __webpack_require__(32);
-	var adler32 = __webpack_require__(33);
-	var crc32   = __webpack_require__(34);
-	var msg   = __webpack_require__(35);
+	var utils   = __webpack_require__(30);
+	var trees   = __webpack_require__(33);
+	var adler32 = __webpack_require__(34);
+	var crc32   = __webpack_require__(35);
+	var msg   = __webpack_require__(36);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -5619,13 +5620,13 @@
 
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -6824,7 +6825,7 @@
 
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -6862,7 +6863,7 @@
 
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -6909,7 +6910,7 @@
 
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -6928,14 +6929,14 @@
 
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -7119,7 +7120,7 @@
 
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -7154,19 +7155,19 @@
 
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(39);
-	var utils = __webpack_require__(29);
-	var strings = __webpack_require__(36);
-	var c = __webpack_require__(42);
-	var msg = __webpack_require__(35);
-	var zstream = __webpack_require__(37);
-	var gzheader = __webpack_require__(43);
+	var zlib_inflate = __webpack_require__(40);
+	var utils = __webpack_require__(30);
+	var strings = __webpack_require__(37);
+	var c = __webpack_require__(43);
+	var msg = __webpack_require__(36);
+	var zstream = __webpack_require__(38);
+	var gzheader = __webpack_require__(44);
 	
 	var toString = Object.prototype.toString;
 	
@@ -7560,17 +7561,17 @@
 
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
-	var adler32 = __webpack_require__(33);
-	var crc32   = __webpack_require__(34);
-	var inflate_fast = __webpack_require__(40);
-	var inflate_table = __webpack_require__(41);
+	var utils = __webpack_require__(30);
+	var adler32 = __webpack_require__(34);
+	var crc32   = __webpack_require__(35);
+	var inflate_fast = __webpack_require__(41);
+	var inflate_table = __webpack_require__(42);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -9069,7 +9070,7 @@
 
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -9401,13 +9402,13 @@
 
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(29);
+	var utils = __webpack_require__(30);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -9734,7 +9735,7 @@
 
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -9787,7 +9788,7 @@
 
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -9833,7 +9834,7 @@
 
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -9844,15 +9845,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -9955,7 +9956,7 @@
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -9968,7 +9969,7 @@
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -9985,7 +9986,7 @@
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -10019,14 +10020,14 @@
 
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
-	var support = __webpack_require__(20);
-	var nodeBuffer = __webpack_require__(44);
+	var utils = __webpack_require__(26);
+	var support = __webpack_require__(21);
+	var nodeBuffer = __webpack_require__(45);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -10232,12 +10233,12 @@
 
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * An object to write any content to a string.
@@ -10268,12 +10269,12 @@
 
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -10310,12 +10311,12 @@
 
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(18);
-	var ZipEntries = __webpack_require__(53);
+	var base64 = __webpack_require__(19);
+	var ZipEntries = __webpack_require__(54);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -10347,18 +10348,18 @@
 
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(54);
-	var NodeBufferReader = __webpack_require__(56);
-	var Uint8ArrayReader = __webpack_require__(57);
-	var utils = __webpack_require__(25);
-	var sig = __webpack_require__(46);
-	var ZipEntry = __webpack_require__(58);
-	var support = __webpack_require__(20);
-	var jszipProto = __webpack_require__(19);
+	var StringReader = __webpack_require__(55);
+	var NodeBufferReader = __webpack_require__(57);
+	var Uint8ArrayReader = __webpack_require__(58);
+	var utils = __webpack_require__(26);
+	var sig = __webpack_require__(47);
+	var ZipEntry = __webpack_require__(59);
+	var support = __webpack_require__(21);
+	var jszipProto = __webpack_require__(20);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -10574,12 +10575,12 @@
 
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(55);
-	var utils = __webpack_require__(25);
+	var DataReader = __webpack_require__(56);
+	var utils = __webpack_require__(26);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -10616,11 +10617,11 @@
 
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -10729,11 +10730,11 @@
 
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(57);
+	var Uint8ArrayReader = __webpack_require__(58);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -10755,11 +10756,11 @@
 
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(55);
+	var DataReader = __webpack_require__(56);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -10808,14 +10809,14 @@
 
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(54);
-	var utils = __webpack_require__(25);
-	var CompressedObject = __webpack_require__(48);
-	var jszipProto = __webpack_require__(19);
+	var StringReader = __webpack_require__(55);
+	var utils = __webpack_require__(26);
+	var CompressedObject = __webpack_require__(49);
+	var jszipProto = __webpack_require__(20);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -11124,11 +11125,11 @@
 
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(25);
+	var utils = __webpack_require__(26);
 	
 	/**
 	 * @deprecated

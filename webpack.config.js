@@ -14,11 +14,12 @@ module.exports = {
 	},
 	module: {
 	  loaders: [
-	    {
-	      test: /\.js[x]?$/,
-	      exclude: /(node_modules|bower_components)/,
-	      loader: 'babel?presets[]=es2015'
-	    }
+		  { test: /\.json$/, loader: 'json' },
+		  {
+			  test: /\.js[x]?$/,
+			  exclude: /(node_modules|bower_components)/,
+			  loader: 'babel?presets[]=es2015'
+		  }
 	  ]
 	},
 	resolve: {
