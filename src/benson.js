@@ -24,57 +24,58 @@ export class Benson {
 		if(addBreak) this.addLogBreak();
 
 		this.history.push(messageIndex);
-		let lines = messages.VALUES[messageIndex];
-		if(typeof lines === "string") {
-			if(this.replayMode) {
-				this._showMessage(lines);
-			} else {
-				this.addMessage(lines, onComplete);
-			}
-		} else {
-			for(let i = 0; i < lines.length; i++) {
-				if(this.replayMode) {
-					this._showMessage(lines[i]);
+		let lines = messages.VALUES[messageIndex].split("|");
+		for(let lc = 0; lc < lines.length; lc++) {
+			let words = lines[lc].split(" ");
+			let line = "";
+			for (let i = 0; i < words.length; i++) {
+				let next = (i == 0 ? "" : " ") + words[i];
+				let forLength = next.replace(/\*/g, "");
+				if (line.length + forLength.length >= 27) {
+					this.addMessage(line);
+					line = words[i];
 				} else {
-					this.addMessage(lines[i], i == lines.length - 1 ? onComplete : null);
+					line += next;
 				}
 			}
+			this.addMessage(line, lc == lines.length - 1 ? onComplete : null);
 		}
 	}
 
-	_parseMessage(message) {
-		// not sure why but 'this' is undefined below
-		var that = this;
-		return message.replace(/\$(.*?)\$/g, (a, b) => {
-			return that.context[b];
-		});
-	}
-
 	_showMessage(message) {
-		let s = this._parseMessage(message);
-		let div = "<div class='message'>" +
-			"<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" +
-			"<span class='log_message'>" + s + "</span>" +
-			"</div>";
-		$("#log_display .log_break").eq(0).before(div);
+		if($("#log_display .active").length > 0) {
+			$("#log_display .active").append(" <span class='log_message'>" + message + "</span>");
+		} else {
+			let div = "<div class='message active'>" +
+				"<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" +
+				"<span class='log_message'>" + message + "</span>" +
+				"</div>";
+			$("#log_display .log_break").eq(0).before(div);
+		}
 
-		if(!this.replayMode) this.el.empty().append(s);
+		if(!this.replayMode) this.el.empty().append(message);
 	}
 
 	addLogBreak() {
 		this.history.push(-1);
 		$("#log_display").prepend("<div class='log_break'></div>");
+		$("#log_display .message").removeClass("active");
 	}
 
 	addMessage(message, onComplete) {
-		// skip dupes
-		if(this.messages.length > 0 && this.messages[this.messages.length - 1][0] == message) {
-			return;
-		}
+		message = message.replace(/\*(.*?)\*/g, "<span class='log_important'>$1</span>");
+		if(this.replayMode) {
+			this._showMessage(message);
+		} else {
+			// skip dupes
+			if (this.messages.length > 0 && this.messages[this.messages.length - 1][0] == message) {
+				return;
+			}
 
-		this.messages.push([message, onComplete]);
-		if(this.messages.length == 1) {
-			this._showMessage(this.messages[0][0]);
+			this.messages.push([message, onComplete]);
+			if (this.messages.length == 1) {
+				this._showMessage(this.messages[0][0]);
+			}
 		}
 	}
 

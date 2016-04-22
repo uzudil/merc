@@ -264,7 +264,7 @@ export class Movement {
 					rotZ: v.rotation.z
 				};
 			}),
-			messages: this.main.benson.history
+			eventLog: this.main.benson.history
 		});
 		this.main.benson.showMessage(messages.MESSAGES.game_saved);
 	}
@@ -302,7 +302,7 @@ export class Movement {
 		}
 
 		// message history replay
-		this.main.benson.replay(gameState.messages);
+		if(gameState["eventLog"]) this.main.benson.replay(gameState.eventLog);
 
 		if(this.player.position.z == ROOM_DEPTH) {
 			this.canMove = false;

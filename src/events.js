@@ -64,7 +64,7 @@ export class Events {
 					this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 					this.movement.main.benson.showMessage(messages.MESSAGES.term_100_or, false);
 				} else {
-					this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+					this.ok_message();
 				}
 				return true;
 			},
@@ -74,7 +74,7 @@ export class Events {
 					this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 					this.movement.main.benson.showMessage(messages.MESSAGES.term_110_or, false);
 				} else {
-					this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+					this.ok_message();
 				}
 				return true;
 			},
@@ -84,7 +84,7 @@ export class Events {
 					this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 					this.movement.main.benson.showMessage(messages.MESSAGES.term_120_or, false);
 				} else {
-					this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+					this.ok_message();
 				}
 				return true;
 			},
@@ -110,7 +110,7 @@ export class Events {
 				return true;
 			},
 			"36,c9,FFCCFF": ()=> {
-				this.movement.main.benson.showMessage(messages.MESSAGES.info_2_36_c9);
+				this.movement.main.benson.showMessage(messages.MESSAGES.info_1_36_c9);
 				return true;
 			},
 			"36,c9,CCCCCC": () => {
@@ -171,9 +171,15 @@ export class Events {
 			this.xFileIndex++;
 			if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 		} else {
-			this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+			this.ok_message();
 		}
 		return true;
+	}
+
+	ok_message() {
+		this.movement.main.benson.showMessage(messages.MESSAGES.ok_message1, false);
+		this.movement.main.benson.showMessage(messages.MESSAGES.ok_message2, false);
+		this.movement.main.benson.showMessage(messages.MESSAGES.ok_message3, false);
 	}
 
 	xenoTerm() {

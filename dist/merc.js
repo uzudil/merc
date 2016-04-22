@@ -47883,24 +47883,20 @@
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
-	/*
-	When adding new messages, ensure their keys are sorted after any previous messages.
-	This is because the keys' sorted index is stored in the savegame (to conserve disk space).
-	Maybe prefix a new batch with zz_ or something...
-	 */
-	var messages = {
-		intro_1: ["Set course to Novagen...", "Engaging Hyperdrive"],
+	/* Special characters: * - bold, | - line break */
+	var VALUES = exports.VALUES = {
+		intro_1: "Set course to Novagen... Engaging Hyperdrive",
 		intro_2: "Enjoy your trip.",
-		intro_3: ["Message received.", "Sender: Targ city.", "Priority: urgent."],
-		intro_4: ["Request for assistance.", "Targ city emergency.", "Immediate help requested."],
-		intro_5: "Starting deceleration...",
+		intro_3: "Message received.|Sender: Targ city.|Priority: urgent.",
+		intro_4: "Request for assistance. Targ city emergency. Immediate help requested.",
+		intro_5: "Starting deceleration... ",
 		intro_6: "Landing on Targ",
-		welcome: ["Welcome to Targ.", "Please take the jet", "and proceed to <span class='log_important'>9-2</span>.", "<span class='log_important'>[SPACE]</span> to use the jet.", "<span class='log_important'>[1]</span>-<span class='log_important'>[0]</span> for power.", "<span class='log_important'>[SPACE]</span> to get out again."],
+		welcome: "Welcome to Targ.|Please take the jet and proceed to *9-2*.|*[SPACE]* to use the jet.|*[1]*-*[0]* for power.|*[SPACE]* to get out again",
 		yeehaw: "Yee-haw!",
 		game_saved: "Game saved.",
-		ufo_fixed: ["The xeno artifacts", "started the craft!", "Try take-off and turns", "without moving first."],
+		ufo_fixed: "The xeno artifacts started the craft! Try take-off and turns without moving first.",
 		ufo_broken: "This craft seems broken.",
-		ship_locked: ["Until you complete", "your mission, your", "ship remains locked."],
+		ship_locked: "Until you complete your mission, your ship remains locked.",
 		takeoff_1: "Preparing for takeoff...",
 		takeoff_2: "3...",
 		takeoff_3: "2...",
@@ -47920,54 +47916,50 @@
 		"ufo": "Alien craft A3",
 		"trans": "Xeno translator chip",
 		"core": "Plasma drive core",
-		x_file_1: ["File X-100: Xeno info", "The construct Allitus", "is set to destroy Targ.", "It was created by an", "alien race in order to", "ensure humanity doesn't", "evolve to discover the", "Xeno central base."],
-		x_file_2: ["File X-110: Xeno info", "The alien artifact", "in this research lab, has", "an unknown purpose. It is", "thought to be related to", "the object at <span class='log_important'>79-66</span>."],
-		x_file_3: ["File X-120: Xeno info", "The location of the Xeno", "central base is debated.", "It may be shielded from our", "scanning equipment somehow."],
-		x_file_4: ["File X-130: Xeno info", "Allitus cannot be", "disarmed at this location.", "However, we think the", "Xeno central base contains", "a shutoff mechanism."],
-		xeno_1: ["30-72: main drive failure", "A3 craft ejected and", "assumed lost. Shields", "and Allitus deployed.", "We have not been detected", "so far."],
-		xeno_2: ["Targ natives have been", "observed evolving to", "within grasp of hyperlight", "technology. To avoid their", "expansion further,", "Allitus has been deployed."],
-		xeno_3: ["It pains us to end their", "civilization on this ", "planet. But it is needed", "in order to protect", "ourselves from detection."],
-		xeno_4: ["Allitus override controls", "are located on this base.", "The terminal energy", "released by the device", "should propel us into", "orbit again."],
-		lift_9_2: ["Take the lift down.", "This complex houses all", "that we know about the", "current situation.", "<span class='log_important'>[E]</span> to use the lift."],
-		in_lift_9_2: ["You're welcome to take", "all you find with you.", "<span class='log_important'>[P]</span> to pick things up."],
-		info_1_9_2: ["The xeno device Allitus", "was discovered a year ago.", "At first we didn't", "understand its purpose.", "It was thought to be a", "power generator.", "Our scientists worked", "hard to fire it up.", "Some months ago they", "succeeded.", "However,", "We now know it to be", "a machine of war.", "Your task is to", "terminate Allitus.", "Next, meet with our", "defense counsil at", "coordinates <span class='log_important'>c8-f0</span>."],
-		info_2_9_2: ["Since your last visit,", "Alien ruins have been", "discovered on Targ.", "An underground complex", "and cave system is", "located at <span class='log_important'>d9-42</span>."],
-		info_3_9_2: ["We have requisitioned", "a Lightcar for your", "travels. It has now been", "encoded for your use."],
-		ok_message: ["Memory scan: <span class='log_important'>OK</span>", "Disk scan: <span class='log_important'>OK</span>", "System health: <span class='log_important'>OK</span>"],
+		x_file_1: "File X-100: Xeno info. The construct Allitus is set to destroy Targ. It was created by an alien race in order to ensure humanity doesn't evolve to discover the Xeno central base.",
+		x_file_2: "File X-110: Xeno info. The alien artifact in this research lab, has an unknown purpose. It is thought to be related to the object at *79-66*.",
+		x_file_3: "File X-120: Xeno info. The location of the Xeno central base is debated. It may be shielded from our scanning equipment somehow.",
+		x_file_4: "File X-130: Xeno info. Allitus cannot be disarmed at this location. However, we think the Xeno central base contains a shutoff mechanism.",
+		xeno_1: "30-72: Main drive failure. A3 craft ejected and assumed lost. Shields and Allitus deployed. We have not been detected so far.",
+		xeno_2: "Targ natives have been observed evolving to within grasp of hyperlight technology. To avoid their expansion further, Allitus has been deployed.",
+		xeno_3: "It pains us to end their civilization on this planet. But it is needed in order to protect ourselves from detection.",
+		xeno_4: "Allitus override controls are located on this base. The terminal energy released by the device should propel us into orbit again.",
+		lift_9_2: "Take the lift down. This complex houses all that we know about the current situation. *[E]* to use the lift.",
+		in_lift_9_2: "You're welcome to take all you find with you. *[P]* to pick things up.",
+		info_1_9_2: "The xeno device Allitus was discovered a year ago.|At first we didn't understand its purpose. It was thought to be a power generator.|Our scientists worked hard to fire it up.|Some months ago they succeeded.|However,|we now know it to be a machine of war.|Your task is to terminate Allitus. Next, meet with our defense council at coordinates *c8-f0*.",
+		info_2_9_2: "Since your last visit, Alien ruins have been discovered on Targ. An underground complex and cave system is located at *d9-42*.",
+		info_3_9_2: "We have requisitioned a Lightcar for your travels. It has now been encoded for your use.",
+		ok_message1: "Memory scan: *OK*",
+		ok_message2: "Disk scan: *OK*",
+		ok_message3: "System health: *OK*",
 		term_100: "Terminal 100: report",
 		term_110: "Terminal 110: report",
 		term_120: "Terminal 120: report",
-		override: ["<span class='log_important'>Override 17A</span> exec:", "!System compromised!"],
-		term_100_or: ["The intruder Allitus is", "taking over all Targ", "communications."],
-		term_110_or: ["Allitus has no known", "weakness. To learn more", "visit our Xeno studies", "lab at <span class='log_important'>36-c9</span>."],
-		term_120_or: ["Allitus is now armed.", "It is set to go critical", "in $allitus-ttl$ days."],
-		info_c8_f0: ["Defense Council Info:", "You're welcome to use", "the Defense Computer Array,", "via the terminals. Your", "security clearance will", "decide the info you see."],
-		override_disk: ["You find a disk labeled", "Emergency Override 17A", "It looks like it fits", "some kind of terminal."],
+		override: "*Override 17A* exec: !System compromised!",
+		term_100_or: "The intruder Allitus is taking over all Targ communications.",
+		term_110_or: "Allitus has no known weakness. To learn more visit our Xeno studies lab at *36-c9*.",
+		term_120_or: "Allitus is now armed. It is set to go critical in 10 days.",
+		info_c8_f0: "Defense Council Info: You're welcome to use the Defense Computer Array, via the terminals. Your security clearance will decide the info you see.",
+		override_disk: "You find a disk labeled Emergency Override 17A It looks like it fits some kind of terminal.",
 		term_20a: "Terminal 20A: report",
 		term_20b: "Terminal 20B: report",
-		info_1_36_c9: ["This area houses", "a Xeno artifact.", "Please observe posted", "health and safety", "regulations."],
-		info_2_36_c9: ["This area houses", "a Xeno artifact.", "Please observe posted", "health and safety", "regulations."],
-		info_3_36_c9: ["Allitus: a device", "of alien origins.", "Warning: High Voltage", "Ionizing radiation", "Posted biohazard", "Do not enter."],
+		info_1_36_c9: "This area houses a Xeno artifact. Please observe posted health and safety regulations.",
+		info_3_36_c9: "Allitus: a device of alien origins. Warning: High Voltage Ionizing radiation Posted biohazard Do not enter.",
 		allitus_1: "Feels cool to the touch.",
-		allitus_on: ["An ominous buzzing", "sound is emitted."],
+		allitus_on: "An ominous buzzing sound is emitted.",
 		allitus_off: "Total silence reigns.",
-		drives_with_core: ["The drives now have", "plasma cores installed.", "The xeno ship prepares", "to depart from Targ."],
-		drives_no_core: ["These xeno drives need", "new plasma cores to", "operate again."],
+		drives_with_core: "The drives now have plasma cores installed. The xeno ship prepares to depart from Targ.",
+		drives_no_core: "These xeno drives need new plasma cores to operate again.",
 		allitus_armed: "Allitus is ARMED",
 		allitus_disarmed: "Allitus is disarmed",
-		thanks: ["The Targ city council is", "eternally grateful for", "disabling the alien threat.", "<span class='log_important'>20000</span> credits have been", "added to your account."],
+		thanks: "The Targ city council is eternally grateful for disabling the alien threat. *20000* credits have been added to your account.",
 		xeno_gibberish: "Xargff norgil Mggarth."
 	};
 	
-	var keys = Object.keys(messages).sort();
 	var MESSAGES = exports.MESSAGES = {};
-	for (var i = 0; i < keys.length; i++) {
-		var k = keys[i];
-		MESSAGES[k] = i;
+	for (var k in VALUES) {
+		MESSAGES[k] = k;
 	}
-	var VALUES = exports.VALUES = keys.map(function (k) {
-		return messages[k];
-	});
 
 /***/ },
 /* 11 */
@@ -48318,7 +48310,7 @@
 							rotZ: v.rotation.z
 						};
 					}),
-					messages: this.main.benson.history
+					eventLog: this.main.benson.history
 				});
 				this.main.benson.showMessage(messages.MESSAGES.game_saved);
 			}
@@ -48351,7 +48343,7 @@
 				}
 	
 				// message history replay
-				this.main.benson.replay(gameState.messages);
+				if (gameState["eventLog"]) this.main.benson.replay(gameState.eventLog);
 	
 				if (this.player.position.z == ROOM_DEPTH) {
 					this.canMove = false;
@@ -63097,7 +63089,7 @@
 						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 						_this.movement.main.benson.showMessage(messages.MESSAGES.term_100_or, false);
 					} else {
-						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+						_this.ok_message();
 					}
 					return true;
 				},
@@ -63107,7 +63099,7 @@
 						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 						_this.movement.main.benson.showMessage(messages.MESSAGES.term_110_or, false);
 					} else {
-						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+						_this.ok_message();
 					}
 					return true;
 				},
@@ -63117,7 +63109,7 @@
 						_this.movement.main.benson.showMessage(messages.MESSAGES.override, false);
 						_this.movement.main.benson.showMessage(messages.MESSAGES.term_120_or, false);
 					} else {
-						_this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+						_this.ok_message();
 					}
 					return true;
 				},
@@ -63143,7 +63135,7 @@
 					return true;
 				},
 				"36,c9,FFCCFF": function c9FFCCFF() {
-					_this.movement.main.benson.showMessage(messages.MESSAGES.info_2_36_c9);
+					_this.movement.main.benson.showMessage(messages.MESSAGES.info_1_36_c9);
 					return true;
 				},
 				"36,c9,CCCCCC": function c9CCCCCC() {
@@ -63206,9 +63198,16 @@
 					this.xFileIndex++;
 					if (this.xFileIndex >= X_FILES.length) this.xFileIndex = 0;
 				} else {
-					this.movement.main.benson.showMessage(messages.MESSAGES.ok_message, false);
+					this.ok_message();
 				}
 				return true;
+			}
+		}, {
+			key: 'ok_message',
+			value: function ok_message() {
+				this.movement.main.benson.showMessage(messages.MESSAGES.ok_message1, false);
+				this.movement.main.benson.showMessage(messages.MESSAGES.ok_message2, false);
+				this.movement.main.benson.showMessage(messages.MESSAGES.ok_message3, false);
 			}
 		}, {
 			key: 'xenoTerm',
@@ -63559,58 +63558,58 @@
 				if (addBreak) this.addLogBreak();
 	
 				this.history.push(messageIndex);
-				var lines = messages.VALUES[messageIndex];
-				if (typeof lines === "string") {
-					if (this.replayMode) {
-						this._showMessage(lines);
-					} else {
-						this.addMessage(lines, onComplete);
-					}
-				} else {
-					for (var i = 0; i < lines.length; i++) {
-						if (this.replayMode) {
-							this._showMessage(lines[i]);
+				var lines = messages.VALUES[messageIndex].split("|");
+				for (var lc = 0; lc < lines.length; lc++) {
+					var words = lines[lc].split(" ");
+					var line = "";
+					for (var i = 0; i < words.length; i++) {
+						var next = (i == 0 ? "" : " ") + words[i];
+						var forLength = next.replace(/\*/g, "");
+						if (line.length + forLength.length >= 27) {
+							this.addMessage(line);
+							line = words[i];
 						} else {
-							this.addMessage(lines[i], i == lines.length - 1 ? onComplete : null);
+							line += next;
 						}
 					}
+					this.addMessage(line, lc == lines.length - 1 ? onComplete : null);
 				}
-			}
-		}, {
-			key: '_parseMessage',
-			value: function _parseMessage(message) {
-				// not sure why but 'this' is undefined below
-				var that = this;
-				return message.replace(/\$(.*?)\$/g, function (a, b) {
-					return that.context[b];
-				});
 			}
 		}, {
 			key: '_showMessage',
 			value: function _showMessage(message) {
-				var s = this._parseMessage(message);
-				var div = "<div class='message'>" + "<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" + "<span class='log_message'>" + s + "</span>" + "</div>";
-				(0, _jquery2.default)("#log_display .log_break").eq(0).before(div);
+				if ((0, _jquery2.default)("#log_display .active").length > 0) {
+					(0, _jquery2.default)("#log_display .active").append(" <span class='log_message'>" + message + "</span>");
+				} else {
+					var div = "<div class='message active'>" + "<span class='log_marker'>" + (this.replayMode ? "" : window.merc.getLogMarker()) + "</span>" + "<span class='log_message'>" + message + "</span>" + "</div>";
+					(0, _jquery2.default)("#log_display .log_break").eq(0).before(div);
+				}
 	
-				if (!this.replayMode) this.el.empty().append(s);
+				if (!this.replayMode) this.el.empty().append(message);
 			}
 		}, {
 			key: 'addLogBreak',
 			value: function addLogBreak() {
 				this.history.push(-1);
 				(0, _jquery2.default)("#log_display").prepend("<div class='log_break'></div>");
+				(0, _jquery2.default)("#log_display .message").removeClass("active");
 			}
 		}, {
 			key: 'addMessage',
 			value: function addMessage(message, onComplete) {
-				// skip dupes
-				if (this.messages.length > 0 && this.messages[this.messages.length - 1][0] == message) {
-					return;
-				}
+				message = message.replace(/\*(.*?)\*/g, "<span class='log_important'>$1</span>");
+				if (this.replayMode) {
+					this._showMessage(message);
+				} else {
+					// skip dupes
+					if (this.messages.length > 0 && this.messages[this.messages.length - 1][0] == message) {
+						return;
+					}
 	
-				this.messages.push([message, onComplete]);
-				if (this.messages.length == 1) {
-					this._showMessage(this.messages[0][0]);
+					this.messages.push([message, onComplete]);
+					if (this.messages.length == 1) {
+						this._showMessage(this.messages[0][0]);
+					}
 				}
 			}
 		}, {
