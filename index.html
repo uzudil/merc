@@ -154,9 +154,9 @@
 		.dialog {
 			display: none;
 			width: 40%;
-			height: 40%;
+			height: 60%;
 			position: absolute;
-			top: 30%;
+			top: 20%;
 			left: 30%;
 			z-index: 1000;
 			border: 10px inset #888;
@@ -302,7 +302,8 @@
 			color: #ffc;
 		}
 
-		#loadgame {
+		#ui_continue {
+			color: #256;
 			display: none;
 		}
 	</style>
@@ -319,29 +320,38 @@
 	</script>
 </head>
 <body>
-	<script src="dist/merc.js?v=27"></script>
 	<div id="loading"><div id="progress"><div id="progress-value"></div></div></div>
 	<div id="alert">
-		<div id="wait-models" class="alert wait-alert">Loading models...</div>
-		<div id="wait-world" class="alert wait-alert">Loading game...</div>
-		<div id="wait" class="alert wait-alert">Loading complex...</div>
-		<div id="enter" class="alert">Press E to enter</div>
-		<div id="exit" class="alert">Press E to exit</div>
-		<div id="vehicle" class="alert">Press SPACE to drive</div>
-		<div id="pickup" class="alert">Press P to use</div>
-		<div id="teleport" class="alert">Press T to teleport</div>
+		<div id="ui_loading_models" class="alert wait-alert localized">Loading models...</div>
+		<div id="ui_loading_game" class="alert wait-alert localized">Loading game...</div>
+		<div id="ui_loading_complex" class="alert wait-alert localized">Loading complex...</div>
+		<div id="ui_e" class="alert localized">Press E to enter</div>
+		<div id="ui_e_exit" class="alert localized">Press E to exit</div>
+		<div id="ui_space" class="alert localized">Press SPACE to drive</div>
+		<div id="ui_p" class="alert localized">Press P to use</div>
+		<div id="ui_t" class="alert localized">Press T to teleport</div>
 	</div>
 	<div id="title-container">
 		<div id="title">
 			<div class="label"><span>M</span><span>E</span><span>R</span><span>C</span></div>
 			<div>2016 (c) Gabor Torok</div>
 			<div id="version"></div>
-			<div id="loadgame">Press C to continue game, or</div>
-			<div class="start">Press any key to start</div>
+			<div id="ui_options" class="start localized">Press O to change the options</div>
+			<div id="ui_continue" class="localized">Press C to continue game</div>
+			<div id="ui_start" class="start localized">Press SPACE to start</div>
+		</div>
+	</div>
+	<div id="options" class="dialog">
+		<div id="ui_options_title" class="localized">Options</div><br><br>
+		<div><label><span id="ui_invert_mouse" class="localized">Invert mouse Y</span> <input id="invert_mouse" type="checkbox"></label></div>
+		<div><label><span id="ui_select_locale" class="localized">Select locale</span> <select id="locale"></select></label></div>
+		<br><br>
+		<div>
+			<button id="ui_close_options" class="localized">Close</button>
 		</div>
 	</div>
 	<div id="ui">
-		<div class="title"><div class="text">Benson 5000: H for help</div></div>
+		<div class="title"><div class="text">Benson 5000: <span id="ui_h" class="localized">H for help</span></div></div>
 	<table>
 		<tr>
 			<td rowspan="3"><div id="el" class="uibox"><div class="line_container"><div class="horiz_line"></div></div><label>EL</label><div class="value"><canvas id="el_canvas"></canvas></div></div></td>
@@ -357,59 +367,47 @@
 	</table>
 	</div>
 	<div id="help" class="dialog">
-		<p>MERC keyboard help<br><br></p>
-		<p>
-			Movement: WASD keys<br>
-			Enter/exit craft: SPACE<br>
-			Craft power: 1-0<br>
-			Stop craft: ~<br>
-			Elevator: E<br>
-			Pickup/Interact with object: P<br>
-			Toggle sound: Q<br>
-			Toggle FPS limits: F<br>
-			Teleport: T<br>
-			Toggle Log: L<br>
-			Save game: X<br>
-			Click for mouse lock.<br>
-			<br>
-		</p>
-		<p>Toggle this panel: H</p>
+		<p id="ui_help_title" class="localized"></p><br><br>
+		<p id="ui_help_main" class="localized"></p><br>
+		<p id="ui_help_footer" class="localized"></p>
 	</div>
 	<div id="explosion_gameover" class="gameover whiteGameover">
 		<div class="gameover_message">
-			<p>Despite your best efforts, you could not stop Allitus from destroying Targ. Better luck next time!</p>
+			<p id="ui_go_fail" class="localized">Despite your best efforts, you could not stop Allitus from destroying Targ. Better luck next time!</p>
 			<br>
 			<br>
-			<button onclick="location.reload(); return false;">Try Again</button>
+			<button class="ui_try_again localized" onclick="location.reload(); return false;">Play Again</button>
 		</div>
 	</div>
 	<div id="targSavedAndXenoDepart" class="gameover blackGameover">
 		<div class="gameover_message">
-			<p>Leaving feels good with an extra 20,000 credits in the bank.
+			<p id="ui_go_win_both" class="localized">Leaving feels good with an extra 20,000 credits in the bank.
 				Plus, having saved both Targ and the alien base makes this a special day.</p>
 			<br>
 			<br>
-			<button onclick="location.reload(); return false;">Play Again</button>
+			<button class="ui_try_again localized" onclick="location.reload(); return false;">Play Again</button>
 		</div>
 	</div>
 	<div id="targSaved" class="gameover blackGameover">
 		<div class="gameover_message">
-			<p>Leaving feels good with an extra 20,000 credits in the bank.
+			<p id="ui_go_win_human" class="localized">Leaving feels good with an extra 20,000 credits in the bank.
 			You feel great that Targ is saved but wonder what fate the aliens suffered...</p>
 			<br>
 			<br>
-			<button onclick="location.reload(); return false;">Play Again</button>
+			<button class="ui_try_again localized" onclick="location.reload(); return false;">Play Again</button>
 		</div>
 	</div>
 	<div id="xenoDepart" class="gameover blackGameover">
 		<div class="gameover_message">
-			<p>You don't bother to look back to see what happened to Targ. The planet may be lost but at least
+			<p id="ui_go_win_xeno" class="localized">You don't bother to look back to see what happened to Targ. The planet may be lost but at least
 				the alien ship escaped to safety. You shrug and proceed to your next adventure.</p>
 			<br>
 			<br>
-			<button onclick="location.reload(); return false;">Play Again</button>
+			<button class="ui_try_again localized" onclick="location.reload(); return false;">Play Again</button>
 		</div>
 	</div>
-	<div id="log" class="dialog"><div><b>Event Log</b></div><div id="log_display"><div class="log_break"></div></div></div>
+	<div id="log" class="dialog"><div><b id="ui_event_log" class="localized">Event Log</b></div><div id="log_display"><div class="log_break"></div></div></div>
+
+	<script src="dist/merc.js?v=27"></script>
 </body>
 </html>

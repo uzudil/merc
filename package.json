@@ -25,10 +25,12 @@
     "webpack-dev-server": "^1.14.0"
   },
   "dependencies": {
+    "fs": "0.0.2",
     "jquery": "^2.2.2",
     "json-loader": "^0.5.4",
     "jszip": "^2.5.0",
     "jszip-utils": "0.0.2",
+    "plates": "^0.4.11",
     "stats.js": "0.0.14-master",
     "three.js": "^0.73.0"
   }

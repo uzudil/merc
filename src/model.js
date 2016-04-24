@@ -102,7 +102,7 @@ export class Models {
 	constructor(onLoad) {
 		this.onLoad = onLoad;
 		this.models = {};
-		util.startLoadingUI("wait-models");
+		util.startLoadingUI("ui_loading_models");
 
 		for(let name of MODELS) {
 			let model;

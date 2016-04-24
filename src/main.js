@@ -46,6 +46,14 @@ class Merc {
 			this.init(models);
 
 			this._game_map = new game_map.GameMap(this.scene, this.models, this.renderer.getMaxAnisotropy());
+			$("#ui_close_options").click(() => {
+				$("#options").hide();
+				return false;
+			});
+			$("#locale").empty().append(Object.keys(messages.LOCALES).sort().map((o) => "<option>" + o + "</option>"));
+			$("#locale").change(() => {
+				messages.setLocale($("#locale").val());
+			});
 			util.execWithProgress([
 				() => this._game_map.initModels(),
 				() => this._game_map.compressSectors(),
@@ -54,21 +62,26 @@ class Merc {
 				() => this._game_map.finishInit(),
 				() => {
 					$("#title .start").show();
-					if(localStorage["savegame"]) $("#loadgame").show();
+					if(localStorage["savegame"]) $("#ui_continue").show();
 					$(document).keyup(( event ) => {
 						event.stopPropagation();
-						$(document).unbind("keyup");
-						this.setupUI();
-						// C - continue
-						if(event.keyCode == 67) {
-							this.startGame(true, true);
-						} else {
-							this.startIntro();
+						if(event.keyCode == 79) {
+							$("#options").show();
+							return false;
+						} else if(event.keyCode == 67 || event.keyCode == 32) {
+							$(document).unbind("keyup");
+							this.setupUI();
+							// C - continue
+							if (event.keyCode == 67) {
+								this.startGame(true, true);
+							} else {
+								this.startIntro();
+							}
+							this.animate();
 						}
-						this.animate();
 					});
 				}
-			], "wait-world");
+			], "ui_loading_game");
 		});
 	}
 

@@ -128,7 +128,7 @@ export function initBinaryLoader() {
 	});
 }
 
-export function startLoadingUI(waitDivId="wait") {
+export function startLoadingUI(waitDivId="ui_loading_complex") {
 	window.loadingComplex = true;
 	$(".alert").hide();
 	$("#loading").show();
@@ -146,7 +146,7 @@ export function setLoadingUIProgress(percent, action) {
 	setTimeout(action, 100);
 }
 
-export function execWithProgress(fxs, waitDivId="wait") {
+export function execWithProgress(fxs, waitDivId="ui_loading_complex") {
 	startLoadingUI(waitDivId);
 	runWithProgress(fxs, 0);
 }

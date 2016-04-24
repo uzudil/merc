@@ -1097,11 +1097,11 @@ export class Movement {
 			this.checkPickup();
 
 			if(!window.loadingComplex) {
-				$("#enter").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
-				$("#exit").toggle(this.enterMode == EXIT_COMPOUND);
-				$("#vehicle").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
-				$("#pickup").toggle(this.pickupObject != null);
-				$("#teleport").toggle(this.room != null && this.room.teleportToRoom != null);
+				$("#ui_e").toggle(this.enterMode == ENTER_BASE || this.enterMode == ENTER_COMPOUND);
+				$("#ui_e_exit").toggle(this.enterMode == EXIT_COMPOUND);
+				$("#ui_space").toggle(this.intersections.filter((o) => o.model instanceof models.Vehicle).length > 0);
+				$("#ui_p").toggle(this.pickupObject != null);
+				$("#ui_t").toggle(this.room != null && this.room.teleportToRoom != null);
 			}
 		}
 
