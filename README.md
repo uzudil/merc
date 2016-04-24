@@ -17,6 +17,10 @@ http://uzudil.github.io/merc/
 
 More info about the game is available on the [wiki](https://github.com/uzudil/merc/wiki).
 
+## Translations
+
+I'm looking for translators! https://poeditor.com/join/project/oD3YmZFxAE
+
 ## Development
 
 Uses ES6, webpack, npm and three.js.
