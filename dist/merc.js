@@ -68,11 +68,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _movement = __webpack_require__(12);
+	var _movement = __webpack_require__(20);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
-	var _skybox = __webpack_require__(67);
+	var _skybox = __webpack_require__(70);
 	
 	var skybox = _interopRequireWildcard(_skybox);
 	
@@ -80,19 +80,19 @@
 	
 	var model = _interopRequireWildcard(_model);
 	
-	var _compass = __webpack_require__(68);
+	var _compass = __webpack_require__(71);
 	
 	var compass = _interopRequireWildcard(_compass);
 	
-	var _benson = __webpack_require__(69);
+	var _benson = __webpack_require__(72);
 	
 	var benson = _interopRequireWildcard(_benson);
 	
-	var _space = __webpack_require__(70);
+	var _space = __webpack_require__(73);
 	
 	var space = _interopRequireWildcard(_space);
 	
-	var _events = __webpack_require__(61);
+	var _events = __webpack_require__(69);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -47902,7 +47902,7 @@
 	exports.tmpl = tmpl;
 	exports.setLocale = setLocale;
 	
-	var _plates = __webpack_require__(62);
+	var _plates = __webpack_require__(11);
 	
 	var _plates2 = _interopRequireDefault(_plates);
 	
@@ -47910,24 +47910,30 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _en_US = __webpack_require__(11);
+	var _en_US = __webpack_require__(16);
 	
 	var _en_US2 = _interopRequireDefault(_en_US);
 	
-	var _test = __webpack_require__(72);
+	var _de_DE = __webpack_require__(17);
 	
-	var _test2 = _interopRequireDefault(_test);
+	var _de_DE2 = _interopRequireDefault(_de_DE);
+	
+	var _es_MX = __webpack_require__(18);
+	
+	var _es_MX2 = _interopRequireDefault(_es_MX);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	/* Special characters: * - bold, | - line break */
 	var LOCALES = exports.LOCALES = {
-		"en_US": _en_US2.default,
-		"test": _test2.default
+		"English": _en_US2.default,
+		"German": _de_DE2.default,
+		"Spanish": _es_MX2.default
 	};
 	var VALUES = exports.VALUES = {};
 	var MESSAGES = exports.MESSAGES = {};
-	setLocale("en_US");
+	var DEFAULT_LOCALE = "English";
+	setLocale(DEFAULT_LOCALE);
 	
 	function tmpl(el) {
 		// http://stackoverflow.com/questions/3614212/jquery-get-html-of-a-whole-element
@@ -47940,9 +47946,16 @@
 	function setLocale(locale) {
 		console.log("Setting locale to " + locale);
 		exports.VALUES = VALUES = LOCALES[locale];
-		exports.MESSAGES = MESSAGES = {};
+	
+		// fill-in english versions if native is missing
+		var en_VALUES = LOCALES[DEFAULT_LOCALE];
 		for (var k in VALUES) {
-			MESSAGES[k] = k;
+			if (!VALUES[k]) VALUES[k] = en_VALUES[k];
+		}
+	
+		exports.MESSAGES = MESSAGES = {};
+		for (var _k in VALUES) {
+			MESSAGES[_k] = _k;
 		}var _iteratorNormalCompletion = true;
 		var _didIteratorError = false;
 		var _iteratorError = undefined;
@@ -47970,6 +47983,1030 @@
 
 /***/ },
 /* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(module, process) {var Plates = (typeof module !== 'undefined' && 'id' in module && typeof exports !== 'undefined') ? exports : {};
+	
+	!function(exports, env, undefined) {
+	  "use strict";
+	
+	  //
+	  // Cache variables to increase lookup speed.
+	  //
+	  var _toString = Object.prototype.toString;
+	
+	  //
+	  // Polyfill the Array#indexOf method for cross browser compatibility.
+	  //
+	  [].indexOf || (Array.prototype.indexOf = function indexOf(a, b ,c){
+	    for (
+	      c = this.length , b = (c+ ~~b) % c;
+	      b < c && (!(b in this) || this[b] !==a );
+	      b++
+	    );
+	
+	    return b^c ? b : -1;
+	  });
+	
+	  //
+	  // Polyfill Array.isArray for cross browser compatibility.
+	  //
+	  Array.isArray || (Array.isArray = function isArray(a) {
+	    return _toString.call(a) === '[object Array]';
+	  });
+	
+	  //
+	  // ### function fetch(data, mapping, value, key)
+	  // #### @data {Object} the data that we need to fetch a value from
+	  // #### @mapping {Object} The iterated mapping step
+	  // #### @tagbody {String} the tagbody we operated against
+	  // #### @key {String} optional key if the mapping doesn't have a dataKey
+	  // Fetches the correct piece of data
+	  //
+	  function fetch(data, mapping, value, tagbody, key) {
+	    key = mapping.dataKey || key;
+	
+	    //
+	    // Check if we have data manipulation or filtering function.
+	    //
+	    if (mapping.dataKey && typeof mapping.dataKey === 'function') {
+	      return mapping.dataKey(data, value || '', tagbody || '', key);
+	    }
+	
+	    //
+	    // See if we are using dot notation style
+	    //
+	    if (!~key.indexOf('.')) return data[key];
+	
+	    var result = key
+	      , structure = data;
+	
+	    for (var paths = key.split('.'), i = 0, length = paths.length; i < length && structure; i++) {
+	      result = structure[+paths[i] || paths[i]];
+	      structure = result;
+	    }
+	
+	    return result !== undefined ? result : data[key];
+	  }
+	
+	  //
+	  // compileMappings
+	  //
+	  // sort the mappings so that mappings for the same attribute and value go consecutive
+	  // and inside those, those that change attributes appear first.
+	  //
+	  function compileMappings(oldMappings) {
+	    var mappings = oldMappings.slice(0);
+	
+	    mappings.sort(function(map1, map2) {
+	      if (!map1.attribute) return 1;
+	      if (!map2.attribute) return -1;
+	
+	      if (map1.attribute !== map2.attribute) {
+	        return map1.attribute < map2.attribute ? -1 : 1;
+	      }
+	      if (map1.value !== map2.value) {
+	        return map1.value < map2.value ? -1 : 1;
+	      }
+	      if (! ('replace' in map1) && ! ('replace' in map2)) {
+	        throw new Error('Conflicting mappings for attribute ' + map1.attribute + ' and value ' + map1.value);
+	      }
+	      if (map1.replace) {
+	        return 1;
+	      }
+	      return -1;
+	    });
+	
+	    return mappings;
+	  }
+	
+	//
+	// Matches a closing tag to a open tag
+	//
+	function matchClosing(input, tagname, html) {
+	  var closeTag = '</' + tagname + '>',
+	      openTag  = new RegExp('< *' + tagname + '( *|>)', 'g'),
+	      closeCount = 0,
+	      openCount = -1,
+	      from, to, chunk
+	      ;
+	
+	  from = html.search(input);
+	  to = from;
+	
+	  while(to > -1 && closeCount !== openCount) {
+	    to = html.indexOf(closeTag, to);
+	    if (to > -1) {
+	      to += tagname.length + 3;
+	      closeCount ++;
+	      chunk = html.slice(from, to);
+	      openCount = chunk.match(openTag).length;
+	    }
+	  }
+	  if (to === -1) {
+	    throw new Error('Unmatched tag ' + tagname + ' in ' + html)
+	  }
+	
+	  return chunk;
+	}
+	
+	  var Merge = function Merge() {};
+	  Merge.prototype = {
+	    nest: [],
+	
+	    tag: new RegExp([
+	      '<',
+	      '(/?)', // 2 - is closing
+	      '([-:\\w]+)', // 3 - name
+	      '((?:[-\\w]+(?:', '=',
+	      '(?:\\w+|["|\'](?:.*)["|\']))?)*)', // 4 - attributes
+	      '(/?)', // 5 - is self-closing
+	      '>'
+	    ].join('\\s*')),
+	
+	    //
+	    // HTML attribute parser.
+	    //
+	    attr: /([\-\w]*)\s*=\s*(?:(["\'])([\-\.\w\s\/:;&#]*)\2)/gi,
+	
+	    //
+	    // In HTML5 it's allowed to have to use self closing tags without closing
+	    // separators. So we need to detect these elements based on the tag name.
+	    //
+	    selfClosing: /^(area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/,
+	
+	    //
+	    // ### function hasClass(str, className)
+	    // #### @str {String} the class attribute
+	    // #### @className {String} the className that the classAttribute should contain
+	    //
+	    // Helper function for detecting if a class attribute contains the className
+	    //
+	    hasClass: function hasClass(str, className) {
+	      return ~str.split(' ').indexOf(className);
+	    },
+	
+	    //
+	    // ### function iterate(html, value, components, tagname, key)
+	    // #### @html {String} peice of HTML
+	    // #### @value {Mixed} iterateable object with data
+	    // #### @components {Array} result of the this.tag regexp execution
+	    // #### @tagname {String} the name of the tag that we iterate on
+	    // #### @key {String} the key of the data that we need to extract from the value
+	    // #### @map {Object} attribute mappings
+	    //
+	    // Iterate over over the supplied HTML.
+	    //
+	    iterate: function iterate(html, value, components, tagname, key, map) {
+	      var output  = '',
+	          segment = matchClosing(components.input, tagname, html),
+	          data = {};
+	
+	      // Is it an array?
+	      if (Array.isArray(value)) {
+	        // Yes: set the output to the result of iterating through the array
+	        for (var i = 0, l = value.length; i < l; i++) {
+	          // If there is a key, then we have a simple object and
+	          // must construct a simple object to use as the data
+	          if (key) {
+	            data[key] = value[i];
+	          } else {
+	            data = value[i];
+	          }
+	
+	          output += this.bind(segment, data, map);
+	        }
+	
+	        return output;
+	      } else if (typeof value === 'object') {
+	        // We need to refine the selection now that we know we're dealing with a
+	        // nested object
+	        segment = segment.slice(components.input.length, -(tagname.length + 3));
+	        return output += this.bind(segment, value, map);
+	      }
+	
+	      return value;
+	    },
+	
+	    //
+	    // ### function bind(html, data, map)
+	    // #### @html {String} the template that we need to modify
+	    // #### @data {Object} data for the template
+	    // #### @map {Mapper} instructions for the data placement in the template
+	    // Process the actual template
+	    //
+	    bind: function bind(html, data, map) {
+	      if (Array.isArray(data)) {
+	        var output = '';
+	
+	        for (var i = 0, l = data.length; i<l; i++) {
+	          output += this.bind(html, data[i], map);
+	        }
+	
+	        return output;
+	      }
+	
+	      html = (html || '').toString();
+	      data = data || {};
+	
+	      var that = this;
+	
+	      var openers = 0,
+	          remove = 0,
+	          components,
+	          attributes,
+	          mappings = map && compileMappings(map.mappings),
+	          intag = false,
+	          tagname = '',
+	          isClosing = false,
+	          isSelfClosing = false,
+	          selfClosing = false,
+	          matchmode = false,
+	          createAttribute = map && map.conf && map.conf.create,
+	          closing,
+	          tagbody;
+	
+	      var c,
+	          buffer = '',
+	          left;
+	
+	      for (var i = 0, l = html.length; i < l; i++) {
+	        c = html.charAt(i);
+	
+	        //
+	        // Figure out which part of the HTML we are currently processing. And if
+	        // we have queued up enough HTML to process it's data.
+	        //
+	        if (c === '!' && intag && !matchmode) {
+	          intag = false;
+	          buffer += html.slice(left, i + 1);
+	        } else if (c === '<' && !intag) {
+	          closing = true;
+	          intag = true;
+	          left = i;
+	        } else if (c === '>' && intag) {
+	          intag = false;
+	          tagbody = html.slice(left, i + 1);
+	          components = this.tag.exec(tagbody);
+	
+	          if(!components) {
+	            intag = true;
+	            continue;
+	          }
+	
+	          isClosing = components[1];
+	          tagname = components[2];
+	          attributes = components[3];
+	          selfClosing = components[4];
+	          isSelfClosing = this.selfClosing.test(tagname);
+	
+	          if (matchmode) {
+	            //
+	            // and its a closing.
+	            //
+	            if (!!isClosing) {
+	              if (openers <= 0) {
+	                matchmode = false;
+	              } else {
+	                --openers;
+	              }
+	            } else if (!isSelfClosing) {
+	              //
+	              // and its not a self-closing tag
+	              //
+	              ++openers;
+	            }
+	          }
+	
+	          if (!isClosing && !matchmode) {
+	            //
+	            // if there is a match in progress and
+	            //
+	            if (mappings && mappings.length > 0) {
+	              for (var ii = mappings.length - 1; ii >= 0; ii--) {
+	                var setAttribute = false
+	                  , mapping = mappings[ii]
+	                  , shouldSetAttribute = mapping.re && attributes.match(mapping.re);
+	
+	                //
+	                // check if we are targetting a element only or attributes
+	                //
+	                if ('tag' in mapping && !this.attr.test(tagbody) && mapping.tag === tagname) {
+	                  tagbody = tagbody + fetch(data, mapping, '', tagbody);
+	                  continue;
+	                }
+	
+	                tagbody = tagbody.replace(this.attr, function(str, key, q, value, a) {
+	                  var newdata;
+	
+	                  if (shouldSetAttribute && mapping.replace !== key || remove) {
+	                    return str;
+	                  } else if (shouldSetAttribute || typeof mapping.replacePartial1 !== 'undefined') {
+	                    setAttribute = true;
+	
+	                    //
+	                    // determine if we should use the replace argument or some value from the data object.
+	                    //
+	                    if (typeof mapping.replacePartial2 !== 'undefined') {
+	                      newdata = value.replace(mapping.replacePartial1, mapping.replacePartial2);
+	                    } else if (typeof mapping.replacePartial1 !== 'undefined' && mapping.dataKey) {
+	                      newdata = value.replace(mapping.replacePartial1, fetch(data, mapping, value, tagbody, key));
+	                    } else {
+	                      newdata = fetch(data, mapping, value, tagbody, key);
+	                    }
+	
+	                    return key + '="' + (newdata || '') + '"';
+	                  } else if (!mapping.replace && mapping.attribute === key) {
+	                    if (
+	                      mapping.value === value ||
+	                      that.hasClass(value, mapping.value ||
+	                      mappings.conf.where === key) ||
+	                      (_toString.call(mapping.value) === '[object RegExp]' &&
+	                        mapping.value.exec(value) !== null)
+	                    ) {
+	                      if (mapping.remove) {
+	                        //
+	                        // only increase the remove counter if it's not a self
+	                        // closing element. As matchmode is suffectient to
+	                        // remove tose
+	                        //
+	                        if (!isSelfClosing) remove++;
+	                        matchmode = true;
+	                      } else if (mapping.plates) {
+	                        var partial = that.bind(
+	                            mapping.plates
+	                          , typeof mapping.data === 'string' ? fetch(data, { dataKey: mapping.data }) : mapping.data || data
+	                          , mapping.mapper
+	                        );
+	
+	                        buffer += tagbody + that.iterate(html, partial, components, tagname, undefined, map);
+	                        matchmode = true;
+	                      } else {
+	                        var v = newdata = fetch(data, mapping, value, tagbody, key);
+	                        newdata = tagbody + newdata;
+	
+	                        if (Array.isArray(v)) {
+	                          newdata = that.iterate(html, v, components, tagname, value, map);
+	                          // If the item is an array, then we need to tell
+	                          // Plates that we're dealing with nests
+	                          that.nest.push(tagname);
+	                        } else if (typeof v === 'object') {
+	                          newdata = tagbody + that.iterate(html, v, components, tagname, value, map);
+	                        }
+	
+	                        buffer += newdata || '';
+	                        matchmode = true;
+	                      }
+	                    }
+	                  }
+	
+	                  return str;
+	                });
+	
+	                //
+	                // Do we need to create the attributes if they don't exist.
+	                //
+	                if (createAttribute && shouldSetAttribute && !setAttribute) {
+	                  var spliced = selfClosing ? 2 : 1
+	                    , close = selfClosing ? '/>': '>'
+	                    , left = tagbody.substr(0, tagbody.length - spliced);
+	
+	                  if (left[left.length - 1] === ' ') {
+	                    left = left.substr(0, left.length - 1);
+	
+	                    if (selfClosing) {
+	                      close = ' ' + close;
+	                    }
+	                  }
+	
+	                  tagbody = [
+	                    left,
+	                    ' ',
+	                    mapping.replace,
+	                    '="',
+	                    fetch(data, mapping),
+	                    '"',
+	                    close
+	                  ].join('');
+	                }
+	              }
+	            } else {
+	              //
+	              // if there is no map, we are just looking to match
+	              // the specified id to a data key in the data object.
+	              //
+	              tagbody.replace(this.attr, function (attr, key, q, value, idx) {
+	                if (key === map && map.conf.where || 'id' && data[value]) {
+	                  var v = data[value],
+	                      nest = Array.isArray(v),
+	                      output = nest || typeof v === 'object'
+	                        ? that.iterate(html.substr(left), v, components, tagname, value, map)
+	                        : v;
+	
+	                  // If the item is an array, then we need to tell
+	                  // Plates that we're dealing with nests
+	                  if (nest) { that.nest.push(tagname); }
+	
+	                  buffer += nest ? output : tagbody + output;
+	                  matchmode = true;
+	                }
+	              });
+	            }
+	          }
+	
+	          //
+	          // if there is currently no match in progress
+	          // just write the tagbody to the buffer.
+	          //
+	          if (!matchmode && that.nest.length === 0) {
+	            if (!remove) buffer += tagbody;
+	
+	            if (remove && !!isClosing) --remove;
+	          } else if (!matchmode && that.nest.length) {
+	              this.nest.pop();
+	          }
+	        } else if (!intag && !matchmode) {
+	          //
+	          // currently not inside a tag and there is no
+	          // match in progress, we can write the char to
+	          // the buffer.
+	          //
+	          if (!remove) buffer += c;
+	        }
+	      }
+	      return buffer;
+	    }
+	  };
+	
+	  //
+	  // ### function Mapper(conf)
+	  // #### @conf {Object} configuration object
+	  // Constructor function for the Mapper instance that is responsible for
+	  // providing the mapping for the data structure
+	  //
+	  function Mapper(conf) {
+	    if (!(this instanceof Mapper)) { return new Mapper(conf); }
+	
+	    this.mappings = [];
+	    this.conf = conf || {};
+	  }
+	
+	  //
+	  // ### function last(newitem)
+	  // #### @newitem {Boolean} do we need to add a new item to the mapping
+	  // Helper function for adding new attribute maps to a Mapper instance
+	  //
+	  function last(newitem) {
+	    if (newitem) {
+	      this.mappings.push({});
+	    }
+	
+	    var m = this.mappings[this.mappings.length - 1];
+	
+	    if (m && m.attribute && m.value && m.dataKey && m.replace) {
+	      m.re = new RegExp(m.attribute + '=([\'"]?)' + m.value + '\\1');
+	    } else if (m) {
+	      delete m.re;
+	    }
+	
+	    return m;
+	  }
+	
+	  //
+	  // Create the actual chainable methods: where('class').is('foo').insert('bla')
+	  //
+	  Mapper.prototype = {
+	    //
+	    // ### function replace(val1, val2)
+	    // #### @val1 {String|RegExp} The part of the attribute that needs to be replaced
+	    // #### @val2 {String} The value it should be replaced with
+	    //
+	    replace: function replace(val1, val2) {
+	      var l = last.call(this);
+	      l.replacePartial1 = val1;
+	      l.replacePartial2 = val2;
+	      return this;
+	    },
+	
+	    //
+	    // ### function use(val)
+	    // #### @val {String} A string that represents a key.
+	    // Data will be inserted into the attribute that was specified in the
+	    // `where` clause.
+	    //
+	    use: function use(val) {
+	      last.call(this).dataKey = val;
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function where(val)
+	    // #### @val {String} an attribute that may be found in a tag
+	    // This method will initiate a clause. Once a clause has been established
+	    // other member methods will be chained to each other in any order.
+	    //
+	    where: function where(val) {
+	      last.call(this, true).attribute = val;
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function class(val)
+	    // #### @val {String} a value that may be found in the `class` attribute of a tag
+	    // the method name should be wrapped in quotes or it will throw errors in IE.
+	    //
+	    'class': function className(val) {
+	      return this.where('class').is(val);
+	    },
+	
+	    //
+	    // ### function tag(val)
+	    // #### @val {String} the name of the tag should be found
+	    //
+	    tag: function tag(val) {
+	      last.call(this, true).tag = val;
+	      return this;
+	    },
+	
+	    //
+	    // ### function is(val)
+	    // #### @val {string} The value of the attribute that was specified in the
+	    // `where` clause.
+	    //
+	    is: function is(val) {
+	      last.call(this).value = val;
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function has(val)
+	    // #### @val {String|RegExp} The value of the attribute that was specified
+	    // in the `where` clause.
+	    //
+	    has: function has(val) {
+	      last.call(this).value = val;
+	      this.replace(val);
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function insert(val)
+	    // #### @val {String} A string that represents a key. Data will be inserted
+	    // in to the attribute that was specified in the `where` clause.
+	    //
+	    insert: function insert(val) {
+	      var l = last.call(this);
+	      l.replace = l.attribute;
+	      l.dataKey = val;
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function as(val)
+	    // #### @val {String} A string that represents an attribute in the tag.
+	    // If there is no attribute by that name name found, one may be created
+	    // depending on the options that where passed in the `Plates.Map`
+	    // constructor.
+	    //
+	    as: function as(val) {
+	      last.call(this).replace = val;
+	      return last.call(this) && this;
+	    },
+	
+	    //
+	    // ### function remove()
+	    // This will remove the element that was specified in the `where` clause
+	    // from the template.
+	    //
+	    remove: function remove() {
+	      last.call(this).remove = true;
+	      return last.call(this, true);
+	    },
+	
+	    //
+	    // ### function append(plates, data, map)
+	    // #### @plates {String} Template or path/id of the template
+	    // #### @data {Object|String} data for the appended template
+	    // #### @map {Plates.Map} mapping for the data
+	    //
+	    append: function append(plates, data, map) {
+	      var l = last.call(this);
+	
+	      if (data instanceof Mapper) {
+	        map = data;
+	        data = undefined;
+	      }
+	
+	      // If the supplied plates template doesn't contain any HTML it's most
+	      // likely that we need to import it. To improve performance we will cache
+	      // the result of the file system.
+	      if (!/<[^<]+?>/.test(plates) && !exports.cache[plates]) {
+	        // figure out if we are running in Node.js or a browser
+	        if ('document' in env && 'getElementById' in env.document) {
+	          exports.cache[plates] = document.getElementById(plates).innerHTML;
+	        } else {
+	          exports.cache[plates] = __webpack_require__(14).readFileSync(
+	            __webpack_require__(15).join(process.cwd(), plates),
+	            'utf8'
+	          );
+	        }
+	      }
+	
+	      l.plates = exports.cache[plates] || plates;
+	      l.data = data;
+	      l.mapper = map;
+	
+	      return last.call(this, true);
+	    }
+	  };
+	
+	  //
+	  // Provide helpful aliases that well help with increased compatibility as not
+	  // all browsers allow the Mapper#class prototype (IE).
+	  //
+	  Mapper.prototype.className = Mapper.prototype['class'];
+	
+	  //
+	  // Aliases of different methods.
+	  //
+	  Mapper.prototype.partial = Mapper.prototype.append;
+	  Mapper.prototype.to = Mapper.prototype.use;
+	
+	  //
+	  // Expose a simple cache object so people can clear the cached partials if
+	  // they want to.
+	  //
+	  exports.cache = {};
+	
+	  //
+	  // Expose the Plates#bind interface.
+	  //
+	  exports.bind = function bind(html, data, map) {
+	    var merge = new Merge();
+	    return merge.bind(html, data, map);
+	  };
+	
+	  //
+	  // Expose the Mapper.
+	  //
+	  exports.Map = Mapper;
+	}(Plates, this);
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)(module), __webpack_require__(13)))
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	module.exports = function(module) {
+		if(!module.webpackPolyfill) {
+			module.deprecate = function() {};
+			module.paths = [];
+			// module.parent = undefined by default
+			module.children = [];
+			module.webpackPolyfill = 1;
+		}
+		return module;
+	}
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports) {
+
+	// shim for using process in browser
+	
+	var process = module.exports = {};
+	var queue = [];
+	var draining = false;
+	var currentQueue;
+	var queueIndex = -1;
+	
+	function cleanUpNextTick() {
+	    draining = false;
+	    if (currentQueue.length) {
+	        queue = currentQueue.concat(queue);
+	    } else {
+	        queueIndex = -1;
+	    }
+	    if (queue.length) {
+	        drainQueue();
+	    }
+	}
+	
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    var timeout = setTimeout(cleanUpNextTick);
+	    draining = true;
+	
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        while (++queueIndex < len) {
+	            if (currentQueue) {
+	                currentQueue[queueIndex].run();
+	            }
+	        }
+	        queueIndex = -1;
+	        len = queue.length;
+	    }
+	    currentQueue = null;
+	    draining = false;
+	    clearTimeout(timeout);
+	}
+	
+	process.nextTick = function (fun) {
+	    var args = new Array(arguments.length - 1);
+	    if (arguments.length > 1) {
+	        for (var i = 1; i < arguments.length; i++) {
+	            args[i - 1] = arguments[i];
+	        }
+	    }
+	    queue.push(new Item(fun, args));
+	    if (queue.length === 1 && !draining) {
+	        setTimeout(drainQueue, 0);
+	    }
+	};
+	
+	// v8 likes predictible objects
+	function Item(fun, array) {
+	    this.fun = fun;
+	    this.array = array;
+	}
+	Item.prototype.run = function () {
+	    this.fun.apply(null, this.array);
+	};
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+	
+	function noop() {}
+	
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+	
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+	
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	console.log("I'm `fs` modules");
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+	
+	// resolves . and .. elements in a path array with directory names there
+	// must be no slashes, empty elements, or device names (c:\) in the array
+	// (so also no leading and trailing slashes - it does not distinguish
+	// relative and absolute paths)
+	function normalizeArray(parts, allowAboveRoot) {
+	  // if the path tries to go above the root, `up` ends up > 0
+	  var up = 0;
+	  for (var i = parts.length - 1; i >= 0; i--) {
+	    var last = parts[i];
+	    if (last === '.') {
+	      parts.splice(i, 1);
+	    } else if (last === '..') {
+	      parts.splice(i, 1);
+	      up++;
+	    } else if (up) {
+	      parts.splice(i, 1);
+	      up--;
+	    }
+	  }
+	
+	  // if the path is allowed to go above the root, restore leading ..s
+	  if (allowAboveRoot) {
+	    for (; up--; up) {
+	      parts.unshift('..');
+	    }
+	  }
+	
+	  return parts;
+	}
+	
+	// Split a filename into [root, dir, basename, ext], unix version
+	// 'root' is just a slash, or nothing.
+	var splitPathRe =
+	    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+	var splitPath = function(filename) {
+	  return splitPathRe.exec(filename).slice(1);
+	};
+	
+	// path.resolve([from ...], to)
+	// posix version
+	exports.resolve = function() {
+	  var resolvedPath = '',
+	      resolvedAbsolute = false;
+	
+	  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+	    var path = (i >= 0) ? arguments[i] : process.cwd();
+	
+	    // Skip empty and invalid entries
+	    if (typeof path !== 'string') {
+	      throw new TypeError('Arguments to path.resolve must be strings');
+	    } else if (!path) {
+	      continue;
+	    }
+	
+	    resolvedPath = path + '/' + resolvedPath;
+	    resolvedAbsolute = path.charAt(0) === '/';
+	  }
+	
+	  // At this point the path should be resolved to a full absolute path, but
+	  // handle relative paths to be safe (might happen when process.cwd() fails)
+	
+	  // Normalize the path
+	  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+	    return !!p;
+	  }), !resolvedAbsolute).join('/');
+	
+	  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+	};
+	
+	// path.normalize(path)
+	// posix version
+	exports.normalize = function(path) {
+	  var isAbsolute = exports.isAbsolute(path),
+	      trailingSlash = substr(path, -1) === '/';
+	
+	  // Normalize the path
+	  path = normalizeArray(filter(path.split('/'), function(p) {
+	    return !!p;
+	  }), !isAbsolute).join('/');
+	
+	  if (!path && !isAbsolute) {
+	    path = '.';
+	  }
+	  if (path && trailingSlash) {
+	    path += '/';
+	  }
+	
+	  return (isAbsolute ? '/' : '') + path;
+	};
+	
+	// posix version
+	exports.isAbsolute = function(path) {
+	  return path.charAt(0) === '/';
+	};
+	
+	// posix version
+	exports.join = function() {
+	  var paths = Array.prototype.slice.call(arguments, 0);
+	  return exports.normalize(filter(paths, function(p, index) {
+	    if (typeof p !== 'string') {
+	      throw new TypeError('Arguments to path.join must be strings');
+	    }
+	    return p;
+	  }).join('/'));
+	};
+	
+	
+	// path.relative(from, to)
+	// posix version
+	exports.relative = function(from, to) {
+	  from = exports.resolve(from).substr(1);
+	  to = exports.resolve(to).substr(1);
+	
+	  function trim(arr) {
+	    var start = 0;
+	    for (; start < arr.length; start++) {
+	      if (arr[start] !== '') break;
+	    }
+	
+	    var end = arr.length - 1;
+	    for (; end >= 0; end--) {
+	      if (arr[end] !== '') break;
+	    }
+	
+	    if (start > end) return [];
+	    return arr.slice(start, end - start + 1);
+	  }
+	
+	  var fromParts = trim(from.split('/'));
+	  var toParts = trim(to.split('/'));
+	
+	  var length = Math.min(fromParts.length, toParts.length);
+	  var samePartsLength = length;
+	  for (var i = 0; i < length; i++) {
+	    if (fromParts[i] !== toParts[i]) {
+	      samePartsLength = i;
+	      break;
+	    }
+	  }
+	
+	  var outputParts = [];
+	  for (var i = samePartsLength; i < fromParts.length; i++) {
+	    outputParts.push('..');
+	  }
+	
+	  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+	
+	  return outputParts.join('/');
+	};
+	
+	exports.sep = '/';
+	exports.delimiter = ':';
+	
+	exports.dirname = function(path) {
+	  var result = splitPath(path),
+	      root = result[0],
+	      dir = result[1];
+	
+	  if (!root && !dir) {
+	    // No dirname whatsoever
+	    return '.';
+	  }
+	
+	  if (dir) {
+	    // It has a dirname, strip trailing slash
+	    dir = dir.substr(0, dir.length - 1);
+	  }
+	
+	  return root + dir;
+	};
+	
+	
+	exports.basename = function(path, ext) {
+	  var f = splitPath(path)[2];
+	  // TODO: make this comparison case-insensitive on windows?
+	  if (ext && f.substr(-1 * ext.length) === ext) {
+	    f = f.substr(0, f.length - ext.length);
+	  }
+	  return f;
+	};
+	
+	
+	exports.extname = function(path) {
+	  return splitPath(path)[3];
+	};
+	
+	function filter (xs, f) {
+	    if (xs.filter) return xs.filter(f);
+	    var res = [];
+	    for (var i = 0; i < xs.length; i++) {
+	        if (f(xs[i], i, xs)) res.push(xs[i]);
+	    }
+	    return res;
+	}
+	
+	// String.prototype.substr - negative index don't work in IE8
+	var substr = 'ab'.substr(-1) === 'b'
+	    ? function (str, start, len) { return str.substr(start, len) }
+	    : function (str, start, len) {
+	        if (start < 0) start = str.length + start;
+	        return str.substr(start, len);
+	    }
+	;
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
+
+/***/ },
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -48070,7 +49107,210 @@
 	};
 
 /***/ },
-/* 12 */
+/* 17 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"intro_1": "Setze Kurs auf Novagen... Starte den Hyperantrieb",
+		"intro_2": "Genieß die Reise.",
+		"intro_3": "Nachricht erhalten.|Absender: Targ city|Priorität: Dringend.",
+		"intro_4": "Unterstützungsanfrage. Notfall in Targ City. Sofortige Hilfe erbeten.",
+		"intro_5": "Leite Bremsmanöver ein...",
+		"intro_6": "Lande auf Targ",
+		"welcome": "Willkommen auf Targ.|Nehmen Sie den Jet und setzen Kurs auf *9-2*.|*[SPACE]* um den Jet zu benutzen.|*[1]*-*[0]* für den Antrieb.|*[SPACE]* zum Aussteigen",
+		"yeehaw": "Juhu!",
+		"game_saved": "Spiel gespeichert.",
+		"ufo_fixed": "Die Xenoartefakte haben das Schiff gestartet! Versuche zunächst, abzuheben und zu drehen ohne dich zu bewegen.",
+		"ufo_broken": "Dieses Schiff scheint kaputt zu sein.",
+		"ship_locked": "Dein Schiff bleibt abgesperrt bis du die Mission erledigt hast.",
+		"takeoff_1": "Vorbereiten zum Abheben...",
+		"takeoff_2": "Drei...",
+		"takeoff_3": "Zwei...",
+		"takeoff_4": "Eins...",
+		"takeoff_5": "Los!",
+		"keya": "Fünfecksschlüssel",
+		"keyb": "Dreiecksschlüssel",
+		"keyc": "Torschlüssel",
+		"keyd": "X-Schlüssel",
+		"car": "Tando Bodenwagen",
+		"plane": "Harris Skipjet",
+		"ship": "Kreuzer der Templer-Klasse",
+		"light": "Pulsar-Wagen",
+		"disk": "Notfallüberbrückungsdiskette",
+		"art": "Xenoartefakt",
+		"art2": "Xenoartefakt",
+		"ufo": "Alienschiff A3",
+		"trans": "Xenp-Übersetzerchip",
+		"core": "Plasmaantriebskern",
+		"x_file_1": "Datei X-100: Xenoinformation. Das Konstrukt Allitus hat vor, Targ zu zerstören. Es wurde von einer Alien-Spezies erschaffen um sicherzustellen, daß die Menschheit sich nicht weit genug entwickelt, um die Xeno-Hauptbasis zu entdecken.",
+		"x_file_2": "Datei X-110: Xenoinformation. Das Alienartefakt in diesem Forschungslabor hat einen unbekannten Zweck. Es hat vermutlich eine Verbindung zu dem Objekt bei *79-66*.",
+		"x_file_3": "Datei X-120: Xenoinformation. Der mögliche Standort der Xeno-Hauptbasis wird diskutiert. Es entzieht sich möglicherweise unseren Scannern auf irgendeine Weise.",
+		"x_file_4": "Datei X-130: Xeno-Information. Allitus kann auf dieser Position nicht entwaffnet werden. Wir sind jedenfalls der Meinung, daß auf der Xeno-Hauptbasis ein Abschaltmechanismus zu finden ist.",
+		"xeno_1": "30-72: Hauptantriebsversagen. A3 Schiff abgestoßen und vermutlich verloren. Schilde und Allitus ausgelöst. Bisher wurden wir noch nicht entdeckt.",
+		"xeno_2": "Die Eingeborenen von Targ wurden dabei beobachtet, in Reichweite der Entwicklung der Hyperraumtechnologie zu stehen. Um ihre weitere Ausbreitung zu vermeiden, wurde Allitus aktiviert.",
+		"xeno_3": "Es schmerzt uns, ihre Zivilisation auf diesem Planeten auszulöschen. Aber es ist notwendig, um uns vor der Entdeckung zu schützen.",
+		"xeno_4": "Die Notfallsteuerung von Allitus wurden in dieser Basis entdeckt. Die Energie, die dieses Gerät aussendet sollte uns zurück in den Orbit bringen.",
+		"lift_9_2": "Nimm den Lift abwärts. Dieser Komplex beinhaltet alles, was wir über die momentane Situation wissen. *[E]* um den Lift zu benutzen.",
+		"in_lift_9_2": "Nimm ruhig alles mit, was du findest. .*[P]* um Dinge aufzuheben.",
+		"info_1_9_2": "Das Xenogerät Allitus wurde vor einem Jahr entdeckt.|Zuerst haben wir seinen Zweck nicht verstanden. Wir dachten, es wäre eine Art Kraftwerk.|Unsere Wissenschaftler haben hart gearbeitet, um es zu aktivieren.|Vor einigen Monaten waren sie schließlich erfolgreich.|Jedoch wissen wir jetzt, das es sich dabei um Kriegsmaschinerie handelt.|Deine Aufgabe ist es, Allitus zu vernichten. Triff dich als nächstes mit unserem Verteidigungskonzil an den Koordinaten *c8-f0*.",
+		"info_2_9_2": "Seit deinem letzten Besuch haben wir Alienruinen auf Targ entdeckt. Ein unterirdischer Komples sowie ein Höhlensystem findet sich bei *d9-42*.",
+		"info_3_9_2": "Wir haben einen Leichtwagen für deine Reisen requiriert. Es wurde für Benutzung durch dich autorisiert.",
+		"ok_message1": "Speicherscan: *OK*",
+		"ok_message2": "Plattenscan: *OK*",
+		"ok_message3": "Systemstatus: *OK*",
+		"term_100": "Terminal 100: Bericht",
+		"term_110": "Terminal 110: Bericht",
+		"term_120": "Terminal 120: Bericht",
+		"override": "*Überbrückung 17A* exec: !System kompromittiert!",
+		"term_100_or": "Dein Eindringling Allitus übernimmt sämtliche Kommunikationseinrichtungen auf Targ.",
+		"term_110_or": "Allitus hat keinerlei bekannte Schwächen. Um mehr zu erfahren, suche unser Labor für Xenostudien bei *36-c9* auf.",
+		"term_120_or": "Allitus ist jetzt bewaffnet. Es wird in 10 Tagen aktiviert werden.",
+		"info_c8_f0": "Information vom Verteidigungskonzil: Sie haben die Erlaubnis, das Verteidigungscomputermatrix über die Terminals zu benutzen. Ihre Sicherheitsfreigabe wird darüber entscheiden, welche Informationen sie zu sehen bekommen.",
+		"override_disk": "Du findest eine Diskette beschriftet mit Notfallüberbrückung 17A. Es sieht aus, als wäre es kompatibel mit einer Art Terminal.",
+		"term_20a": "Terminal 20A: Bericht",
+		"term_20b": "Terminal 20B: Bericht",
+		"info_1_36_c9": "In dieser Gegend gibt es ein Xenoartefakt. Bitte beachten Sie die veröffentlichten Gesundheits- und Sicherheitsvorschriften.",
+		"info_3_36_c9": "Allitus: ein Werkzeug fremdartigen Ursprungs. Warnung: Hochspannungs-ionisierte Strahlung und biologische Gefährdung. Betreten verboten.",
+		"allitus_1": "",
+		"allitus_on": "",
+		"allitus_off": "",
+		"drives_with_core": "",
+		"drives_no_core": "",
+		"allitus_armed": "",
+		"allitus_disarmed": "",
+		"thanks": "",
+		"xeno_gibberish": "",
+		"ui_loading_models": "",
+		"ui_loading_game": "",
+		"ui_loading_complex": "",
+		"ui_e": "",
+		"ui_e_exit": "",
+		"ui_space": "",
+		"ui_p": "",
+		"ui_t": "",
+		"ui_continue": "",
+		"ui_start": "",
+		"ui_options": "",
+		"ui_h": "",
+		"ui_help_title": "",
+		"ui_help_main": "",
+		"ui_help_footer": "",
+		"ui_go_fail": "",
+		"ui_go_win_both": "",
+		"ui_go_win_human": "",
+		"ui_go_win_xeno": "",
+		"ui_try_again": "",
+		"ui_event_log": "",
+		"ui_options_title": "",
+		"ui_invert_mouse": "",
+		"ui_select_locale": "",
+		"ui_close_options": ""
+	};
+
+/***/ },
+/* 18 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"intro_1": "Curso fijado a Novagen... Engranando hiperpropulsión",
+		"intro_2": "Disfrute su viaje.",
+		"intro_3": "",
+		"intro_4": "",
+		"intro_5": "Comenzando deceleración...",
+		"intro_6": "Aterrizando en el objetivo",
+		"welcome": "",
+		"yeehaw": "Yee-haw!",
+		"game_saved": "Juego guardado.",
+		"ufo_fixed": "",
+		"ufo_broken": "Esta nave aparece roto.",
+		"ship_locked": "",
+		"takeoff_1": "Preparando para despegar...",
+		"takeoff_2": "3...",
+		"takeoff_3": "2...",
+		"takeoff_4": "1...",
+		"takeoff_5": "Despegue!",
+		"keya": "Llave pentágono",
+		"keyb": "Llave triángulo",
+		"keyc": "Llave de puerta",
+		"keyd": "Llave X",
+		"car": "",
+		"plane": "",
+		"ship": "",
+		"light": "",
+		"disk": "",
+		"art": "",
+		"art2": "",
+		"ufo": "",
+		"trans": "",
+		"core": "",
+		"x_file_1": "",
+		"x_file_2": "",
+		"x_file_3": "",
+		"x_file_4": "",
+		"xeno_1": "",
+		"xeno_2": "",
+		"xeno_3": "",
+		"xeno_4": "",
+		"lift_9_2": "",
+		"in_lift_9_2": "",
+		"info_1_9_2": "",
+		"info_2_9_2": "",
+		"info_3_9_2": "",
+		"ok_message1": "",
+		"ok_message2": "",
+		"ok_message3": "",
+		"term_100": "",
+		"term_110": "",
+		"term_120": "",
+		"override": "",
+		"term_100_or": "",
+		"term_110_or": "",
+		"term_120_or": "",
+		"info_c8_f0": "",
+		"override_disk": "",
+		"term_20a": "",
+		"term_20b": "",
+		"info_1_36_c9": "",
+		"info_3_36_c9": "",
+		"allitus_1": "",
+		"allitus_on": "",
+		"allitus_off": "",
+		"drives_with_core": "",
+		"drives_no_core": "",
+		"allitus_armed": "",
+		"allitus_disarmed": "",
+		"thanks": "",
+		"xeno_gibberish": "",
+		"ui_loading_models": "Cargando los modelos...",
+		"ui_loading_game": "Cargando el juego...",
+		"ui_loading_complex": "Cargando el complejo...",
+		"ui_e": "Pulse E para entrar",
+		"ui_e_exit": "Pulse E para salir",
+		"ui_space": "Pulsa ESPACIADOR para manejar",
+		"ui_p": "Pulsa P para usar",
+		"ui_t": "Pulsa P para teletransportar",
+		"ui_continue": "Pulsa C para continuar el juego, o",
+		"ui_start": "Pulsa ESPACIADOR para comenzar",
+		"ui_options": "Pulsa O para cambiar las opciones",
+		"ui_h": "H por ayuda",
+		"ui_help_title": "MERC por ayuda con el teclado",
+		"ui_help_main": "",
+		"ui_help_footer": "",
+		"ui_go_fail": "",
+		"ui_go_win_both": "",
+		"ui_go_win_human": "",
+		"ui_go_win_xeno": "",
+		"ui_try_again": "",
+		"ui_event_log": "",
+		"ui_options_title": "Opciones",
+		"ui_invert_mouse": "",
+		"ui_select_locale": "",
+		"ui_close_options": "Termine"
+	};
+
+/***/ },
+/* 19 */,
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -48104,11 +49344,11 @@
 	
 	var util = _interopRequireWildcard(_util);
 	
-	var _noise = __webpack_require__(13);
+	var _noise = __webpack_require__(21);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
-	var _compounds = __webpack_require__(14);
+	var _compounds = __webpack_require__(22);
 	
 	var compounds = _interopRequireWildcard(_compounds);
 	
@@ -48116,7 +49356,7 @@
 	
 	var game_map = _interopRequireWildcard(_game_map);
 	
-	var _events = __webpack_require__(61);
+	var _events = __webpack_require__(69);
 	
 	var events = _interopRequireWildcard(_events);
 	
@@ -49469,7 +50709,7 @@
 	}();
 
 /***/ },
-/* 13 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -50243,7 +51483,7 @@
 	}();
 
 /***/ },
-/* 14 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50254,11 +51494,11 @@
 	exports.LEVELS = undefined;
 	exports.loadLevel = loadLevel;
 	
-	var _room = __webpack_require__(15);
+	var _room = __webpack_require__(23);
 	
 	var room = _interopRequireWildcard(_room);
 	
-	var _compound_generator = __webpack_require__(17);
+	var _compound_generator = __webpack_require__(25);
 	
 	var generator = _interopRequireWildcard(_compound_generator);
 	
@@ -50274,7 +51514,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _jszip = __webpack_require__(18);
+	var _jszip = __webpack_require__(26);
 	
 	var _jszip2 = _interopRequireDefault(_jszip);
 	
@@ -50436,7 +51676,7 @@
 	};
 
 /***/ },
-/* 15 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -50448,7 +51688,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(12);
+	var _movement = __webpack_require__(20);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -50464,7 +51704,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(16);
+	var _ThreeCSG = __webpack_require__(24);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -50887,7 +52127,7 @@
 	}();
 
 /***/ },
-/* 16 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51459,7 +52699,7 @@
 	};
 
 /***/ },
-/* 17 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -51471,7 +52711,7 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _movement = __webpack_require__(12);
+	var _movement = __webpack_require__(20);
 	
 	var movement = _interopRequireWildcard(_movement);
 	
@@ -51487,7 +52727,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _ThreeCSG = __webpack_require__(16);
+	var _ThreeCSG = __webpack_require__(24);
 	
 	var csg = _interopRequireWildcard(_ThreeCSG);
 	
@@ -51963,12 +53203,12 @@
 	}();
 
 /***/ },
-/* 18 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var base64 = __webpack_require__(19);
+	var base64 = __webpack_require__(27);
 	
 	/**
 	Usage:
@@ -52016,16 +53256,16 @@
 	        return newObj;
 	    };
 	}
-	JSZip.prototype = __webpack_require__(20);
-	JSZip.prototype.load = __webpack_require__(53);
-	JSZip.support = __webpack_require__(21);
-	JSZip.defaults = __webpack_require__(48);
+	JSZip.prototype = __webpack_require__(28);
+	JSZip.prototype.load = __webpack_require__(61);
+	JSZip.support = __webpack_require__(29);
+	JSZip.defaults = __webpack_require__(56);
 	
 	/**
 	 * @deprecated
 	 * This namespace will be removed in a future version without replacement.
 	 */
-	JSZip.utils = __webpack_require__(60);
+	JSZip.utils = __webpack_require__(68);
 	
 	JSZip.base64 = {
 	    /**
@@ -52043,12 +53283,12 @@
 	        return base64.decode(input);
 	    }
 	};
-	JSZip.compressions = __webpack_require__(27);
+	JSZip.compressions = __webpack_require__(35);
 	module.exports = JSZip;
 
 
 /***/ },
-/* 19 */
+/* 27 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -52124,22 +53364,22 @@
 
 
 /***/ },
-/* 20 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(21);
-	var utils = __webpack_require__(26);
-	var crc32 = __webpack_require__(46);
-	var signature = __webpack_require__(47);
-	var defaults = __webpack_require__(48);
-	var base64 = __webpack_require__(19);
-	var compressions = __webpack_require__(27);
-	var CompressedObject = __webpack_require__(49);
-	var nodeBuffer = __webpack_require__(45);
-	var utf8 = __webpack_require__(50);
-	var StringWriter = __webpack_require__(51);
-	var Uint8ArrayWriter = __webpack_require__(52);
+	var support = __webpack_require__(29);
+	var utils = __webpack_require__(34);
+	var crc32 = __webpack_require__(54);
+	var signature = __webpack_require__(55);
+	var defaults = __webpack_require__(56);
+	var base64 = __webpack_require__(27);
+	var compressions = __webpack_require__(35);
+	var CompressedObject = __webpack_require__(57);
+	var nodeBuffer = __webpack_require__(53);
+	var utf8 = __webpack_require__(58);
+	var StringWriter = __webpack_require__(59);
+	var Uint8ArrayWriter = __webpack_require__(60);
 	
 	/**
 	 * Returns the raw data of a ZipObject, decompress the content if necessary.
@@ -53013,7 +54253,7 @@
 
 
 /***/ },
-/* 21 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -53051,10 +54291,10 @@
 	    }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(30).Buffer))
 
 /***/ },
-/* 22 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, global) {/*!
@@ -53067,9 +54307,9 @@
 	
 	'use strict'
 	
-	var base64 = __webpack_require__(23)
-	var ieee754 = __webpack_require__(24)
-	var isArray = __webpack_require__(25)
+	var base64 = __webpack_require__(31)
+	var ieee754 = __webpack_require__(32)
+	var isArray = __webpack_require__(33)
 	
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -54606,10 +55846,10 @@
 	  return i
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(30).Buffer, (function() { return this; }())))
 
 /***/ },
-/* 23 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -54739,7 +55979,7 @@
 
 
 /***/ },
-/* 24 */
+/* 32 */
 /***/ function(module, exports) {
 
 	exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -54829,7 +56069,7 @@
 
 
 /***/ },
-/* 25 */
+/* 33 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -54840,13 +56080,13 @@
 
 
 /***/ },
-/* 26 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var support = __webpack_require__(21);
-	var compressions = __webpack_require__(27);
-	var nodeBuffer = __webpack_require__(45);
+	var support = __webpack_require__(29);
+	var compressions = __webpack_require__(35);
+	var nodeBuffer = __webpack_require__(53);
 	/**
 	 * Convert a string to a "binary string" : a string containing only char codes between 0 and 255.
 	 * @param {string} str the string to transform.
@@ -55172,7 +56412,7 @@
 
 
 /***/ },
-/* 27 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -55187,17 +56427,17 @@
 	    compressInputType: null,
 	    uncompressInputType: null
 	};
-	exports.DEFLATE = __webpack_require__(28);
+	exports.DEFLATE = __webpack_require__(36);
 
 
 /***/ },
-/* 28 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var USE_TYPEDARRAY = (typeof Uint8Array !== 'undefined') && (typeof Uint16Array !== 'undefined') && (typeof Uint32Array !== 'undefined');
 	
-	var pako = __webpack_require__(29);
+	var pako = __webpack_require__(37);
 	exports.uncompressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	exports.compressInputType = USE_TYPEDARRAY ? "uint8array" : "array";
 	
@@ -55213,17 +56453,17 @@
 
 
 /***/ },
-/* 29 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Top level file is just a mixin of submodules & constants
 	'use strict';
 	
-	var assign    = __webpack_require__(30).assign;
+	var assign    = __webpack_require__(38).assign;
 	
-	var deflate   = __webpack_require__(31);
-	var inflate   = __webpack_require__(39);
-	var constants = __webpack_require__(43);
+	var deflate   = __webpack_require__(39);
+	var inflate   = __webpack_require__(47);
+	var constants = __webpack_require__(51);
 	
 	var pako = {};
 	
@@ -55233,7 +56473,7 @@
 
 
 /***/ },
-/* 30 */
+/* 38 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -55341,17 +56581,17 @@
 
 
 /***/ },
-/* 31 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_deflate = __webpack_require__(32);
-	var utils = __webpack_require__(30);
-	var strings = __webpack_require__(37);
-	var msg = __webpack_require__(36);
-	var zstream = __webpack_require__(38);
+	var zlib_deflate = __webpack_require__(40);
+	var utils = __webpack_require__(38);
+	var strings = __webpack_require__(45);
+	var msg = __webpack_require__(44);
+	var zstream = __webpack_require__(46);
 	
 	var toString = Object.prototype.toString;
 	
@@ -55723,16 +56963,16 @@
 
 
 /***/ },
-/* 32 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils   = __webpack_require__(30);
-	var trees   = __webpack_require__(33);
-	var adler32 = __webpack_require__(34);
-	var crc32   = __webpack_require__(35);
-	var msg   = __webpack_require__(36);
+	var utils   = __webpack_require__(38);
+	var trees   = __webpack_require__(41);
+	var adler32 = __webpack_require__(42);
+	var crc32   = __webpack_require__(43);
+	var msg   = __webpack_require__(44);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -57494,13 +58734,13 @@
 
 
 /***/ },
-/* 33 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(30);
+	var utils = __webpack_require__(38);
 	
 	/* Public constants ==========================================================*/
 	/* ===========================================================================*/
@@ -58699,7 +59939,7 @@
 
 
 /***/ },
-/* 34 */
+/* 42 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58737,7 +59977,7 @@
 
 
 /***/ },
-/* 35 */
+/* 43 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58784,7 +60024,7 @@
 
 
 /***/ },
-/* 36 */
+/* 44 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -58803,14 +60043,14 @@
 
 
 /***/ },
-/* 37 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// String encode/decode helpers
 	'use strict';
 	
 	
-	var utils = __webpack_require__(30);
+	var utils = __webpack_require__(38);
 	
 	
 	// Quick check if we can use fast array to bin string conversion
@@ -58994,7 +60234,7 @@
 
 
 /***/ },
-/* 38 */
+/* 46 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -59029,19 +60269,19 @@
 
 
 /***/ },
-/* 39 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var zlib_inflate = __webpack_require__(40);
-	var utils = __webpack_require__(30);
-	var strings = __webpack_require__(37);
-	var c = __webpack_require__(43);
-	var msg = __webpack_require__(36);
-	var zstream = __webpack_require__(38);
-	var gzheader = __webpack_require__(44);
+	var zlib_inflate = __webpack_require__(48);
+	var utils = __webpack_require__(38);
+	var strings = __webpack_require__(45);
+	var c = __webpack_require__(51);
+	var msg = __webpack_require__(44);
+	var zstream = __webpack_require__(46);
+	var gzheader = __webpack_require__(52);
 	
 	var toString = Object.prototype.toString;
 	
@@ -59435,17 +60675,17 @@
 
 
 /***/ },
-/* 40 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(30);
-	var adler32 = __webpack_require__(34);
-	var crc32   = __webpack_require__(35);
-	var inflate_fast = __webpack_require__(41);
-	var inflate_table = __webpack_require__(42);
+	var utils = __webpack_require__(38);
+	var adler32 = __webpack_require__(42);
+	var crc32   = __webpack_require__(43);
+	var inflate_fast = __webpack_require__(49);
+	var inflate_table = __webpack_require__(50);
 	
 	var CODES = 0;
 	var LENS = 1;
@@ -60944,7 +62184,7 @@
 
 
 /***/ },
-/* 41 */
+/* 49 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61276,13 +62516,13 @@
 
 
 /***/ },
-/* 42 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	
-	var utils = __webpack_require__(30);
+	var utils = __webpack_require__(38);
 	
 	var MAXBITS = 15;
 	var ENOUGH_LENS = 852;
@@ -61609,7 +62849,7 @@
 
 
 /***/ },
-/* 43 */
+/* 51 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -61662,7 +62902,7 @@
 
 
 /***/ },
-/* 44 */
+/* 52 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61708,7 +62948,7 @@
 
 
 /***/ },
-/* 45 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -61719,15 +62959,15 @@
 	    return Buffer.isBuffer(b);
 	};
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(30).Buffer))
 
 /***/ },
-/* 46 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(34);
 	
 	var table = [
 	    0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
@@ -61830,7 +63070,7 @@
 
 
 /***/ },
-/* 47 */
+/* 55 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61843,7 +63083,7 @@
 
 
 /***/ },
-/* 48 */
+/* 56 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61860,7 +63100,7 @@
 
 
 /***/ },
-/* 49 */
+/* 57 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -61894,14 +63134,14 @@
 
 
 /***/ },
-/* 50 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(26);
-	var support = __webpack_require__(21);
-	var nodeBuffer = __webpack_require__(45);
+	var utils = __webpack_require__(34);
+	var support = __webpack_require__(29);
+	var nodeBuffer = __webpack_require__(53);
 	
 	/**
 	 * The following functions come from pako, from pako/lib/utils/strings
@@ -62107,12 +63347,12 @@
 
 
 /***/ },
-/* 51 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(34);
 	
 	/**
 	 * An object to write any content to a string.
@@ -62143,12 +63383,12 @@
 
 
 /***/ },
-/* 52 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(34);
 	
 	/**
 	 * An object to write any content to an Uint8Array.
@@ -62185,12 +63425,12 @@
 
 
 /***/ },
-/* 53 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var base64 = __webpack_require__(19);
-	var ZipEntries = __webpack_require__(54);
+	var base64 = __webpack_require__(27);
+	var ZipEntries = __webpack_require__(62);
 	module.exports = function(data, options) {
 	    var files, zipEntries, i, input;
 	    options = options || {};
@@ -62222,18 +63462,18 @@
 
 
 /***/ },
-/* 54 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(55);
-	var NodeBufferReader = __webpack_require__(57);
-	var Uint8ArrayReader = __webpack_require__(58);
-	var utils = __webpack_require__(26);
-	var sig = __webpack_require__(47);
-	var ZipEntry = __webpack_require__(59);
-	var support = __webpack_require__(21);
-	var jszipProto = __webpack_require__(20);
+	var StringReader = __webpack_require__(63);
+	var NodeBufferReader = __webpack_require__(65);
+	var Uint8ArrayReader = __webpack_require__(66);
+	var utils = __webpack_require__(34);
+	var sig = __webpack_require__(55);
+	var ZipEntry = __webpack_require__(67);
+	var support = __webpack_require__(29);
+	var jszipProto = __webpack_require__(28);
 	//  class ZipEntries {{{
 	/**
 	 * All the entries in the zip file.
@@ -62449,12 +63689,12 @@
 
 
 /***/ },
-/* 55 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(56);
-	var utils = __webpack_require__(26);
+	var DataReader = __webpack_require__(64);
+	var utils = __webpack_require__(34);
 	
 	function StringReader(data, optimizedBinaryString) {
 	    this.data = data;
@@ -62491,11 +63731,11 @@
 
 
 /***/ },
-/* 56 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(34);
 	
 	function DataReader(data) {
 	    this.data = null; // type : see implementation
@@ -62604,11 +63844,11 @@
 
 
 /***/ },
-/* 57 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var Uint8ArrayReader = __webpack_require__(58);
+	var Uint8ArrayReader = __webpack_require__(66);
 	
 	function NodeBufferReader(data) {
 	    this.data = data;
@@ -62630,11 +63870,11 @@
 
 
 /***/ },
-/* 58 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var DataReader = __webpack_require__(56);
+	var DataReader = __webpack_require__(64);
 	
 	function Uint8ArrayReader(data) {
 	    if (data) {
@@ -62683,14 +63923,14 @@
 
 
 /***/ },
-/* 59 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var StringReader = __webpack_require__(55);
-	var utils = __webpack_require__(26);
-	var CompressedObject = __webpack_require__(49);
-	var jszipProto = __webpack_require__(20);
+	var StringReader = __webpack_require__(63);
+	var utils = __webpack_require__(34);
+	var CompressedObject = __webpack_require__(57);
+	var jszipProto = __webpack_require__(28);
 	
 	var MADE_BY_DOS = 0x00;
 	var MADE_BY_UNIX = 0x03;
@@ -62999,11 +64239,11 @@
 
 
 /***/ },
-/* 60 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var utils = __webpack_require__(26);
+	var utils = __webpack_require__(34);
 	
 	/**
 	 * @deprecated
@@ -63110,7 +64350,7 @@
 
 
 /***/ },
-/* 61 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -63376,1031 +64616,7 @@
 	}();
 
 /***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(module, process) {var Plates = (typeof module !== 'undefined' && 'id' in module && typeof exports !== 'undefined') ? exports : {};
-	
-	!function(exports, env, undefined) {
-	  "use strict";
-	
-	  //
-	  // Cache variables to increase lookup speed.
-	  //
-	  var _toString = Object.prototype.toString;
-	
-	  //
-	  // Polyfill the Array#indexOf method for cross browser compatibility.
-	  //
-	  [].indexOf || (Array.prototype.indexOf = function indexOf(a, b ,c){
-	    for (
-	      c = this.length , b = (c+ ~~b) % c;
-	      b < c && (!(b in this) || this[b] !==a );
-	      b++
-	    );
-	
-	    return b^c ? b : -1;
-	  });
-	
-	  //
-	  // Polyfill Array.isArray for cross browser compatibility.
-	  //
-	  Array.isArray || (Array.isArray = function isArray(a) {
-	    return _toString.call(a) === '[object Array]';
-	  });
-	
-	  //
-	  // ### function fetch(data, mapping, value, key)
-	  // #### @data {Object} the data that we need to fetch a value from
-	  // #### @mapping {Object} The iterated mapping step
-	  // #### @tagbody {String} the tagbody we operated against
-	  // #### @key {String} optional key if the mapping doesn't have a dataKey
-	  // Fetches the correct piece of data
-	  //
-	  function fetch(data, mapping, value, tagbody, key) {
-	    key = mapping.dataKey || key;
-	
-	    //
-	    // Check if we have data manipulation or filtering function.
-	    //
-	    if (mapping.dataKey && typeof mapping.dataKey === 'function') {
-	      return mapping.dataKey(data, value || '', tagbody || '', key);
-	    }
-	
-	    //
-	    // See if we are using dot notation style
-	    //
-	    if (!~key.indexOf('.')) return data[key];
-	
-	    var result = key
-	      , structure = data;
-	
-	    for (var paths = key.split('.'), i = 0, length = paths.length; i < length && structure; i++) {
-	      result = structure[+paths[i] || paths[i]];
-	      structure = result;
-	    }
-	
-	    return result !== undefined ? result : data[key];
-	  }
-	
-	  //
-	  // compileMappings
-	  //
-	  // sort the mappings so that mappings for the same attribute and value go consecutive
-	  // and inside those, those that change attributes appear first.
-	  //
-	  function compileMappings(oldMappings) {
-	    var mappings = oldMappings.slice(0);
-	
-	    mappings.sort(function(map1, map2) {
-	      if (!map1.attribute) return 1;
-	      if (!map2.attribute) return -1;
-	
-	      if (map1.attribute !== map2.attribute) {
-	        return map1.attribute < map2.attribute ? -1 : 1;
-	      }
-	      if (map1.value !== map2.value) {
-	        return map1.value < map2.value ? -1 : 1;
-	      }
-	      if (! ('replace' in map1) && ! ('replace' in map2)) {
-	        throw new Error('Conflicting mappings for attribute ' + map1.attribute + ' and value ' + map1.value);
-	      }
-	      if (map1.replace) {
-	        return 1;
-	      }
-	      return -1;
-	    });
-	
-	    return mappings;
-	  }
-	
-	//
-	// Matches a closing tag to a open tag
-	//
-	function matchClosing(input, tagname, html) {
-	  var closeTag = '</' + tagname + '>',
-	      openTag  = new RegExp('< *' + tagname + '( *|>)', 'g'),
-	      closeCount = 0,
-	      openCount = -1,
-	      from, to, chunk
-	      ;
-	
-	  from = html.search(input);
-	  to = from;
-	
-	  while(to > -1 && closeCount !== openCount) {
-	    to = html.indexOf(closeTag, to);
-	    if (to > -1) {
-	      to += tagname.length + 3;
-	      closeCount ++;
-	      chunk = html.slice(from, to);
-	      openCount = chunk.match(openTag).length;
-	    }
-	  }
-	  if (to === -1) {
-	    throw new Error('Unmatched tag ' + tagname + ' in ' + html)
-	  }
-	
-	  return chunk;
-	}
-	
-	  var Merge = function Merge() {};
-	  Merge.prototype = {
-	    nest: [],
-	
-	    tag: new RegExp([
-	      '<',
-	      '(/?)', // 2 - is closing
-	      '([-:\\w]+)', // 3 - name
-	      '((?:[-\\w]+(?:', '=',
-	      '(?:\\w+|["|\'](?:.*)["|\']))?)*)', // 4 - attributes
-	      '(/?)', // 5 - is self-closing
-	      '>'
-	    ].join('\\s*')),
-	
-	    //
-	    // HTML attribute parser.
-	    //
-	    attr: /([\-\w]*)\s*=\s*(?:(["\'])([\-\.\w\s\/:;&#]*)\2)/gi,
-	
-	    //
-	    // In HTML5 it's allowed to have to use self closing tags without closing
-	    // separators. So we need to detect these elements based on the tag name.
-	    //
-	    selfClosing: /^(area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)$/,
-	
-	    //
-	    // ### function hasClass(str, className)
-	    // #### @str {String} the class attribute
-	    // #### @className {String} the className that the classAttribute should contain
-	    //
-	    // Helper function for detecting if a class attribute contains the className
-	    //
-	    hasClass: function hasClass(str, className) {
-	      return ~str.split(' ').indexOf(className);
-	    },
-	
-	    //
-	    // ### function iterate(html, value, components, tagname, key)
-	    // #### @html {String} peice of HTML
-	    // #### @value {Mixed} iterateable object with data
-	    // #### @components {Array} result of the this.tag regexp execution
-	    // #### @tagname {String} the name of the tag that we iterate on
-	    // #### @key {String} the key of the data that we need to extract from the value
-	    // #### @map {Object} attribute mappings
-	    //
-	    // Iterate over over the supplied HTML.
-	    //
-	    iterate: function iterate(html, value, components, tagname, key, map) {
-	      var output  = '',
-	          segment = matchClosing(components.input, tagname, html),
-	          data = {};
-	
-	      // Is it an array?
-	      if (Array.isArray(value)) {
-	        // Yes: set the output to the result of iterating through the array
-	        for (var i = 0, l = value.length; i < l; i++) {
-	          // If there is a key, then we have a simple object and
-	          // must construct a simple object to use as the data
-	          if (key) {
-	            data[key] = value[i];
-	          } else {
-	            data = value[i];
-	          }
-	
-	          output += this.bind(segment, data, map);
-	        }
-	
-	        return output;
-	      } else if (typeof value === 'object') {
-	        // We need to refine the selection now that we know we're dealing with a
-	        // nested object
-	        segment = segment.slice(components.input.length, -(tagname.length + 3));
-	        return output += this.bind(segment, value, map);
-	      }
-	
-	      return value;
-	    },
-	
-	    //
-	    // ### function bind(html, data, map)
-	    // #### @html {String} the template that we need to modify
-	    // #### @data {Object} data for the template
-	    // #### @map {Mapper} instructions for the data placement in the template
-	    // Process the actual template
-	    //
-	    bind: function bind(html, data, map) {
-	      if (Array.isArray(data)) {
-	        var output = '';
-	
-	        for (var i = 0, l = data.length; i<l; i++) {
-	          output += this.bind(html, data[i], map);
-	        }
-	
-	        return output;
-	      }
-	
-	      html = (html || '').toString();
-	      data = data || {};
-	
-	      var that = this;
-	
-	      var openers = 0,
-	          remove = 0,
-	          components,
-	          attributes,
-	          mappings = map && compileMappings(map.mappings),
-	          intag = false,
-	          tagname = '',
-	          isClosing = false,
-	          isSelfClosing = false,
-	          selfClosing = false,
-	          matchmode = false,
-	          createAttribute = map && map.conf && map.conf.create,
-	          closing,
-	          tagbody;
-	
-	      var c,
-	          buffer = '',
-	          left;
-	
-	      for (var i = 0, l = html.length; i < l; i++) {
-	        c = html.charAt(i);
-	
-	        //
-	        // Figure out which part of the HTML we are currently processing. And if
-	        // we have queued up enough HTML to process it's data.
-	        //
-	        if (c === '!' && intag && !matchmode) {
-	          intag = false;
-	          buffer += html.slice(left, i + 1);
-	        } else if (c === '<' && !intag) {
-	          closing = true;
-	          intag = true;
-	          left = i;
-	        } else if (c === '>' && intag) {
-	          intag = false;
-	          tagbody = html.slice(left, i + 1);
-	          components = this.tag.exec(tagbody);
-	
-	          if(!components) {
-	            intag = true;
-	            continue;
-	          }
-	
-	          isClosing = components[1];
-	          tagname = components[2];
-	          attributes = components[3];
-	          selfClosing = components[4];
-	          isSelfClosing = this.selfClosing.test(tagname);
-	
-	          if (matchmode) {
-	            //
-	            // and its a closing.
-	            //
-	            if (!!isClosing) {
-	              if (openers <= 0) {
-	                matchmode = false;
-	              } else {
-	                --openers;
-	              }
-	            } else if (!isSelfClosing) {
-	              //
-	              // and its not a self-closing tag
-	              //
-	              ++openers;
-	            }
-	          }
-	
-	          if (!isClosing && !matchmode) {
-	            //
-	            // if there is a match in progress and
-	            //
-	            if (mappings && mappings.length > 0) {
-	              for (var ii = mappings.length - 1; ii >= 0; ii--) {
-	                var setAttribute = false
-	                  , mapping = mappings[ii]
-	                  , shouldSetAttribute = mapping.re && attributes.match(mapping.re);
-	
-	                //
-	                // check if we are targetting a element only or attributes
-	                //
-	                if ('tag' in mapping && !this.attr.test(tagbody) && mapping.tag === tagname) {
-	                  tagbody = tagbody + fetch(data, mapping, '', tagbody);
-	                  continue;
-	                }
-	
-	                tagbody = tagbody.replace(this.attr, function(str, key, q, value, a) {
-	                  var newdata;
-	
-	                  if (shouldSetAttribute && mapping.replace !== key || remove) {
-	                    return str;
-	                  } else if (shouldSetAttribute || typeof mapping.replacePartial1 !== 'undefined') {
-	                    setAttribute = true;
-	
-	                    //
-	                    // determine if we should use the replace argument or some value from the data object.
-	                    //
-	                    if (typeof mapping.replacePartial2 !== 'undefined') {
-	                      newdata = value.replace(mapping.replacePartial1, mapping.replacePartial2);
-	                    } else if (typeof mapping.replacePartial1 !== 'undefined' && mapping.dataKey) {
-	                      newdata = value.replace(mapping.replacePartial1, fetch(data, mapping, value, tagbody, key));
-	                    } else {
-	                      newdata = fetch(data, mapping, value, tagbody, key);
-	                    }
-	
-	                    return key + '="' + (newdata || '') + '"';
-	                  } else if (!mapping.replace && mapping.attribute === key) {
-	                    if (
-	                      mapping.value === value ||
-	                      that.hasClass(value, mapping.value ||
-	                      mappings.conf.where === key) ||
-	                      (_toString.call(mapping.value) === '[object RegExp]' &&
-	                        mapping.value.exec(value) !== null)
-	                    ) {
-	                      if (mapping.remove) {
-	                        //
-	                        // only increase the remove counter if it's not a self
-	                        // closing element. As matchmode is suffectient to
-	                        // remove tose
-	                        //
-	                        if (!isSelfClosing) remove++;
-	                        matchmode = true;
-	                      } else if (mapping.plates) {
-	                        var partial = that.bind(
-	                            mapping.plates
-	                          , typeof mapping.data === 'string' ? fetch(data, { dataKey: mapping.data }) : mapping.data || data
-	                          , mapping.mapper
-	                        );
-	
-	                        buffer += tagbody + that.iterate(html, partial, components, tagname, undefined, map);
-	                        matchmode = true;
-	                      } else {
-	                        var v = newdata = fetch(data, mapping, value, tagbody, key);
-	                        newdata = tagbody + newdata;
-	
-	                        if (Array.isArray(v)) {
-	                          newdata = that.iterate(html, v, components, tagname, value, map);
-	                          // If the item is an array, then we need to tell
-	                          // Plates that we're dealing with nests
-	                          that.nest.push(tagname);
-	                        } else if (typeof v === 'object') {
-	                          newdata = tagbody + that.iterate(html, v, components, tagname, value, map);
-	                        }
-	
-	                        buffer += newdata || '';
-	                        matchmode = true;
-	                      }
-	                    }
-	                  }
-	
-	                  return str;
-	                });
-	
-	                //
-	                // Do we need to create the attributes if they don't exist.
-	                //
-	                if (createAttribute && shouldSetAttribute && !setAttribute) {
-	                  var spliced = selfClosing ? 2 : 1
-	                    , close = selfClosing ? '/>': '>'
-	                    , left = tagbody.substr(0, tagbody.length - spliced);
-	
-	                  if (left[left.length - 1] === ' ') {
-	                    left = left.substr(0, left.length - 1);
-	
-	                    if (selfClosing) {
-	                      close = ' ' + close;
-	                    }
-	                  }
-	
-	                  tagbody = [
-	                    left,
-	                    ' ',
-	                    mapping.replace,
-	                    '="',
-	                    fetch(data, mapping),
-	                    '"',
-	                    close
-	                  ].join('');
-	                }
-	              }
-	            } else {
-	              //
-	              // if there is no map, we are just looking to match
-	              // the specified id to a data key in the data object.
-	              //
-	              tagbody.replace(this.attr, function (attr, key, q, value, idx) {
-	                if (key === map && map.conf.where || 'id' && data[value]) {
-	                  var v = data[value],
-	                      nest = Array.isArray(v),
-	                      output = nest || typeof v === 'object'
-	                        ? that.iterate(html.substr(left), v, components, tagname, value, map)
-	                        : v;
-	
-	                  // If the item is an array, then we need to tell
-	                  // Plates that we're dealing with nests
-	                  if (nest) { that.nest.push(tagname); }
-	
-	                  buffer += nest ? output : tagbody + output;
-	                  matchmode = true;
-	                }
-	              });
-	            }
-	          }
-	
-	          //
-	          // if there is currently no match in progress
-	          // just write the tagbody to the buffer.
-	          //
-	          if (!matchmode && that.nest.length === 0) {
-	            if (!remove) buffer += tagbody;
-	
-	            if (remove && !!isClosing) --remove;
-	          } else if (!matchmode && that.nest.length) {
-	              this.nest.pop();
-	          }
-	        } else if (!intag && !matchmode) {
-	          //
-	          // currently not inside a tag and there is no
-	          // match in progress, we can write the char to
-	          // the buffer.
-	          //
-	          if (!remove) buffer += c;
-	        }
-	      }
-	      return buffer;
-	    }
-	  };
-	
-	  //
-	  // ### function Mapper(conf)
-	  // #### @conf {Object} configuration object
-	  // Constructor function for the Mapper instance that is responsible for
-	  // providing the mapping for the data structure
-	  //
-	  function Mapper(conf) {
-	    if (!(this instanceof Mapper)) { return new Mapper(conf); }
-	
-	    this.mappings = [];
-	    this.conf = conf || {};
-	  }
-	
-	  //
-	  // ### function last(newitem)
-	  // #### @newitem {Boolean} do we need to add a new item to the mapping
-	  // Helper function for adding new attribute maps to a Mapper instance
-	  //
-	  function last(newitem) {
-	    if (newitem) {
-	      this.mappings.push({});
-	    }
-	
-	    var m = this.mappings[this.mappings.length - 1];
-	
-	    if (m && m.attribute && m.value && m.dataKey && m.replace) {
-	      m.re = new RegExp(m.attribute + '=([\'"]?)' + m.value + '\\1');
-	    } else if (m) {
-	      delete m.re;
-	    }
-	
-	    return m;
-	  }
-	
-	  //
-	  // Create the actual chainable methods: where('class').is('foo').insert('bla')
-	  //
-	  Mapper.prototype = {
-	    //
-	    // ### function replace(val1, val2)
-	    // #### @val1 {String|RegExp} The part of the attribute that needs to be replaced
-	    // #### @val2 {String} The value it should be replaced with
-	    //
-	    replace: function replace(val1, val2) {
-	      var l = last.call(this);
-	      l.replacePartial1 = val1;
-	      l.replacePartial2 = val2;
-	      return this;
-	    },
-	
-	    //
-	    // ### function use(val)
-	    // #### @val {String} A string that represents a key.
-	    // Data will be inserted into the attribute that was specified in the
-	    // `where` clause.
-	    //
-	    use: function use(val) {
-	      last.call(this).dataKey = val;
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function where(val)
-	    // #### @val {String} an attribute that may be found in a tag
-	    // This method will initiate a clause. Once a clause has been established
-	    // other member methods will be chained to each other in any order.
-	    //
-	    where: function where(val) {
-	      last.call(this, true).attribute = val;
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function class(val)
-	    // #### @val {String} a value that may be found in the `class` attribute of a tag
-	    // the method name should be wrapped in quotes or it will throw errors in IE.
-	    //
-	    'class': function className(val) {
-	      return this.where('class').is(val);
-	    },
-	
-	    //
-	    // ### function tag(val)
-	    // #### @val {String} the name of the tag should be found
-	    //
-	    tag: function tag(val) {
-	      last.call(this, true).tag = val;
-	      return this;
-	    },
-	
-	    //
-	    // ### function is(val)
-	    // #### @val {string} The value of the attribute that was specified in the
-	    // `where` clause.
-	    //
-	    is: function is(val) {
-	      last.call(this).value = val;
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function has(val)
-	    // #### @val {String|RegExp} The value of the attribute that was specified
-	    // in the `where` clause.
-	    //
-	    has: function has(val) {
-	      last.call(this).value = val;
-	      this.replace(val);
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function insert(val)
-	    // #### @val {String} A string that represents a key. Data will be inserted
-	    // in to the attribute that was specified in the `where` clause.
-	    //
-	    insert: function insert(val) {
-	      var l = last.call(this);
-	      l.replace = l.attribute;
-	      l.dataKey = val;
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function as(val)
-	    // #### @val {String} A string that represents an attribute in the tag.
-	    // If there is no attribute by that name name found, one may be created
-	    // depending on the options that where passed in the `Plates.Map`
-	    // constructor.
-	    //
-	    as: function as(val) {
-	      last.call(this).replace = val;
-	      return last.call(this) && this;
-	    },
-	
-	    //
-	    // ### function remove()
-	    // This will remove the element that was specified in the `where` clause
-	    // from the template.
-	    //
-	    remove: function remove() {
-	      last.call(this).remove = true;
-	      return last.call(this, true);
-	    },
-	
-	    //
-	    // ### function append(plates, data, map)
-	    // #### @plates {String} Template or path/id of the template
-	    // #### @data {Object|String} data for the appended template
-	    // #### @map {Plates.Map} mapping for the data
-	    //
-	    append: function append(plates, data, map) {
-	      var l = last.call(this);
-	
-	      if (data instanceof Mapper) {
-	        map = data;
-	        data = undefined;
-	      }
-	
-	      // If the supplied plates template doesn't contain any HTML it's most
-	      // likely that we need to import it. To improve performance we will cache
-	      // the result of the file system.
-	      if (!/<[^<]+?>/.test(plates) && !exports.cache[plates]) {
-	        // figure out if we are running in Node.js or a browser
-	        if ('document' in env && 'getElementById' in env.document) {
-	          exports.cache[plates] = document.getElementById(plates).innerHTML;
-	        } else {
-	          exports.cache[plates] = __webpack_require__(65).readFileSync(
-	            __webpack_require__(66).join(process.cwd(), plates),
-	            'utf8'
-	          );
-	        }
-	      }
-	
-	      l.plates = exports.cache[plates] || plates;
-	      l.data = data;
-	      l.mapper = map;
-	
-	      return last.call(this, true);
-	    }
-	  };
-	
-	  //
-	  // Provide helpful aliases that well help with increased compatibility as not
-	  // all browsers allow the Mapper#class prototype (IE).
-	  //
-	  Mapper.prototype.className = Mapper.prototype['class'];
-	
-	  //
-	  // Aliases of different methods.
-	  //
-	  Mapper.prototype.partial = Mapper.prototype.append;
-	  Mapper.prototype.to = Mapper.prototype.use;
-	
-	  //
-	  // Expose a simple cache object so people can clear the cached partials if
-	  // they want to.
-	  //
-	  exports.cache = {};
-	
-	  //
-	  // Expose the Plates#bind interface.
-	  //
-	  exports.bind = function bind(html, data, map) {
-	    var merge = new Merge();
-	    return merge.bind(html, data, map);
-	  };
-	
-	  //
-	  // Expose the Mapper.
-	  //
-	  exports.Map = Mapper;
-	}(Plates, this);
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(63)(module), __webpack_require__(64)))
-
-/***/ },
-/* 63 */
-/***/ function(module, exports) {
-
-	module.exports = function(module) {
-		if(!module.webpackPolyfill) {
-			module.deprecate = function() {};
-			module.paths = [];
-			// module.parent = undefined by default
-			module.children = [];
-			module.webpackPolyfill = 1;
-		}
-		return module;
-	}
-
-
-/***/ },
-/* 64 */
-/***/ function(module, exports) {
-
-	// shim for using process in browser
-	
-	var process = module.exports = {};
-	var queue = [];
-	var draining = false;
-	var currentQueue;
-	var queueIndex = -1;
-	
-	function cleanUpNextTick() {
-	    draining = false;
-	    if (currentQueue.length) {
-	        queue = currentQueue.concat(queue);
-	    } else {
-	        queueIndex = -1;
-	    }
-	    if (queue.length) {
-	        drainQueue();
-	    }
-	}
-	
-	function drainQueue() {
-	    if (draining) {
-	        return;
-	    }
-	    var timeout = setTimeout(cleanUpNextTick);
-	    draining = true;
-	
-	    var len = queue.length;
-	    while(len) {
-	        currentQueue = queue;
-	        queue = [];
-	        while (++queueIndex < len) {
-	            if (currentQueue) {
-	                currentQueue[queueIndex].run();
-	            }
-	        }
-	        queueIndex = -1;
-	        len = queue.length;
-	    }
-	    currentQueue = null;
-	    draining = false;
-	    clearTimeout(timeout);
-	}
-	
-	process.nextTick = function (fun) {
-	    var args = new Array(arguments.length - 1);
-	    if (arguments.length > 1) {
-	        for (var i = 1; i < arguments.length; i++) {
-	            args[i - 1] = arguments[i];
-	        }
-	    }
-	    queue.push(new Item(fun, args));
-	    if (queue.length === 1 && !draining) {
-	        setTimeout(drainQueue, 0);
-	    }
-	};
-	
-	// v8 likes predictible objects
-	function Item(fun, array) {
-	    this.fun = fun;
-	    this.array = array;
-	}
-	Item.prototype.run = function () {
-	    this.fun.apply(null, this.array);
-	};
-	process.title = 'browser';
-	process.browser = true;
-	process.env = {};
-	process.argv = [];
-	process.version = ''; // empty string to avoid regexp issues
-	process.versions = {};
-	
-	function noop() {}
-	
-	process.on = noop;
-	process.addListener = noop;
-	process.once = noop;
-	process.off = noop;
-	process.removeListener = noop;
-	process.removeAllListeners = noop;
-	process.emit = noop;
-	
-	process.binding = function (name) {
-	    throw new Error('process.binding is not supported');
-	};
-	
-	process.cwd = function () { return '/' };
-	process.chdir = function (dir) {
-	    throw new Error('process.chdir is not supported');
-	};
-	process.umask = function() { return 0; };
-
-
-/***/ },
-/* 65 */
-/***/ function(module, exports) {
-
-	console.log("I'm `fs` modules");
-
-
-/***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
-	//
-	// Permission is hereby granted, free of charge, to any person obtaining a
-	// copy of this software and associated documentation files (the
-	// "Software"), to deal in the Software without restriction, including
-	// without limitation the rights to use, copy, modify, merge, publish,
-	// distribute, sublicense, and/or sell copies of the Software, and to permit
-	// persons to whom the Software is furnished to do so, subject to the
-	// following conditions:
-	//
-	// The above copyright notice and this permission notice shall be included
-	// in all copies or substantial portions of the Software.
-	//
-	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-	// USE OR OTHER DEALINGS IN THE SOFTWARE.
-	
-	// resolves . and .. elements in a path array with directory names there
-	// must be no slashes, empty elements, or device names (c:\) in the array
-	// (so also no leading and trailing slashes - it does not distinguish
-	// relative and absolute paths)
-	function normalizeArray(parts, allowAboveRoot) {
-	  // if the path tries to go above the root, `up` ends up > 0
-	  var up = 0;
-	  for (var i = parts.length - 1; i >= 0; i--) {
-	    var last = parts[i];
-	    if (last === '.') {
-	      parts.splice(i, 1);
-	    } else if (last === '..') {
-	      parts.splice(i, 1);
-	      up++;
-	    } else if (up) {
-	      parts.splice(i, 1);
-	      up--;
-	    }
-	  }
-	
-	  // if the path is allowed to go above the root, restore leading ..s
-	  if (allowAboveRoot) {
-	    for (; up--; up) {
-	      parts.unshift('..');
-	    }
-	  }
-	
-	  return parts;
-	}
-	
-	// Split a filename into [root, dir, basename, ext], unix version
-	// 'root' is just a slash, or nothing.
-	var splitPathRe =
-	    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-	var splitPath = function(filename) {
-	  return splitPathRe.exec(filename).slice(1);
-	};
-	
-	// path.resolve([from ...], to)
-	// posix version
-	exports.resolve = function() {
-	  var resolvedPath = '',
-	      resolvedAbsolute = false;
-	
-	  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-	    var path = (i >= 0) ? arguments[i] : process.cwd();
-	
-	    // Skip empty and invalid entries
-	    if (typeof path !== 'string') {
-	      throw new TypeError('Arguments to path.resolve must be strings');
-	    } else if (!path) {
-	      continue;
-	    }
-	
-	    resolvedPath = path + '/' + resolvedPath;
-	    resolvedAbsolute = path.charAt(0) === '/';
-	  }
-	
-	  // At this point the path should be resolved to a full absolute path, but
-	  // handle relative paths to be safe (might happen when process.cwd() fails)
-	
-	  // Normalize the path
-	  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-	    return !!p;
-	  }), !resolvedAbsolute).join('/');
-	
-	  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-	};
-	
-	// path.normalize(path)
-	// posix version
-	exports.normalize = function(path) {
-	  var isAbsolute = exports.isAbsolute(path),
-	      trailingSlash = substr(path, -1) === '/';
-	
-	  // Normalize the path
-	  path = normalizeArray(filter(path.split('/'), function(p) {
-	    return !!p;
-	  }), !isAbsolute).join('/');
-	
-	  if (!path && !isAbsolute) {
-	    path = '.';
-	  }
-	  if (path && trailingSlash) {
-	    path += '/';
-	  }
-	
-	  return (isAbsolute ? '/' : '') + path;
-	};
-	
-	// posix version
-	exports.isAbsolute = function(path) {
-	  return path.charAt(0) === '/';
-	};
-	
-	// posix version
-	exports.join = function() {
-	  var paths = Array.prototype.slice.call(arguments, 0);
-	  return exports.normalize(filter(paths, function(p, index) {
-	    if (typeof p !== 'string') {
-	      throw new TypeError('Arguments to path.join must be strings');
-	    }
-	    return p;
-	  }).join('/'));
-	};
-	
-	
-	// path.relative(from, to)
-	// posix version
-	exports.relative = function(from, to) {
-	  from = exports.resolve(from).substr(1);
-	  to = exports.resolve(to).substr(1);
-	
-	  function trim(arr) {
-	    var start = 0;
-	    for (; start < arr.length; start++) {
-	      if (arr[start] !== '') break;
-	    }
-	
-	    var end = arr.length - 1;
-	    for (; end >= 0; end--) {
-	      if (arr[end] !== '') break;
-	    }
-	
-	    if (start > end) return [];
-	    return arr.slice(start, end - start + 1);
-	  }
-	
-	  var fromParts = trim(from.split('/'));
-	  var toParts = trim(to.split('/'));
-	
-	  var length = Math.min(fromParts.length, toParts.length);
-	  var samePartsLength = length;
-	  for (var i = 0; i < length; i++) {
-	    if (fromParts[i] !== toParts[i]) {
-	      samePartsLength = i;
-	      break;
-	    }
-	  }
-	
-	  var outputParts = [];
-	  for (var i = samePartsLength; i < fromParts.length; i++) {
-	    outputParts.push('..');
-	  }
-	
-	  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-	
-	  return outputParts.join('/');
-	};
-	
-	exports.sep = '/';
-	exports.delimiter = ':';
-	
-	exports.dirname = function(path) {
-	  var result = splitPath(path),
-	      root = result[0],
-	      dir = result[1];
-	
-	  if (!root && !dir) {
-	    // No dirname whatsoever
-	    return '.';
-	  }
-	
-	  if (dir) {
-	    // It has a dirname, strip trailing slash
-	    dir = dir.substr(0, dir.length - 1);
-	  }
-	
-	  return root + dir;
-	};
-	
-	
-	exports.basename = function(path, ext) {
-	  var f = splitPath(path)[2];
-	  // TODO: make this comparison case-insensitive on windows?
-	  if (ext && f.substr(-1 * ext.length) === ext) {
-	    f = f.substr(0, f.length - ext.length);
-	  }
-	  return f;
-	};
-	
-	
-	exports.extname = function(path) {
-	  return splitPath(path)[3];
-	};
-	
-	function filter (xs, f) {
-	    if (xs.filter) return xs.filter(f);
-	    var res = [];
-	    for (var i = 0; i < xs.length; i++) {
-	        if (f(xs[i], i, xs)) res.push(xs[i]);
-	    }
-	    return res;
-	}
-	
-	// String.prototype.substr - negative index don't work in IE8
-	var substr = 'ab'.substr(-1) === 'b'
-	    ? function (str, start, len) { return str.substr(start, len) }
-	    : function (str, start, len) {
-	        if (start < 0) start = str.length + start;
-	        return str.substr(start, len);
-	    }
-	;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(64)))
-
-/***/ },
-/* 67 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -64516,7 +64732,7 @@
 	}();
 
 /***/ },
-/* 68 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -64629,7 +64845,7 @@
 	}();
 
 /***/ },
-/* 69 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -64645,7 +64861,7 @@
 	
 	var _jquery2 = _interopRequireDefault(_jquery);
 	
-	var _noise = __webpack_require__(13);
+	var _noise = __webpack_require__(21);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
@@ -64829,7 +65045,7 @@
 	}();
 
 /***/ },
-/* 70 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -64845,7 +65061,7 @@
 	
 	var _three2 = _interopRequireDefault(_three);
 	
-	var _noise = __webpack_require__(13);
+	var _noise = __webpack_require__(21);
 	
 	var noise = _interopRequireWildcard(_noise);
 	
@@ -65048,108 +65264,6 @@
 	
 		return Space;
 	}();
-
-/***/ },
-/* 71 */,
-/* 72 */
-/***/ function(module, exports) {
-
-	module.exports = {
-		"intro_1": "xxx-Set course to Novagen... Engaging Hyperdrive",
-		"intro_2": "xxx-Enjoy your trip.",
-		"intro_3": "xxx-Message received.|Sender: Targ city.|Priority: urgent.",
-		"intro_4": "xxx-Request for assistance. Targ city emergency. Immediate help requested.",
-		"intro_5": "xxx-Starting deceleration... ",
-		"intro_6": "xxx-Landing on Targ",
-		"welcome": "xxx-Welcome to Targ.|Please take the jet and proceed to *9-2*.|*[SPACE]* to use the jet.|*[1]*-*[0]* for power.|*[SPACE]* to get out again",
-		"yeehaw": "xxx-Yee-haw!",
-		"game_saved": "xxx-Game saved.",
-		"ufo_fixed": "xxx-The xeno artifacts started the craft! Try take-off and turns without moving first.",
-		"ufo_broken": "xxx-This craft seems broken.",
-		"ship_locked": "xxx-Until you complete your mission, your ship remains locked.",
-		"takeoff_1": "xxx-Preparing for takeoff...",
-		"takeoff_2": "xxx-3...",
-		"takeoff_3": "xxx-2...",
-		"takeoff_4": "xxx-1...",
-		"takeoff_5": "xxx-Blastoff!",
-		"keya": "xxx-Pentagon key",
-		"keyb": "xxx-Triangle key",
-		"keyc": "xxx-Gate key",
-		"keyd": "xxx-X key",
-		"car": "xxx-Tando groundcar",
-		"plane": "xxx-Harris skipjet",
-		"ship": "xxx-Templar class cruiser",
-		"light": "xxx-Pulsar lightcar",
-		"disk": "xxx-Emergency Override Disk",
-		"art": "xxx-Xeno artifact",
-		"art2": "xxx-Xeno artifact",
-		"ufo": "xxx-Alien craft A3",
-		"trans": "xxx-Xeno translator chip",
-		"core": "xxx-Plasma drive core",
-		"x_file_1": "xxx-File X-100: Xeno info. The construct Allitus is set to destroy Targ. It was created by an alien race in order to ensure humanity doesn't evolve to discover the Xeno central base.",
-		"x_file_2": "xxx-File X-110: Xeno info. The alien artifact in this research lab, has an unknown purpose. It is thought to be related to the object at *79-66*.",
-		"x_file_3": "xxx-File X-120: Xeno info. The location of the Xeno central base is debated. It may be shielded from our scanning equipment somehow.",
-		"x_file_4": "xxx-File X-130: Xeno info. Allitus cannot be disarmed at this location. However, we think the Xeno central base contains a shutoff mechanism.",
-		"xeno_1": "xxx-30-72: Main drive failure. A3 craft ejected and assumed lost. Shields and Allitus deployed. We have not been detected so far.",
-		"xeno_2": "xxx-Targ natives have been observed evolving to within grasp of hyperlight technology. To avoid their expansion further, Allitus has been deployed.",
-		"xeno_3": "xxx-It pains us to end their civilization on this planet. But it is needed in order to protect ourselves from detection.",
-		"xeno_4": "xxx-Allitus override controls are located on this base. The terminal energy released by the device should propel us into orbit again.",
-		"lift_9_2": "xxx-Take the lift down. This complex houses all that we know about the current situation. *[E]* to use the lift.",
-		"in_lift_9_2": "xxx-You're welcome to take all you find with you. *[P]* to pick things up.",
-		"info_1_9_2": "xxx-The xeno device Allitus was discovered a year ago.|At first we didn't understand its purpose. It was thought to be a power generator.|Our scientists worked hard to fire it up.|Some months ago they succeeded.|However,|we now know it to be a machine of war.|Your task is to terminate Allitus. Next, meet with our defense council at coordinates *c8-f0*.",
-		"info_2_9_2": "xxx-Since your last visit, Alien ruins have been discovered on Targ. An underground complex and cave system is located at *d9-42*.",
-		"info_3_9_2": "xxx-We have requisitioned a Lightcar for your travels. It has now been encoded for your use.",
-		"ok_message1": "xxx-Memory scan: *OK*",
-		"ok_message2": "xxx-Disk scan: *OK*",
-		"ok_message3": "xxx-System health: *OK*",
-		"term_100": "xxx-Terminal 100: report",
-		"term_110": "xxx-Terminal 110: report",
-		"term_120": "xxx-Terminal 120: report",
-		"override": "xxx-*Override 17A* exec: !System compromised!",
-		"term_100_or": "xxx-The intruder Allitus is taking over all Targ communications.",
-		"term_110_or": "xxx-Allitus has no known weakness. To learn more visit our Xeno studies lab at *36-c9*.",
-		"term_120_or": "xxx-Allitus is now armed. It is set to go critical in 10 days.",
-		"info_c8_f0": "xxx-Defense Council Info: You're welcome to use the Defense Computer Array, via the terminals. Your security clearance will decide the info you see.",
-		"override_disk": "xxx-You find a disk labeled Emergency Override 17A It looks like it fits some kind of terminal.",
-		"term_20a": "xxx-Terminal 20A: report",
-		"term_20b": "xxx-Terminal 20B: report",
-		"info_1_36_c9": "xxx-This area houses a Xeno artifact. Please observe posted health and safety regulations.",
-		"info_3_36_c9": "xxx-Allitus: a device of alien origins. Warning: High Voltage Ionizing radiation Posted biohazard Do not enter.",
-		"allitus_1": "xxx-Feels cool to the touch.",
-		"allitus_on": "xxx-An ominous buzzing sound is emitted.",
-		"allitus_off": "xxx-Total silence reigns.",
-		"drives_with_core": "xxx-The drives now have plasma cores installed. The xeno ship prepares to depart from Targ.",
-		"drives_no_core": "xxx-These xeno drives need new plasma cores to operate again.",
-		"allitus_armed": "xxx-Allitus is ARMED",
-		"allitus_disarmed": "xxx-Allitus is disarmed",
-		"thanks": "xxx-The Targ city council is eternally grateful for disabling the alien threat. *20000* credits have been added to your account.",
-		"xeno_gibberish": "xxx-Xargff norgil Mggarth.",
-		"ui_loading_models": "xxx-Loading models...",
-		"ui_loading_game": "xxx-Loading game...",
-		"ui_loading_complex": "xxx-Loading complex...",
-		"ui_e": "xxx-Press E to enter",
-		"ui_e_exit": "xxx-Press E to exit",
-		"ui_space": "xxx-Press SPACE to drive",
-		"ui_p": "xxx-Press P to use",
-		"ui_t": "xxx-Press T to teleport",
-		"ui_continue": "xxx-Press C to continue game, or",
-		"ui_start": "xxx-Press SPACE to start",
-		"ui_options": "xxx-Press O to change the options",
-		"ui_h": "xxx-H for help",
-		"ui_help_title": "xxx-MERC keyboard help",
-		"ui_help_main": "xxx-Movement: WASD keys<br>Enter/exit craft: SPACE<br>Craft power: 1-0<br>Stop craft: ~<br>Elevator: E<br>Pickup/Interact with object: P<br>Toggle sound: Q<br>Toggle FPS limits: F<br>Teleport: T<br>Toggle Log: L<br>Save game: X<br>Click for mouse lock.",
-		"ui_help_footer": "xxx-Toggle this panel: H",
-		"ui_go_fail": "xxx-Despite your best efforts, you could not stop Allitus from destroying Targ. Better luck next time!",
-		"ui_go_win_both": "xxx-Leaving feels good with an extra 20,000 credits in the bank. Plus, having saved both Targ and the alien base makes this a special day.",
-		"ui_go_win_human": "xxx-Leaving feels good with an extra 20,000 credits in the bank. You feel great that Targ is saved but wonder what fate the aliens suffered...",
-		"ui_go_win_xeno": "xxx-You don't bother to look back to see what happened to Targ. The planet may be lost but at least the alien ship escaped to safety. You shrug and proceed to your next adventure.",
-		"ui_try_again": "xxx-Play Again",
-		"ui_event_log": "xxx-Event Log",
-		"ui_options_title": "xxx-Options",
-		"ui_invert_mouse": "xxx-Invert mouse Y",
-		"ui_select_locale": "xxx-Select locale",
-		"ui_close_options": "xxx-Close"
-	};
 
 /***/ }
 /******/ ]);

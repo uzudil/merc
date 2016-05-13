@@ -1,16 +1,19 @@
 import Plates from 'plates'
 import $ from 'jquery';
 import en_US from 'en_US.json'
-import test from 'test.json'
+import de_DE from 'de_DE.json'
+import es_MX from 'es_MX.json'
 
 /* Special characters: * - bold, | - line break */
 export var LOCALES = {
-	"en_US": en_US,
-	"test": test
+	"English": en_US,
+	"German": de_DE,
+	"Spanish": es_MX,
 };
 export var VALUES = {};
 export var MESSAGES = {};
-setLocale("en_US");
+const DEFAULT_LOCALE = "English";
+setLocale(DEFAULT_LOCALE);
 
 export function tmpl(el) {
 	// http://stackoverflow.com/questions/3614212/jquery-get-html-of-a-whole-element
@@ -23,6 +26,13 @@ export function tmpl(el) {
 export function setLocale(locale) {
 	console.log("Setting locale to " + locale);
 	VALUES = LOCALES[locale];
+
+	// fill-in english versions if native is missing
+	let en_VALUES = LOCALES[DEFAULT_LOCALE];
+	for(let k in VALUES) {
+		if(!VALUES[k]) VALUES[k] = en_VALUES[k];
+	}
+
 	MESSAGES = {};
 	for(let k in VALUES) MESSAGES[k] = k;
 	for(let e of $(".localized")) tmpl($(e));
